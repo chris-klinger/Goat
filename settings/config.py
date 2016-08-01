@@ -59,3 +59,9 @@ def change_setting(goat_dir):
         message = 'Current value for setting "{}" is "{}". Please choose a new value'\
                 .format(to_change, settings.__getattr__(to_change))).prompt()
     settings.__setattr__(to_change, change_to)
+
+def list_settings(goat_dir):
+    """Lists all current settings from settings file"""
+    settings = SettingsFile(get_settings_file(goat_dir))
+    for key, value in settings.list_attrs():
+        print('Setting {} has current value {}'.format(key,value))

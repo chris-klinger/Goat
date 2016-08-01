@@ -54,3 +54,14 @@ class SettingsFile:
             print('Error when deleting setting {}'.format(attr))
         finally:
             write_file.close()
+
+    def list_attrs(self):
+        """Returns a list of all attributes from settings object"""
+        read_file = open(self.db_name, 'rb')
+        settings = pickle.load(read_file)
+        try:
+            return settings.__dict__.items()
+        except(Exception):
+            print('Error when accessing settings')
+        finally:
+            read_file.close()
