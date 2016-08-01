@@ -5,8 +5,8 @@ including code to create, add, remove, or change settings
 
 import os, pickle
 
-from settings_file import Settings, SettingsFile
-from goat.util import prompts
+from settings.settings_file import Settings, SettingsFile
+from util import prompts
 
 basename = 'settings/goat_settings.pkl'
 
@@ -33,7 +33,7 @@ def add_setting(goat_dir):
         message = 'Please choose a setting to add').prompt()
     value = prompts.StringPrompt(
         message = 'Please choose a value for this setting').prompt()
-    settings.to_add = value
+    settings.__setattr__(to_add, value)
 
 def remove_setting(goat_dir,setting):
     """Removes a setting from settings file"""
@@ -44,13 +44,13 @@ def check_setting(goat_dir):
     settings = SettingsFile(get_settings_file(goat_dir))
     to_check = prompts.StringPrompt(
         message = 'Please choose a setting to check').prompt()
-    return settings.to_check
+    print(settings.__getattr__(to_check))
 
-def change_setting(goat_dir,setting):
+def change_setting(goat_dir):
     """Changes a setting from settings file"""
     settings = SettingsFile(get_settings_file(goat_dir))
     to_change = prompts.StringPrompt(
         message = 'Please choose a setting to change').prompt()
     change_to = prompts.StringPrompt(
-        message = 'Current value for setting {} is {}. Please choose a new value'.format(to_change, settings.to_change)).prompt()
-    settings.to_change = change_to
+        message = 'Current value for setting {} is {}. Please choose a new value'.format(to_change, settings.__getattr__(to_change))).prompt()
+    settings.__setattr__(to_change, change_to)

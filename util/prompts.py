@@ -7,9 +7,10 @@ class Prompt:
     Superclass from which all subclasses should be derived for specific
     prompts. Subclass must implement validate() method.
     """
-    def __init__(self, message=None, errormsg=None):
+    def __init__(self, message=None, errormsg=None, valids=None):
         self.message = message
         self.errormsg = errormsg
+        self.valids = valids
     def prompt(self):
         """Prompts a user for input"""
         user_input = None
@@ -26,13 +27,10 @@ class Prompt:
 class StringPrompt(Prompt):
     """Prompts user input, expects a string in return"""
     def validate(self, user_input):
-        pass  # user input is always in a string
+        return True  # user input is always in a string
 
 class LimitedPrompt(Prompt):
     """Checks input against a subset of possibilites"""
-    def __init__(self, valids):
-        self.valids = valids
-        Prompt.__init__(self)
     def validate(self, user_input):
         if user_input in self.valids:
             return True
@@ -43,7 +41,7 @@ class YesNoPrompt(Prompt):
     def validate(self, user_input):
         if user_input.lower() in {'yes', 'no', 'y', 'n'}:
             return True
-    return False
+        return False
 
 class FilePrompt(Prompt):
     """Prompts user input of a file"""

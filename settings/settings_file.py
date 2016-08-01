@@ -13,7 +13,7 @@ class Settings:
 class SettingsFile:
     """Interface for underlying settings object"""
     def __init__(self, db_name):
-        self.db_name = db_name
+        self.__dict__['db_name'] = db_name
 
     def __getattr__(self, attr):
         """Gets attribute from settings object"""
@@ -33,7 +33,7 @@ class SettingsFile:
         read_file.close()
         try:
             write_file = open(self.db_name, 'wb')
-            setattr(settings, attr, value)
+            settings.__setattr__(attr, value)
             pickle.dump(settings, write_file)
         except(Exception):
             print('Error when writing setting {}'.format(attr))

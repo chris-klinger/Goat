@@ -9,7 +9,7 @@ returns True, else returns False
 """
 
 #import os
-from goat.settings import config
+from settings import config
 
 def initialize(*args):
     """Runs other initialization functions"""
