@@ -13,6 +13,7 @@ class Settings:
 class SettingsFile:
     """Interface for underlying settings object"""
     def __init__(self, db_name):
+        # Explicit dict assignment bypasses setattr
         self.__dict__['db_name'] = db_name
 
     def __getattr__(self, attr):
@@ -33,9 +34,23 @@ class SettingsFile:
         read_file.close()
         try:
             write_file = open(self.db_name, 'wb')
-            settings.__setattr__(attr, value)
+            setattr(settings, attr, value)
             pickle.dump(settings, write_file)
         except(Exception):
             print('Error when writing setting {}'.format(attr))
+        finally:
+            write_file.close()
+
+    def __delattr__(self, attr):
+        """Deletes attribute from settings object"""
+        read_file = open(self.db_name, 'rb')
+        settings = pickle.load(read_file)
+        read_file.close()
+        try:
+            write_file = open(self.db_name, 'wb')
+            delattr(settings, attr)
+            pickle.dump(settings, write_file)
+        except(Exception):
+            print('Error when deleting setting {}'.format(attr))
         finally:
             write_file.close()

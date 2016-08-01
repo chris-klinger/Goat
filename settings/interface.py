@@ -22,6 +22,6 @@ def settings_loop(goat_dir):
         elif user_input == 'check':
             settings.config.check_setting(goat_dir)
         elif user_input == 'remove':
-            settings.config.check_setting(goat_dir)
+            settings.config.remove_setting(goat_dir)
         elif user_input == 'quit':
             loop = False

@@ -35,16 +35,20 @@ def add_setting(goat_dir):
         message = 'Please choose a value for this setting').prompt()
     settings.__setattr__(to_add, value)
 
-def remove_setting(goat_dir,setting):
+def remove_setting(goat_dir):
     """Removes a setting from settings file"""
-    pass
+    settings = SettingsFile(get_settings_file(goat_dir))
+    to_del = prompts.StringPrompt(
+        message = 'Please choose a setting to delete').prompt()
+    settings.__delattr__(to_del)
 
 def check_setting(goat_dir):
     """Returns current value for setting"""
     settings = SettingsFile(get_settings_file(goat_dir))
     to_check = prompts.StringPrompt(
         message = 'Please choose a setting to check').prompt()
-    print(settings.__getattr__(to_check))
+    if settings.__getattr__(to_check) is not None:
+        print(settings.__getattr__(to_check))
 
 def change_setting(goat_dir):
     """Changes a setting from settings file"""
@@ -52,5 +56,6 @@ def change_setting(goat_dir):
     to_change = prompts.StringPrompt(
         message = 'Please choose a setting to change').prompt()
     change_to = prompts.StringPrompt(
-        message = 'Current value for setting {} is {}. Please choose a new value'.format(to_change, settings.__getattr__(to_change))).prompt()
+        message = 'Current value for setting "{}" is "{}". Please choose a new value'\
+                .format(to_change, settings.__getattr__(to_change))).prompt()
     settings.__setattr__(to_change, change_to)

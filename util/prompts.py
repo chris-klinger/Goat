@@ -15,7 +15,7 @@ class Prompt:
         """Prompts a user for input"""
         user_input = None
         while user_input is None:
-            user_input = input(str(self.message)+'=> ')
+            user_input = input(str(self.message)+' => ')
             if not self.validate(user_input):
                 print(str(self.errormsg))
                 user_input = None
