@@ -26,29 +26,42 @@ def create_settings(goat_dir):
         settings = Settings()
         pickle.dump(settings, o)
 
-def add_setting(goat_dir):
+def add_setting(goat_dir, **kwargs):
     """Adds to settings file"""
     settings = SettingsFile(get_settings_file(goat_dir))
-    to_add = prompts.StringPrompt(
-        message = 'Please choose a setting to add').prompt()
-    value = prompts.StringPrompt(
-        message = 'Please choose a value for this setting').prompt()
-    settings.__setattr__(to_add, value)
+    if len(kwargs) == 0:
+        to_add = prompts.StringPrompt(
+            message = 'Please choose a setting to add').prompt()
+        value = prompts.StringPrompt(
+            message = 'Please choose a value for this setting').prompt()
+        settings.__setattr__(to_add, value)
+    else:
+        for key, value in kwargs.items():
+            settings.__setattr__(key, value)
 
-def remove_setting(goat_dir):
+def remove_setting(goat_dir, *args):
     """Removes a setting from settings file"""
     settings = SettingsFile(get_settings_file(goat_dir))
-    to_del = prompts.StringPrompt(
-        message = 'Please choose a setting to delete').prompt()
-    settings.__delattr__(to_del)
+    if len(args) == 0:
+        to_del = prompts.StringPrompt(
+            message = 'Please choose a setting to delete').prompt()
+        settings.__delattr__(to_del)
+    else:
+        for setting in args:
+            settings.__delattr__(setting)
 
-def check_setting(goat_dir):
+def check_setting(goat_dir, *args):
     """Returns current value for setting"""
     settings = SettingsFile(get_settings_file(goat_dir))
-    to_check = prompts.StringPrompt(
-        message = 'Please choose a setting to check').prompt()
-    if settings.__getattr__(to_check) is not None:
-        print(settings.__getattr__(to_check))
+    if len(args) == 0:
+        to_check = prompts.StringPrompt(
+            message = 'Please choose a setting to check').prompt()
+        if settings.__getattr__(to_check) is not None:
+            print(settings.__getattr__(to_check))
+    else:
+        for setting in args:
+            if settings.__getattr__(setting) is not None:
+                print(settings.__getattr__(setting))
 
 def change_setting(goat_dir):
     """Changes a setting from settings file"""

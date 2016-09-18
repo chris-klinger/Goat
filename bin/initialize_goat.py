@@ -9,39 +9,26 @@ returns True, else returns False
 """
 
 #import os
-from settings import config
+from settings import settings_config
+from databases import database_config
 
 def initialize(*args):
     """Runs other initialization functions"""
     initialize_settings(*args)
+    initialize_dbs(*args)
 
 def initialize_settings(goat_dir):
     """Checks for a settings file"""
-    if config.check_for_settings(goat_dir):
+    if settings_config.check_for_settings(goat_dir):
         pass
     else:
-        config.create_settings(goat_dir)
+        settings_config.create_settings(goat_dir)
+
+def initialize_dbs(goat_dir):
+    """Checks for required database structure"""
+    if database_config.check_for_dbs(goat_dir):
+        pass
+    else:
+        database_config.create_dbs(goat_dir)
 
 
-#def initialize():
-#    """Builds a Goat subdirectory if one does not exist"""
-#    if not check_goat():
-#        make_goat()
-
-#def check_goat():
-#    """Checks the current directory for a Goat subdirectory"""
-#    for elem in os.listdir():
-#        if os.path.isdir(elem) and 'Goat' in elem:  # Goat subdir
-#            return True
-#    return False
-
-#def make_goat():
-#    """Makes a new Goat subdirectory"""
-#    newfiles = ['goat_settings.txt']
-#    newdirs = ['Goat_databases', 'Goat_temp']
-#    curr_dir = os.getcwd()
-#    os.mkdir('Goat')
-#    for newfile in newfiles:
-#        open(os.path.join(curr_dir, 'Goat', newfile), 'a').close()
-#    for newdir in newdirs:
-#        os.makedirs(os.path.join(curr_dir, 'Goat', newdir))

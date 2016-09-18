@@ -3,7 +3,7 @@ Interface for generic settings file
 """
 
 from util import prompts
-import settings.config
+from settings import settings_config
 
 valid_options = {'add', 'change', 'check', 'remove', 'quit', 'list'}
 
@@ -16,14 +16,14 @@ def settings_loop(goat_dir):
             errormsg = 'Unrecognized action',
             valids = valid_options).prompt()
         if user_input == 'add':
-            settings.config.add_setting(goat_dir)
+            settings_config.add_setting(goat_dir)
         elif user_input == 'change':
-            settings.config.change_setting(goat_dir)
+            settings_config.change_setting(goat_dir)
         elif user_input == 'check':
-            settings.config.check_setting(goat_dir)
+            settings_config.check_setting(goat_dir)
         elif user_input == 'remove':
-            settings.config.remove_setting(goat_dir)
+            settings_config.remove_setting(goat_dir)
         elif user_input == 'list':
-            settings.config.list_settings(goat_dir)
+            settings_config.list_settings(goat_dir)
         elif user_input == 'quit':
             loop = False
