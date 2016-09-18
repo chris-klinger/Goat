@@ -25,3 +25,43 @@ def create_dbs(goat_dir):
     os.mkdir(db_dir)
     settings_config.add_setting(goat_dir, database_directory=db_dir)
 
+def add_by_dir(target_dir, *exts):
+    """
+    Adds records for each file in a directory. If one or more
+    extensions are specified, will only add files ending in those
+    extensions and ignore others
+    """
+    pass
+
+def recursive_add_by_dir(target_dir, *exts):
+    """Recursive version of add_by_dir()"""
+    pass
+
+def add_by_file(addfile):
+    """Adds a record for the specified file"""
+    pass
+
+def add_record(record=None, addfile=None, rdir=None, subdir=None):
+    """
+    Adds a record to the database. The user is requested to provide
+    values for missing information.
+    """
+    pass
+
+def remove_record(record=None):
+    """Removes a record from the database"""
+    pass
+
+def update_record(record=None):
+    """
+    Combines user input with other functions to update records
+    already present in the database
+    """
+    pass
+
+def list_records(record_type=None):
+    """
+    Lists records in the database, either by their attributes or by
+    the included files
+    """
+    pass
