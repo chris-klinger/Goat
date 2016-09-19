@@ -78,3 +78,11 @@ def list_settings(goat_dir):
     settings = SettingsFile(get_settings_file(goat_dir))
     for key, value in settings.list_attrs():
         print('Setting {} has current value {}'.format(key,value))
+
+def get_setting(goat_dir, setting):
+    """Returns current value for a setting"""
+    settings = SettingsFile(get_settings_file(goat_dir))
+    try:
+        return settings.__getattr__(setting)
+    except(Exception):
+        return None

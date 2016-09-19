@@ -18,7 +18,6 @@ class Record:
     def __init__(self, genus=None, species=None):
         self.genus = genus
         self.species = species
-        self.name = str(genus + '_' + species)
 
 class RecordsDB:
     """Abstracts underlying shelve database"""
@@ -33,7 +32,7 @@ class RecordsDB:
     def check_record(self, record):
         """Checks whether a record is present"""
         for entry in self.list_records():
-            if entry.name == record:
+            if entry == record:
                 return True
         return False
 
