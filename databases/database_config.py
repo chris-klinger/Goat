@@ -85,25 +85,92 @@ def remove_record(goat_dir, record=None):
         species = prompts.StringPrompt(
             message = 'Please enter a species name').prompt()
         record = str(genus + '_' + species)
-    if records_db.check_record(record):
-        user_conf = prompts.YesNoPrompt(
-            message = 'Do you wish to delete all data for {}?'.format(record),
-            errormsg = 'Please enter YES/yes/Y/y or NO/No/no/n').prompt()
-        if user_conf.lower() in {'no', 'n'}:
-            pass # nothing more to do
-        elif user_conf.lower() in {'yes', 'y'}:
-            records_db.remove_record_obj(record)
+    user_conf = prompts.YesNoPrompt(
+        message = 'Do you wish to delete all data for {}?'.format(record),
+        errormsg = 'Please enter YES/yes/Y/y or NO/No/no/n').prompt()
+    if user_conf.lower() in {'no', 'n'}:
+        pass # nothing more to do
+    elif user_conf.lower() in {'yes', 'y'}:
+        records_db.remove_record_obj(record)
 
-def update_record(record=None):
+def update_record(goat_dir, record=None):
     """
     Combines user input with other functions to update records
     already present in the database
     """
-    pass
+    records_db = get_record_db(goat_dir)
+    if record is None:
+        genus = prompts.StringPrompt(
+            message = 'Please enter a genus name').prompt()
+        species = prompts.StringPrompt(
+            message = 'Please enter a species name').prompt()
+        record = str(genus + '_' + species)
+    choices = {'add', 'change', 'remove', 'quit'}
+    cont = True
+    while cont is True:
+        user_choice = prompts.LimitedPrompt(
+            message = 'Please choose an option: add, change, remove, quit',
+            errormsg = 'Unrecognized option',
+            valids = choices).prompt()
+        if user_choice.lower() == 'quit':
+            cont = False
+        elif user_choice.lower() == 'add':
+            to_add = {}
+            attr = prompts.StringPrompt(
+                message = 'Please specify a new attribute').prompt()
+            value = prompts.StringPrompt(
+                message = 'Please specify a value for {}'.format(attr)).prompt()
+            user_conf = prompts.YesNoPrompt(
+                message = 'You have entered {} {}, is this correct?'.format(attr,value),
+                errormsg = 'Please enter YES/yes/Y/y or NO/No/no/n').prompt()
+            if user_conf.lower() in {'yes','y'}:
+                to_add[attr] = value
+                records_db.extend_record(record, **to_add)
+            elif user_conf.lower() in {'no','n'}:
+                print('Did not update record {}'.format(record))
+        elif user_choice.lower() == 'remove':
+            attr = prompts.StringPrompt(
+                message = 'Please specify an attribute to remove').prompt()
+            user_conf = prompts.YesNoPrompt(
+                message = 'Do you want to delete {} from {}?'.format(attr,record),
+                errormsg = 'Please enter YES/yes/Y/y or NO/no/N/n').prompt()
+            if user_conf.lower() in {'yes','y'}:
+                records_db.reduce_record(record,attr)
+            elif user_conf.lower() in {'no','n'}:
+                print('Did not remove attribute {}'.format(attr))
+        elif user_choice.lower() =='change':
+            attr = prompts.StringPrompt(
+                message = 'Please specify an attribute to change').prompt()
+            user_conf = prompts.YesNoPrompt(
+                message = 'Current value for {} is {}. Do you want to change it?'.format(
+                    attr, records_db.check_record_attr(record,attr)),
+                errormsg = 'Please enter YES/yes/Y/y or NO/no/N/n').prompt()
+            if user_conf.lower() in {'no','n'}:
+                print('Did not change value for {}'.format(attr))
+            elif user_conf.lower() in {'yes','y'}:
+                new_value = prompts.StringPrompt(
+                    message = 'Please choose a new value for {}'.format(attr)).prompt()
+                user_conf = prompts.YesNoPrompt(
+                    message = 'New value {} ok?'.format(new_value),
+                    errormsg = 'Please enter YES/yes/Y/y or NO/no/N/n').prompt()
+                if user_conf.lower() in {'yes','y'}:
+                    records_db.change_record_attr(record,attr,new_value)
+                elif user_conf.lower() in {'no','n'}:
+                    print('Did not change value for attribute {}'.format(attr))
 
-def check_record(record=None):
+def check_record(goat_dir, record=None):
     """Checks whether a record is already present"""
-    pass
+    records_db = get_record_db(goat_dir)
+    if record is None:
+        genus = prompts.StringPrompt(
+            message = 'Please enter a genus name').prompt()
+        species = prompts.StringPrompt(
+            message = 'Please enter a species name').prompt()
+        record = str(genus + '_' + species)
+    if records_db.check_record(record):
+        print('Record for {} exists in database'.format(record))
+    else:
+        print('Could not find record for {} in database'.format(record))
 
 def list_records(goat_dir, record_type=None):
     """

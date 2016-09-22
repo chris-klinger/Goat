@@ -36,6 +36,16 @@ class RecordsDB:
                 return True
         return False
 
+    def fetch_record(self, record_name):
+        """Fetches a record"""
+        with shelve.open(self.db_name) as db:
+            return db[record_name]
+
+    def update_record(self, record_name, record):
+        """Stores back a record"""
+        with shelve.open(self.db_name) as db:
+            db[record_name] = record
+
     def add_record_obj(self, record, **kwargs):
         """Adds information to already existing records"""
         (genus,species) = record.split('_')[0], record.split('_')[1]
@@ -52,40 +62,55 @@ class RecordsDB:
             except(KeyError):
                 print("Could not remove {}, no such record".format(record))
 
-    def extend_record(self, record, **kwargs):
+    def extend_record(self, record_name, **kwargs):
         """Adds information to pre-existing records"""
-        if self.check_record(record):
-            with shelve.open(self.db_name) as db:
-                for attr,value in kwargs:
-                    try:
-                        setattr(db[record], attr, value)
-                    except(Exception):
-                        print('Error when adding value {} to record {}'.format(attr, record))
+        if self.check_record(record_name):
+            record = self.fetch_record(record_name)
+            for attr,value in kwargs.items():
+                try:
+                    setattr(record, attr, value)
+                except(Exception):
+                    print('Error when adding value {} to record {}'.format(attr, record))
+            self.update_record(record_name, record)
         else:
             print('Could not extend {}, no such record'.format(record))
 
-    def reduce_record(self, record, *args):
+    def reduce_record(self, record_name, *args):
         """Removes information from pre-existing records"""
-        if self.check_record(record):
-            with shelve.open(self.db_name) as db:
-                for attr in args:
-                    try:
-                        delattr(db[record], attr)
-                    except(Exception):
-                        print('Error when removing {} from record {}'.format(attr, record))
+        if self.check_record(record_name):
+            record = self.fetch_record(record_name)
+            for attr in args:
+                try:
+                    delattr(record, attr)
+                except(Exception):
+                    print('Error when removing {} from record {}'.format(attr, record))
+            self.update_record(record_name, record)
         else:
             print('Could not reduce {}, no such record'.format(record))
 
-    def change_record_attr(self, record, attr, new_value):
+    def change_record_attr(self, record_name, attr, new_value):
         """Changes one or more attributes of a record"""
-        if self.check_record(record):
+        if self.check_record(record_name):
             try:
-                self.reduce_record(record, attr)
-                self.extend_record(record, attr=new_value)
+                to_change = {}
+                to_change[attr] = new_value
+                self.reduce_record(record_name, attr)
+                self.extend_record(record_name, **to_change)
             except(Exception):
-                print('Error when changing {} for {}'.format(attr, record))
+                print('Error when changing {} for {}'.format(attr, record_name))
         else:
-            print('Could not change {}, no such record'.format(record))
+            print('Could not change {}, no such record'.format(record_name))
+
+    def check_record_attr(self, record_name, attr):
+        """Checks the value of an attribute for a record"""
+        if self.check_record(record_name):
+            record = self.fetch_record(record_name)
+            try:
+                return getattr(record, attr)
+            except(Exception):
+                print('Error when checking {} of {}'.format(attr, record))
+        else:
+            print('Could not check {}, no such record'.format(record))
 
     def list_record_info(self, record):
         """Lists all current attributes and their values"""
@@ -93,7 +118,7 @@ class RecordsDB:
             with shelve.open(self.db_name) as db:
                 try:
                     for attr,value in db[record].__dict__.items():
-                        print('{} {}'.format(attr,value))
+                        print('value of {} is {}'.format(attr,value))
                 except(Exception):
                     print('Could not list info for {}'.format(record))
         else:
