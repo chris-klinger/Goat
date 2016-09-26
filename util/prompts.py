@@ -38,6 +38,10 @@ class LimitedPrompt(Prompt):
 
 class YesNoPrompt(Prompt):
     """Checks whether user input is a valid yes/no response"""
+    def __init__(self, message=None, errormsg=None, valids=None):
+        if errormsg is None:
+            errormsg = 'Please enter YES/yes/Y/y or NO/no/N/n'
+        Prompt.__init__(self, message, errormsg, valids)
     def validate(self, user_input):
         if user_input.lower() in {'yes', 'no', 'y', 'n'}:
             return True
