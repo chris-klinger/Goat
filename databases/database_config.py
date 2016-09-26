@@ -69,8 +69,7 @@ def add_record(goat_dir, record=None, addfile=None, rdir=None, subdir=None):
         print('File to be added is {}'.format(addfile))
         pass # need to add directories and subdirs here later
     more_info = prompts.YesNoPrompt(
-        message = 'Do you wish to add more info for records {}?'.format(record),
-        errormsg = 'Please enter YES/yes/Y/y or NO/no/N/n').prompt()
+        message = 'Do you wish to add more info for records {}?'.format(record)).prompt()
     if more_info.lower() in {'no', 'n'}:
         pass # nothing more to do
     elif more_info.lower() in {'yes', 'y'}:
@@ -86,8 +85,7 @@ def remove_record(goat_dir, record=None):
             message = 'Please enter a species name').prompt()
         record = str(genus + '_' + species)
     user_conf = prompts.YesNoPrompt(
-        message = 'Do you wish to delete all data for {}?'.format(record),
-        errormsg = 'Please enter YES/yes/Y/y or NO/No/no/n').prompt()
+        message = 'Do you wish to delete all data for {}?'.format(record)).prompt()
     if user_conf.lower() in {'no', 'n'}:
         pass # nothing more to do
     elif user_conf.lower() in {'yes', 'y'}:
@@ -121,8 +119,7 @@ def update_record(goat_dir, record=None):
             value = prompts.StringPrompt(
                 message = 'Please specify a value for {}'.format(attr)).prompt()
             user_conf = prompts.YesNoPrompt(
-                message = 'You have entered {} {}, is this correct?'.format(attr,value),
-                errormsg = 'Please enter YES/yes/Y/y or NO/No/no/n').prompt()
+                message = 'You have entered {} {}, is this correct?'.format(attr,value)).prompt()
             if user_conf.lower() in {'yes','y'}:
                 to_add[attr] = value
                 records_db.extend_record(record, **to_add)
@@ -132,8 +129,7 @@ def update_record(goat_dir, record=None):
             attr = prompts.StringPrompt(
                 message = 'Please specify an attribute to remove').prompt()
             user_conf = prompts.YesNoPrompt(
-                message = 'Do you want to delete {} from {}?'.format(attr,record),
-                errormsg = 'Please enter YES/yes/Y/y or NO/no/N/n').prompt()
+                message = 'Do you want to delete {} from {}?'.format(attr,record)).prompt()
             if user_conf.lower() in {'yes','y'}:
                 records_db.reduce_record(record,attr)
             elif user_conf.lower() in {'no','n'}:
@@ -143,16 +139,14 @@ def update_record(goat_dir, record=None):
                 message = 'Please specify an attribute to change').prompt()
             user_conf = prompts.YesNoPrompt(
                 message = 'Current value for {} is {}. Do you want to change it?'.format(
-                    attr, records_db.check_record_attr(record,attr)),
-                errormsg = 'Please enter YES/yes/Y/y or NO/no/N/n').prompt()
+                    attr, records_db.check_record_attr(record,attr))).prompt()
             if user_conf.lower() in {'no','n'}:
                 print('Did not change value for {}'.format(attr))
             elif user_conf.lower() in {'yes','y'}:
                 new_value = prompts.StringPrompt(
                     message = 'Please choose a new value for {}'.format(attr)).prompt()
                 user_conf = prompts.YesNoPrompt(
-                    message = 'New value {} ok?'.format(new_value),
-                    errormsg = 'Please enter YES/yes/Y/y or NO/no/N/n').prompt()
+                    message = 'New value {} ok?'.format(new_value)).prompt()
                 if user_conf.lower() in {'yes','y'}:
                     records_db.change_record_attr(record,attr,new_value)
                 elif user_conf.lower() in {'no','n'}:
