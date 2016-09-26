@@ -6,7 +6,7 @@ and also general code to perform basic actions: add, remove, update, list
 import os
 
 from settings import settings_config
-from databases import database_records
+from databases import database_records,database_util
 from util import prompts
 
 def get_record_db(goat_dir):
@@ -113,18 +113,20 @@ def update_record(goat_dir, record=None):
         if user_choice.lower() == 'quit':
             cont = False
         elif user_choice.lower() == 'add':
-            to_add = {}
-            attr = prompts.StringPrompt(
-                message = 'Please specify a new attribute').prompt()
-            value = prompts.StringPrompt(
-                message = 'Please specify a value for {}'.format(attr)).prompt()
-            user_conf = prompts.YesNoPrompt(
-                message = 'You have entered {} {}, is this correct?'.format(attr,value)).prompt()
-            if user_conf.lower() in {'yes','y'}:
-                to_add[attr] = value
-                records_db.extend_record(record, **to_add)
-            elif user_conf.lower() in {'no','n'}:
-                print('Did not update record {}'.format(record))
+            to_add = database_util.add_attribute_loop()
+            records_db.extend_record(record, **to_add)
+            #to_add = {}
+            #attr = prompts.StringPrompt(
+                #message = 'Please specify a new attribute').prompt()
+            #value = prompts.StringPrompt(
+                #message = 'Please specify a value for {}'.format(attr)).prompt()
+            #user_conf = prompts.YesNoPrompt(
+                #message = 'You have entered {} {}, is this correct?'.format(attr,value)).prompt()
+            #if user_conf.lower() in {'yes','y'}:
+                #to_add[attr] = value
+                #records_db.extend_record(record, **to_add)
+            #elif user_conf.lower() in {'no','n'}:
+                #print('Did not update record {}'.format(record))
         elif user_choice.lower() == 'remove':
             attr = prompts.StringPrompt(
                 message = 'Please specify an attribute to remove').prompt()
