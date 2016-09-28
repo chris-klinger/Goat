@@ -52,11 +52,7 @@ def add_record(goat_dir, record=None, addfile=None, rdir=None, subdir=None):
     """
     records_db = get_record_db(goat_dir)
     if record is None:
-        genus = prompts.StringPrompt(
-            message = 'Please enter a genus name').prompt()
-        species = prompts.StringPrompt(
-            message = 'Please enter a species name').prompt()
-        record = str(genus + '_' + species)
+        record = database_util.get_record()
     if records_db.check_record(record):
         print('Goat has detected an existing record for {}'.format(record))
         modify = prompts.YesNoPrompt(
@@ -85,11 +81,7 @@ def remove_record(goat_dir, record=None):
     """Removes a record from the database"""
     records_db = get_record_db(goat_dir)
     if record is None:
-        genus = prompts.StringPrompt(
-            message = 'Please enter a genus name').prompt()
-        species = prompts.StringPrompt(
-            message = 'Please enter a species name').prompt()
-        record = str(genus + '_' + species)
+        record = database_util.get_record()
     user_conf = prompts.YesNoPrompt(
         message = 'Do you wish to delete all data for {}?'.format(record)).prompt()
     if user_conf.lower() in {'no', 'n'}:
@@ -104,11 +96,7 @@ def update_record(goat_dir, record=None):
     """
     records_db = get_record_db(goat_dir)
     if record is None:
-        genus = prompts.StringPrompt(
-            message = 'Please enter a genus name').prompt()
-        species = prompts.StringPrompt(
-            message = 'Please enter a species name').prompt()
-        record = str(genus + '_' + species)
+        record = database_util.get_record()
     choices = {'add', 'change', 'remove', 'quit'}
     cont = True
     while cont is True:
@@ -134,11 +122,7 @@ def check_record(goat_dir, record=None):
     """Checks whether a record is already present"""
     records_db = get_record_db(goat_dir)
     if record is None:
-        genus = prompts.StringPrompt(
-            message = 'Please enter a genus name').prompt()
-        species = prompts.StringPrompt(
-            message = 'Please enter a species name').prompt()
-        record = str(genus + '_' + species)
+        record = database_util.get_record()
     if records_db.check_record(record):
         print('Record for {} exists in database'.format(record))
     else:

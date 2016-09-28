@@ -5,6 +5,29 @@ This module contains accessory code for use in the other database modules.
 from util import prompts
 from databases import database_config
 
+def get_record(mode=None):
+    """
+    Prompts user for input of either a record, or alternatively for
+    both the genus and species associated with a record.
+    """
+    if mode is None:
+        valids = ['name', 'taxinfo']
+        choice = prompts.LimitedPrompt(
+            message = 'Select record by "name" or "taxinfo"?',
+            errormsg = 'Please choose either "name" or "taxinfo"',
+            valids = valids).prompt()
+        mode = choice
+    if mode == 'name':
+        record = prompts.RecordPrompt(
+            message = 'Please enter a record name').prompt()
+    elif mode == 'taxinfo':
+        genus = prompts.StringPrompt(
+            message = 'Please enter a genus name').prompt()
+        species = prompts.StringPrompt(
+            message = 'Please enter a species name').prompt()
+        record = str(genus + '_' + species)
+    return record
+
 def add_attribute_loop(add_dict=None):
     """
     Collects multiple key,value pairs to update a record object. As many

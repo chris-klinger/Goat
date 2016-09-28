@@ -2,6 +2,8 @@
 Contains a class-style interface for prompts used throughout Goat.
 """
 
+import re
+
 class Prompt:
     """
     Superclass from which all subclasses should be derived for specific
@@ -44,6 +46,18 @@ class YesNoPrompt(Prompt):
         Prompt.__init__(self, message, errormsg, valids)
     def validate(self, user_input):
         if user_input.lower() in {'yes', 'no', 'y', 'n'}:
+            return True
+        return False
+
+class RecordPrompt(Prompt):
+    """Looks for input like <\w+>_<\w+>"""
+    def __init__(self, message=None, errormsg=None, valids=None):
+        if errormsg is None:
+            errormsg = 'Input does not appear to be a valid record'
+        Prompt.__init__(self, message, errormsg, valids)
+    def validate(self, user_input):
+        record_pattern = re.compile(r'\w+_\w+')
+        if record_pattern.search(user_input):
             return True
         return False
 

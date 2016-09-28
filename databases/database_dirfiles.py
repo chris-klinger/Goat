@@ -7,12 +7,24 @@ Note: for the directory removal operations, should import a generic
 recursive directory removal from util or somewhere else and call it
 """
 
-def check_record_dir(dirname=None):
-    """Checks whether a directory already exists"""
-    pass
+import os
 
-def add_record_dir(record=None):
+from databases import database_config,database_util
+from util import prompts
+
+def check_record_dir(goat_dir,record=None):
+    """Checks whether a directory already exists"""
+    seq_db = database_config.get_db_dir_path(goat_dir)
+    if record is None:
+        record = database_util.get_record()
+    if os.path.exists(os.path.join(seq_db,record)):
+        return True
+    else:
+        return False
+
+def add_record_dir(goat_dir,record=None):
     """Creates a directory for the given record"""
+    seq_db = database_config.get_db_dir_path(goat_dir)
     pass
 
 def add_record_subdir(record, dir_type):
