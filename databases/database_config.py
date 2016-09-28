@@ -59,7 +59,12 @@ def add_record(goat_dir, record=None, addfile=None, rdir=None, subdir=None):
         record = str(genus + '_' + species)
     if records_db.check_record(record):
         print('Goat has detected an existing record for {}'.format(record))
-        pass # do something
+        modify = prompts.YesNoPrompt(
+            message = 'Do you want to modify {}?'.format(record))
+        if modify in {'no','n'}:
+            print('Did not modify {}'.format(record))
+        elif modify in {'yes','y'}:
+            update_record(goat_dir,record)
     else:
         print('No such record exists yet, adding record')
         records_db.add_record_obj(record)
@@ -69,11 +74,12 @@ def add_record(goat_dir, record=None, addfile=None, rdir=None, subdir=None):
         print('File to be added is {}'.format(addfile))
         pass # need to add directories and subdirs here later
     more_info = prompts.YesNoPrompt(
-        message = 'Do you wish to add more info for records {}?'.format(record)).prompt()
+        message = 'Do you wish to add more info for record {}?'.format(record)).prompt()
     if more_info.lower() in {'no', 'n'}:
         pass # nothing more to do
     elif more_info.lower() in {'yes', 'y'}:
-        pass # Need to add more functionality here eventually
+        records_db.extend_record(record,
+            **database_util.add_attribute_loop())
 
 def remove_record(goat_dir, record=None):
     """Removes a record from the database"""
@@ -113,46 +119,16 @@ def update_record(goat_dir, record=None):
         if user_choice.lower() == 'quit':
             cont = False
         elif user_choice.lower() == 'add':
-            to_add = database_util.add_attribute_loop()
-            records_db.extend_record(record, **to_add)
-            #to_add = {}
-            #attr = prompts.StringPrompt(
-                #message = 'Please specify a new attribute').prompt()
-            #value = prompts.StringPrompt(
-                #message = 'Please specify a value for {}'.format(attr)).prompt()
-            #user_conf = prompts.YesNoPrompt(
-                #message = 'You have entered {} {}, is this correct?'.format(attr,value)).prompt()
-            #if user_conf.lower() in {'yes','y'}:
-                #to_add[attr] = value
-                #records_db.extend_record(record, **to_add)
-            #elif user_conf.lower() in {'no','n'}:
-                #print('Did not update record {}'.format(record))
+            records_db.extend_record(record,
+                    **database_util.add_attribute_loop())
         elif user_choice.lower() == 'remove':
-            attr = prompts.StringPrompt(
-                message = 'Please specify an attribute to remove').prompt()
-            user_conf = prompts.YesNoPrompt(
-                message = 'Do you want to delete {} from {}?'.format(attr,record)).prompt()
-            if user_conf.lower() in {'yes','y'}:
-                records_db.reduce_record(record,attr)
-            elif user_conf.lower() in {'no','n'}:
-                print('Did not remove attribute {}'.format(attr))
+            records_db.reduce_record(record,
+                    *database_util.remove_attribute_loop())
         elif user_choice.lower() =='change':
-            attr = prompts.StringPrompt(
-                message = 'Please specify an attribute to change').prompt()
-            user_conf = prompts.YesNoPrompt(
-                message = 'Current value for {} is {}. Do you want to change it?'.format(
-                    attr, records_db.check_record_attr(record,attr))).prompt()
-            if user_conf.lower() in {'no','n'}:
-                print('Did not change value for {}'.format(attr))
-            elif user_conf.lower() in {'yes','y'}:
-                new_value = prompts.StringPrompt(
-                    message = 'Please choose a new value for {}'.format(attr)).prompt()
-                user_conf = prompts.YesNoPrompt(
-                    message = 'New value {} ok?'.format(new_value)).prompt()
-                if user_conf.lower() in {'yes','y'}:
-                    records_db.change_record_attr(record,attr,new_value)
-                elif user_conf.lower() in {'no','n'}:
-                    print('Did not change value for attribute {}'.format(attr))
+            to_change = database_util.change_attribute_loop(goat_dir,
+                    record)
+            for k,v in to_change.items():
+                records_db.change_record_attr(record,k,v)
 
 def check_record(goat_dir, record=None):
     """Checks whether a record is already present"""
