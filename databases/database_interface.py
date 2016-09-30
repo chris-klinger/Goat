@@ -4,7 +4,7 @@ shelve database of records along with their underlying directories
 and files.
 """
 
-from util import prompts
+from util.inputs import prompts
 from databases import database_config
 
 valid_options = {'add', 'change', 'check', 'remove', 'quit', 'list'}

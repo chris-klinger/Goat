@@ -2,7 +2,7 @@
 This module contains accessory code for use in the other database modules.
 """
 
-from util import prompts
+from util.inputs import prompts
 from databases import database_config
 
 def get_record(mode=None):
@@ -27,6 +27,29 @@ def get_record(mode=None):
             message = 'Please enter a species name').prompt()
         record = str(genus + '_' + species)
     return record
+
+def get_dir_type(addfile=None):
+    """
+    Prompts user for input of a directory type associated with a file,
+    i.e. protein or genomic.
+    """
+    valid_types = {'protein','genomic'}
+    if addfile is not None:
+        dir_type = prompts.LimitedPrompt(
+            message = 'Please choose a type for {}'.format(addfile),
+            valids = valid_types).prompt()
+    else:
+        dir_type = prompts.LimitedPrompt(
+            message = 'Please choose a type',
+            valids = valid_types).prompt()
+    return dir_type
+
+def get_file():
+    """Prompts user for input of a valid file"""
+    addfile = prompts.FilePrompt(
+        message = 'Please enter a file to add',
+        errormsg = 'Could not recognize specified file').prompt()
+    return addfile
 
 def add_attribute_loop(add_dict=None):
     """

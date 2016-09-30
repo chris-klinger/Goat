@@ -6,8 +6,8 @@ and also general code to perform basic actions: add, remove, update, list
 import os
 
 from settings import settings_config
-from databases import database_records,database_util
-from util import prompts
+from databases import database_records,database_util,database_dirfiles
+from util.inputs import prompts
 
 def get_record_db(goat_dir):
     return database_records.RecordsDB(os.path.join(
@@ -41,9 +41,11 @@ def recursive_add_by_dir(target_dir, *exts):
     """Recursive version of add_by_dir()"""
     pass
 
-def add_by_file(addfile):
+def add_by_file(goat_dir, addfile=None):
     """Adds a record for the specified file"""
-    pass
+    if addfile is None:
+        addfile = database_util.get_file()
+    add_record(goat_dir, addfile=addfile)
 
 def add_record(goat_dir, record=None, addfile=None, rdir=None, subdir=None):
     """
@@ -65,10 +67,19 @@ def add_record(goat_dir, record=None, addfile=None, rdir=None, subdir=None):
         print('No such record exists yet, adding record')
         records_db.add_record_obj(record)
     if addfile is None:
-        print('Warning, no file for record {}. Goat requires files for all functionality'.format(record))
-    else:
+        print('Warning, no file for record {}.'
+            'Goat requires files for all functionality'.format(record))
+        add_now = prompts.YesNoPrompt(
+            message = 'Would you like to add a file now?').prompt()
+        if add_now.lower() in {'yes','y'}:
+            addfile = database_util.get_file()
+        elif add_now.lower() in {'no','n'}:
+            pass # Might change later
+    try:
         print('File to be added is {}'.format(addfile))
-        pass # need to add directories and subdirs here later
+        database_dirfiles.add_record_from_file(goat_dir, record, addfile)
+    except Exception:
+        pass # Could not add file
     more_info = prompts.YesNoPrompt(
         message = 'Do you wish to add more info for record {}?'.format(record)).prompt()
     if more_info.lower() in {'no', 'n'}:

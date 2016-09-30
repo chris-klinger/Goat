@@ -6,7 +6,7 @@ including code to create, add, remove, or change settings
 import os, pickle
 
 from settings.settings_file import Settings, SettingsFile
-from util import prompts
+from util.inputs import prompts
 
 basename = 'settings/goat_settings.pkl'
 

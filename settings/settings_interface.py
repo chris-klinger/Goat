@@ -2,7 +2,7 @@
 Interface for generic settings file
 """
 
-from util import prompts
+from util.inputs import prompts
 from settings import settings_config
 
 valid_options = {'add', 'change', 'check', 'remove', 'quit', 'list'}
