@@ -9,7 +9,7 @@ recursive directory removal from util or somewhere else and call it
 
 import os, shutil
 
-from databases import database_config,database_util
+from databases import database_config,database_util,database_records
 #from util.inputs import prompts
 from util.directories import walk_dirs
 from util.exceptions import goat_exceptions
@@ -106,6 +106,19 @@ def add_record_file(subdir, addfile, mode='copy'):
         elif mode == 'move':
             shutil.move(addfile,subdir)
 
+def add_file_to_record(goat_dir, record, addfile, dir_type=None):
+    """
+    Adds the full path of the specified file to the 'dir_type' attribute
+    of the corresponding record. To be used later for the purposes of
+    quick file lookup.
+    """
+    if dir_type is None:
+        dir_type = database_util.get_dir_type()
+    records_db = database_config.get_record_db(goat_dir)
+    to_add = {}
+    to_add[dir_type] = addfile
+    records_db.extend_record(record, **to_add)
+
 def add_record_from_file(goat_dir, record, addfile, dir_type=None):
     """
     Adds all required dirs and subdirs for a specified file. If the
@@ -120,12 +133,13 @@ def add_record_from_file(goat_dir, record, addfile, dir_type=None):
         dir_type = database_util.get_dir_type()
     try:
         subdir = add_record_subdir(goat_dir,record,dir_type)
-        print(subdir)
         os.mkdir(subdir)
     except goat_exceptions.DirExistsError as nonuniq:
         print(nonuniq)
     try:
         add_record_file(subdir, addfile)
+        add_file_to_record(goat_dir, record, os.path.join(
+            subdir, os.path.basename(addfile)), dir_type)
     except goat_exceptions.FileExistsError as nonuniq:
         print(nonuniq)
 

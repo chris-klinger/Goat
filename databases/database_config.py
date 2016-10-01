@@ -99,6 +99,7 @@ def remove_record(goat_dir, record=None):
         pass # nothing more to do
     elif user_conf.lower() in {'yes', 'y'}:
         records_db.remove_record_obj(record)
+        database_dirfiles.remove_record_dir(goat_dir,record)
 
 def update_record(goat_dir, record=None):
     """

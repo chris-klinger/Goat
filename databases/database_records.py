@@ -64,10 +64,12 @@ class RecordsDB:
 
     def extend_record(self, record_name, **kwargs):
         """Adds information to pre-existing records"""
+        print("In body of extend_record")
         if self.check_record(record_name):
             record = self.fetch_record(record_name)
             for attr,value in kwargs.items():
                 try:
+                    print('Setting attribute')
                     setattr(record, attr, value)
                 except(Exception):
                     print('Error when adding value {} to record {}'.format(attr, record))
