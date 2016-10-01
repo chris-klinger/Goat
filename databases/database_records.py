@@ -64,18 +64,16 @@ class RecordsDB:
 
     def extend_record(self, record_name, **kwargs):
         """Adds information to pre-existing records"""
-        print("In body of extend_record")
         if self.check_record(record_name):
             record = self.fetch_record(record_name)
             for attr,value in kwargs.items():
                 try:
-                    print('Setting attribute')
                     setattr(record, attr, value)
                 except(Exception):
                     print('Error when adding value {} to record {}'.format(attr, record))
             self.update_record(record_name, record)
         else:
-            print('Could not extend {}, no such record'.format(record))
+            print('Could not extend {}, no such record'.format(record_name))
 
     def reduce_record(self, record_name, *args):
         """Removes information from pre-existing records"""
@@ -88,7 +86,7 @@ class RecordsDB:
                     print('Error when removing {} from record {}'.format(attr, record))
             self.update_record(record_name, record)
         else:
-            print('Could not reduce {}, no such record'.format(record))
+            print('Could not reduce {}, no such record'.format(record_name))
 
     def change_record_attr(self, record_name, attr, new_value):
         """Changes one or more attributes of a record"""
@@ -112,7 +110,7 @@ class RecordsDB:
             except(Exception):
                 print('Error when checking {} of {}'.format(attr, record))
         else:
-            print('Could not check {}, no such record'.format(record))
+            print('Could not check {}, no such record'.format(record_name))
 
     def list_record_info(self, record):
         """Lists all current attributes and their values"""

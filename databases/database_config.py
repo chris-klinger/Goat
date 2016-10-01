@@ -120,13 +120,15 @@ def update_record(goat_dir, record=None):
             cont = False
         elif user_choice.lower() == 'add':
             records_db.extend_record(record,
-                    **database_util.add_attribute_loop())
+                    **database_util.add_attribute_loop(
+                        goat_dir,record))
         elif user_choice.lower() == 'remove':
             records_db.reduce_record(record,
-                    *database_util.remove_attribute_loop())
+                    *database_util.remove_attribute_loop(
+                        goat_dir,record))
         elif user_choice.lower() =='change':
-            to_change = database_util.change_attribute_loop(goat_dir,
-                    record)
+            to_change = database_util.change_attribute_loop(
+                    goat_dir,record)
             for k,v in to_change.items():
                 records_db.change_record_attr(record,k,v)
 

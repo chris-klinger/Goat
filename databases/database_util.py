@@ -3,7 +3,11 @@ This module contains accessory code for use in the other database modules.
 """
 
 from util.inputs import prompts
-from databases import database_config
+from databases import database_config, database_dirfiles
+
+# holds a set of types for files
+# note, these act as reserved keywords for Goat record attributes
+valid_file_types = {'protein','genomic'}
 
 def get_record(mode=None):
     """
@@ -33,15 +37,14 @@ def get_dir_type(addfile=None):
     Prompts user for input of a directory type associated with a file,
     i.e. protein or genomic.
     """
-    valid_types = {'protein','genomic'}
     if addfile is not None:
         dir_type = prompts.LimitedPrompt(
             message = 'Please choose a type for {}'.format(addfile),
-            valids = valid_types).prompt()
+            valids = valid_file_types).prompt()
     else:
         dir_type = prompts.LimitedPrompt(
             message = 'Please choose a type',
-            valids = valid_types).prompt()
+            valids = valid_file_types).prompt()
     return dir_type
 
 def get_file():
@@ -51,7 +54,7 @@ def get_file():
         errormsg = 'Could not recognize specified file').prompt()
     return addfile
 
-def add_attribute_loop(add_dict=None):
+def add_attribute_loop(goat_dir, record, add_dict=None):
     """
     Collects multiple key,value pairs to update a record object. As many
     such pairs as desired can be added before quitting.
@@ -62,15 +65,25 @@ def add_attribute_loop(add_dict=None):
     while loop is True:
         attr = prompts.StringPrompt(
             message = 'Please specify an attribute to add').prompt()
-        value = prompts.StringPrompt(
-            message = 'Please specify a value for {}'.format(attr)).prompt()
-        user_conf = prompts.YesNoPrompt(
-            message = 'You have entered {} {}, is this correct?'.format(
-                attr,value)).prompt()
-        if user_conf.lower() in {'yes','y'}:
-            add_dict[attr] = value
-        elif user_conf.lower() in {'no','n'}:
-            print('Attribute {} will not be added'.format(attr))
+        if attr in valid_file_types:
+            add_file = prompts.YesNoPrompt(
+                message = 'Do you wish to add a file?').prompt()
+            if add_file.lower() in {'yes','y'}:
+                value = get_file()
+                database_dirfiles.add_record_from_file(goat_dir,
+                    record, value, attr)
+            elif add_file.lower() in {'no','n'}:
+                break
+        else:
+            value = prompts.StringPrompt(
+                message = 'Please specify a value for {}'.format(attr)).prompt()
+            user_conf = prompts.YesNoPrompt(
+                message = 'You have entered {} {}, is this correct?'.format(
+                    attr,value)).prompt()
+            if user_conf.lower() in {'yes','y'}:
+                add_dict[attr] = value
+            elif user_conf.lower() in {'no','n'}:
+                print('Attribute {} will not be added'.format(attr))
         cont = prompts.YesNoPrompt(
             message = 'Do you wish to add more attributes?').prompt()
         if cont.lower() in {'yes','y'}:
@@ -79,7 +92,7 @@ def add_attribute_loop(add_dict=None):
             loop = False
     return add_dict
 
-def remove_attribute_loop(remove_list=None):
+def remove_attribute_loop(goat_dir, record, remove_list=None):
     """
     Collects multiple attributes to remove from a record object. As many
     such attributes as desired can be added before quitting.
