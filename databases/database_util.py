@@ -143,20 +143,35 @@ def change_attribute_loop(goat_dir,record,change_dict=None):
     while loop is True:
         attr = prompts.StringPrompt(
             message = 'Please specify an attribute to change').prompt()
-        user_conf = prompts.YesNoPrompt(
-            message = 'Current value for {} is {}. Do you want to change it?'.format(
-                attr, records_db.check_record_attr(record,attr))).prompt()
-        if user_conf.lower() in {'no','n'}:
-            print('Did not change value for {}'.format(attr))
-        elif user_conf.lower() in {'yes','y'}:
-            new_value = prompts.StringPrompt(
-                message = 'Please choose a new value for {}'.format(attr)).prompt()
+        if attr in valid_file_types:
+            change_file = prompts.YesNoPrompt(
+                message = 'Current {} file is {}, do you want to change it?'.format(
+                    attr, records_db.check_record_attr(record,attr))).prompt()
+            if change_file.lower() in {'yes','y'}:
+                # Remove the whole subdir first
+                database_dirfiles.remove_subdir_attr(goat_dir,
+                        record, attr)
+                # Now add a new file
+                new_file = get_file()
+                database_dirfiles.add_record_from_file(goat_dir,
+                    record, new_file, attr)
+            elif change_file.lower() in {'no','n'}:
+                break
+        else:
             user_conf = prompts.YesNoPrompt(
-                message = 'New value {} ok?'.format(new_value)).prompt()
-            if user_conf.lower() in {'yes','y'}:
-                change_dict[attr] = new_value
-            elif user_conf.lower() in {'no','n'}:
+                message = 'Current value for {} is {}. Do you want to change it?'.format(
+                    attr, records_db.check_record_attr(record,attr))).prompt()
+            if user_conf.lower() in {'no','n'}:
                 print('Did not change value for {}'.format(attr))
+            elif user_conf.lower() in {'yes','y'}:
+                new_value = prompts.StringPrompt(
+                    message = 'Please choose a new value for {}'.format(attr)).prompt()
+                user_conf = prompts.YesNoPrompt(
+                    message = 'New value {} ok?'.format(new_value)).prompt()
+                if user_conf.lower() in {'yes','y'}:
+                    change_dict[attr] = new_value
+                elif user_conf.lower() in {'no','n'}:
+                    print('Did not change value for {}'.format(attr))
         cont = prompts.YesNoPrompt(
             message = 'Do you wish to change more attributes?').prompt()
         if cont.lower() in {'yes','y'}:
