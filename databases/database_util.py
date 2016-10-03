@@ -32,6 +32,20 @@ def get_record(mode=None):
         record = str(genus + '_' + species)
     return record
 
+def get_exts():
+    """Prompt user for one or more file extensions"""
+    pass
+
+def add_files_by_dir(goat_dir, target_dir, select_files=False,
+        recurse=False, *exts):
+    """
+    Adds files from a specified directory to the database. Deeper subdirs
+    can also be traversed for files if desired. User specification can
+    also extend to selecting each file individually, to only recognizing
+    files with a specified extension, or a combination of both.
+    """
+    pass
+
 def get_dir_type(addfile=None):
     """
     Prompts user for input of a directory type associated with a file,
