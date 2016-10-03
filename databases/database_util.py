@@ -103,13 +103,24 @@ def remove_attribute_loop(goat_dir, record, remove_list=None):
     while loop is True:
         attr = prompts.StringPrompt(
             message = 'Please specify an attribute to remove').prompt()
-        user_conf = prompts.YesNoPrompt(
-            message = 'You have entered {}, is this correct?'.format(
-                attr)).prompt()
-        if user_conf.lower() in {'yes','y'}:
-            remove_list.append(attr)
-        elif user_conf.lower() in {'no','n'}:
-            print('Attribute {} will not be removed'.format(attr))
+        if attr in valid_file_types:
+            rm_file = prompts.YesNoPrompt(
+                message = 'Do you wish to remove file for {}?'.format(
+                    attr)).prompt()
+            if rm_file.lower() in {'yes','y'}:
+                # Only one file per subdir, therefore remove whole thing
+                database_dirfiles.remove_subdir_attr(goat_dir,
+                    record, attr)
+            elif rm_file.lower() in {'no','n'}:
+                break
+        else:
+            user_conf = prompts.YesNoPrompt(
+                message = 'You have entered {}, is this correct?'.format(
+                    attr)).prompt()
+            if user_conf.lower() in {'yes','y'}:
+                remove_list.append(attr)
+            elif user_conf.lower() in {'no','n'}:
+                print('Attribute {} will not be removed'.format(attr))
         cont = prompts.YesNoPrompt(
             message = 'Do you wish to remove more attributes?').prompt()
         if cont.lower() in {'yes','y'}:

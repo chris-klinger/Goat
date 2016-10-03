@@ -176,6 +176,13 @@ def remove_record_subdir(goat_dir, record, dir_type):
     else:
         shutil.rmtree(os.path.join(seq_db,record,dir_type))
 
+def remove_subdir_attr(goat_dir, record, dir_type):
+    """Removes the subdir and all files in it; also, removes corresponding
+    attribute from the record object"""
+    records_db = database_config.get_record_db(goat_dir)
+    remove_record_subdir(goat_dir, record, dir_type)
+    records_db.reduce_record(record, dir_type)
+
 def list_record_structure(goat_dir,*args):
     """
     Will eventually implement a recursive walker class to move down
