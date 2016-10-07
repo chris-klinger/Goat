@@ -32,9 +32,25 @@ def get_record(mode=None):
         record = str(genus + '_' + species)
     return record
 
-def get_exts():
+def get_exts(exts=None):
     """Prompt user for one or more file extensions"""
-    pass
+    if exts is None:
+        exts = []
+    loop = True
+    while loop:
+        valids = ['add','quit']
+        choice = prompts.LimitedPrompt(
+            message = 'Please choose to add an extension or quit',
+            errormsg = 'Please choose either "add" or "quit"',
+            valids = valids).prompt()
+        if choice.lower() == 'add':
+            ext = prompts.StringPrompt(
+                message = 'Please type a file extension to search for',
+                errormsg = 'Unrecognized choice').prompt()
+            exts.append(ext)
+        elif choice.lower() == 'quit':
+            loop = False
+    return exts
 
 def add_files_by_dir(goat_dir, target_dir, select_files=False,
         recurse=False, *exts):
@@ -44,7 +60,36 @@ def add_files_by_dir(goat_dir, target_dir, select_files=False,
     also extend to selecting each file individually, to only recognizing
     files with a specified extension, or a combination of both.
     """
-    pass
+    import glob
+    files_to_add = []
+    if exts is None:
+        if not recurse:
+            for addfile in glob.glob(target_dir):
+                files_to_add.append(addfile)
+        elif recurse:
+            for addfile in glob.glob(target_dir, recursive=True):
+                files_to_add.append(addfile)
+    else:
+        for ext in exts:
+            ext = '*.' + str(ext) # just to be sure
+            if not recurse:
+                for addfile in glob.glob(target_dir,ext):
+                    files_to_add.append(addfile)
+            elif recurse:
+                for addfile in glob.glob(target_dir,ext,
+                        recursive=True):
+                    files_to_add.append(addfile)
+    if not select_files:
+        for addfile in files_to_add:
+            database_config.add_by_file(goat_dir, addfile)
+    else:
+        for addfile in files_to_add:
+            user_conf = prompts.YesNoPrompt(
+                message = 'Add {} to database?'.format(addfile)).prompt()
+            if user_conf.lower() in {'yes','y'}:
+                database_config.add_by_file(goat_dir, addfile)
+            else:
+                pass # do not add the file
 
 def get_dir_type(addfile=None):
     """
