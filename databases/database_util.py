@@ -3,6 +3,7 @@ This module contains accessory code for use in the other database modules.
 """
 
 from util.inputs import prompts
+from util.directories import walk_dirs
 from databases import database_config, database_dirfiles
 
 # holds a set of types for files
@@ -55,38 +56,73 @@ def get_exts(exts=None):
 def add_files_by_dir(goat_dir, target_dir, select_files=False,
         recurse=False, *exts):
     """
-    Adds files from a specified directory to the database. Deeper subdirs
-    can also be traversed for files if desired. User specification can
-    also extend to selecting each file individually, to only recognizing
-    files with a specified extension, or a combination of both.
+    Adds file from a specified directory to the database. Deeper subdirs
+    can also be traversed for files. User specification can also extend
+    to selecting each file individually, to only recognizing files with
+    a specified extension, or a combination of both
     """
-    import glob
-    files_to_add = []
-    if exts is None:
-        if not recurse:
-            for addfile in glob.glob(target_dir):
-                files_to_add.append(addfile)
-        elif recurse:
-            for addfile in glob.glob(target_dir, recursive=True):
-                files_to_add.append(addfile)
-    else:
-        for ext in exts:
-            ext = '*.' + str(ext) # just to be sure
-            if not recurse:
-                for addfile in glob.glob(target_dir,ext):
-                    files_to_add.append(addfile)
-            elif recurse:
-                for addfile in glob.glob(target_dir,ext,
-                        recursive=True):
-                    files_to_add.append(addfile)
+    file_walker = walk_dirs.FileWalker(target_dir, recurse, *exts)
+    files_to_add = file_walker.getfiles()
     if not select_files:
         for addfile in files_to_add:
+            print('Adding {}'.format(addfile))
             database_config.add_by_file(goat_dir, addfile)
     else:
         for addfile in files_to_add:
             user_conf = prompts.YesNoPrompt(
                 message = 'Add {} to database?'.format(addfile)).prompt()
             if user_conf.lower() in {'yes','y'}:
+                print('Adding {}'.format(addfile))
+                database_config.add_by_file(goat_dir, addfile)
+            else:
+                pass # do not add the file
+
+def add_files_by_dir_old(goat_dir, target_dir, select_files=False,
+        recurse=False, *exts):
+    """
+    Adds files from a specified directory to the database. Deeper subdirs
+    can also be traversed for files if desired. User specification can
+    also extend to selecting each file individually, to only recognizing
+    files with a specified extension, or a combination of both.
+    """
+    import os, glob
+    files_to_add = []
+    if not exts: # empty list
+        if not recurse:
+            pathname = os.path.join(target_dir, '*')
+            for addfile in glob.glob(pathname):
+                if os.path.isfile:
+                    files_to_add.append(addfile)
+        elif recurse:
+            pathname = os.path.join(target_dir, '**')
+            for addfile in glob.glob(pathname, recursive=True):
+                if os.path.isfile:
+                    files_to_add.append(addfile)
+    else:
+        for ext in exts:
+            if '.' in ext: # user may or may not include period symbol
+                ext = str(ext)
+            else:
+                ext = '.' + str(ext)
+            if not recurse:
+                pathname = os.path.join(target_dir, '*', ext)
+                for addfile in glob.glob(pathname):
+                    files_to_add.append(addfile)
+            elif recurse:
+                pathname = os.path.join(target_dir, '**', ext)
+                for addfile in glob.glob(pathname,
+                        recursive=True):
+                    files_to_add.append(addfile)
+    if not select_files:
+        for addfile in files_to_add:
+            print('Adding {}'.format(addfile))
+            database_config.add_by_file(goat_dir, addfile)
+    else:
+        for addfile in files_to_add:
+            user_conf = prompts.YesNoPrompt(
+                message = 'Add {} to database?'.format(addfile)).prompt()
+            if user_conf.lower() in {'yes','y'}:
+                print('Adding {}'.format(addfile))
                 database_config.add_by_file(goat_dir, addfile)
             else:
                 pass # do not add the file

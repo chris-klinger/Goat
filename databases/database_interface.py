@@ -18,7 +18,17 @@ def database_loop(goat_dir):
             errormsg = 'Unrecognized action',
             valids = valid_options).prompt()
         if user_input == 'add':
-            database_config.add_record(goat_dir)
+            valids = {'directory', 'file', 'record'}
+            choice = prompts.LimitedPrompt(
+                message = 'Add by? (directory, file, record)',
+                errormsg = 'Unrecognized type',
+                valids = valids).prompt()
+            if choice == 'directory':
+                database_config.add_by_dir(goat_dir)
+            elif choice == 'file':
+                database_config.add_by_file(goat_dir)
+            else:
+                database_config.add_record(goat_dir)
         elif user_input == 'remove':
             database_config.remove_record(goat_dir)
         elif user_input == 'change':

@@ -35,7 +35,7 @@ def add_by_dir(goat_dir, target_dir=None):
     extensions are specified, will only add files ending in those
     extensions and ignore others
     """
-    exts = None
+    exts = []
     select_files = False
     recurse = False
     if target_dir is None:
