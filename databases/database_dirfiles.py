@@ -11,26 +11,13 @@ import os, shutil
 
 from databases import database_config,database_util
 #from util.inputs import prompts
-from util.directories import walk_dirs
+from util.directories import walk_dirs,dirfiles
 from util.exceptions import goat_exceptions
-
-def check_path(inpath, wanted=None):
-    """Checks whether a given path returns the specified type"""
-    if wanted == 'file':
-        if os.path.isfile(inpath):
-            return True
-    elif wanted == 'dir':
-        if os.path.isdir(inpath):
-            return True
-    elif wanted is None: # is anything there?
-        if os.path.exists(inpath):
-            return True
-    return False
 
 def check_record_dir(goat_dir, record=None, path=None):
     """Checks whether a directory already exists"""
     if path is not None:
-        return check_path(path, 'dir')
+        return dirfiles.check_path(path, 'dir')
     else:
         seq_db = database_config.get_db_dir_path(goat_dir)
         if record is None:
@@ -43,7 +30,7 @@ def check_record_dir(goat_dir, record=None, path=None):
 def check_record_subdir(goat_dir, record=None, dir_type=None, path=None):
     """Checks whether a directory already exists"""
     if path is not None:
-        return check_path(path, 'dir')
+        return dirfiles.check_path(path, 'dir')
     else:
         seq_db = database_config.get_db_dir_path(goat_dir)
         if record is None:
@@ -94,10 +81,10 @@ def add_file_to_subdir(subdir, addfile, mode='copy'):
     Both subdir and addfile must be specified as whole paths.
     """
     # Does the desired file exist?
-    if not check_path(addfile, 'file'):
+    if not dirfiles.check_path(addfile, 'file'):
         print('Goat cannot recognize file {}'.format(addfile))
     # Is the file already present in the subdir?
-    if check_path(os.path.join(subdir,os.path.basename(addfile))):
+    if dirfiles.check_path(os.path.join(subdir,os.path.basename(addfile))):
         raise goat_exceptions.FileExistsError(os.path.join(
             subdir,os.path.basename(addfile)))
     else:

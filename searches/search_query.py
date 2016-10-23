@@ -9,6 +9,8 @@ determining whether a reverse search actually retrieves the original
 query or not.
 """
 
+import shelve
+
 class Query():
     """Generic Query class"""
     def __init__(self, identity, location, qtype=None, record=None, redundant_accs=None):
@@ -27,3 +29,18 @@ class Query():
         orthologues in the database
         """
         pass
+
+class QueryDB:
+    """Abstracts underlying shelve database"""
+    def __init__(self, db_name):
+        self.db_name = db_name
+
+    def list_queries(self):
+        """Utility function"""
+        with shelve.open(self.db_name) as db:
+            return list(db.keys())
+
+    def fetch_query(self, query_identity):
+        """Fetches a query"""
+        with shelve.open(self.db_name) as db:
+            return db[query_identity]
