@@ -35,12 +35,44 @@ class QueryDB:
     def __init__(self, db_name):
         self.db_name = db_name
 
+    def check_query(self, query_name):
+        """Checks whether a query is present"""
+        for entry in self.list_queries:
+            if entry == query_name:
+                return True
+        return False
+
     def list_queries(self):
         """Utility function"""
         with shelve.open(self.db_name) as db:
             return list(db.keys())
 
-    def fetch_query(self, query_identity):
+    def fetch_query(self, query_name):
         """Fetches a query"""
         with shelve.open(self.db_name) as db:
-            return db[query_identity]
+            return db[query_name]
+
+    def update_record(self, query_name, query):
+        """Stores back a query"""
+        with shelve.open(self.db_name) as db:
+            db[query_name] = query
+
+    def add_query(self, query_name, **kwargs):
+        """Adds information to already existing records"""
+        with shelve.open(self.db_name) as db:
+            db[query_name] = Query(query_name)
+        if len(kwargs) > 0:
+            self.add_query_info(query_name, kwargs)
+
+    def add_query_info(self, query_name, **kwargs):
+        """Adds information to pre-existing records"""
+        if self.check_query(query_name):
+            query = self.fetch_record(query_name)
+            for attr,value in kwargs.items():
+                try:
+                    setattr(query, attr, value)
+                except(Exception):
+                    print('Error when adding value {} to record {}'.format(attr, query))
+            self.update_query(query_name, query)
+        else:
+            print('Could not extend {}, no such record'.format(query_name))

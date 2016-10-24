@@ -10,6 +10,7 @@ from databases import database_records,database_util,database_dirfiles
 from util.inputs import prompts
 
 def get_record_db(goat_dir):
+    """Gets the records database"""
     return database_records.RecordsDB(os.path.join(
         settings_config.get_setting(goat_dir, 'database_directory'),'records'))
 

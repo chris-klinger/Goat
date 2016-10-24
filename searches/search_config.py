@@ -15,8 +15,10 @@ structure of this subdir.
 
 import os, pickle
 
+from Bio import SeqIO
+
 from searches.search_setup import Search, SearchFile
-from searches import search_util
+from searches import search_util, search_query
 from util.input import prompts
 
 def get_search_file(search_name):
@@ -31,6 +33,10 @@ def make_search_file(search_dir, search_name):
         search = Search()
         pickle.dump(search, o)
     return search_file_path
+
+def get_query_db(search_dir, search_name):
+    """Gets the query database for the search"""
+    return search_query.QueryDB(os.path.join(search_dir, search_name))
 
 def new_search(search_name, target_dir=None, queries=None, databases=None):
     """
@@ -50,14 +56,20 @@ def new_search(search_name, target_dir=None, queries=None, databases=None):
             target_dir = search_util.specify_search_dir()
     os.mkdir(os.path.join(target_dir, search_name))
     search = make_search_file(target_dir, search_name)
+    query_db = get_query_db(target_dir, search_name)
     if not queries:
-        add_queries_to_search(search)
+        add_queries_to_search(query_db)
     if not databases:
         add_databases_to_search(search)
 
-def add_queries_to_search():
+def add_queries_to_search(query_db):
     """Adds one or more queries to a search object"""
-    pass
+    query_files = search_util.get_query_files()
+    for query_file in query_files:
+        parsed_queries = SeqIO.parse(query_file, "fasta") # assumes FASTA, needs to be changed later
+        for seq_record in parsed_queries:
+            query_db.add_query(seq_record.id, query_file) # identity of the query
+            # Add other info?
 
 def add_databases_to_search():
     """Specifies one or more databases to add to a search object"""
