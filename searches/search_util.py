@@ -3,6 +3,7 @@ This module contains utility code associated with searching operations
 in Goat.
 """
 
+from databases import database_config
 from util.input import prompts
 
 def name_search():
@@ -44,3 +45,27 @@ def get_query_files():
         elif choice == 'quit':
             loop = False
     return query_files
+
+def get_databases(goat_dir, db_type):
+    """Prompts user for one or more databases, checks whether each is valid"""
+    records_db = database_config.get_record_db(goat_dir)
+    databases = []
+    loop = True
+    while loop:
+        valids = ['add','quit']
+        choice = prompts.LimitedPrompt(
+            message = 'Please choose to add a database or quit',
+            errormsg = 'Please choose an existing database',
+            valids = valids).prompt()
+        if choice == 'add':
+            db = prompts.RecordPrompt(
+                message = 'Please type a valid database record').prompt()
+            if records_db.check_record(db):
+                databases.append(database_config.get_record_attr(
+                    goat_dir, db_type, db))
+                print('Added {} to search database'.format(db))
+            else:
+                print('Could not find {} in database'.format(db))
+        elif choice == 'quit':
+            loop = False
+    return databases

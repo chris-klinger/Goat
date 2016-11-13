@@ -10,7 +10,7 @@ from searches import search_config
 
 valid_options = {'search', 'results', 'summary', 'analysis', 'quit'}
 
-def search_loop():
+def search_loop(goat_dir):
     """Performs/analyzes searches based on user input"""
     loop = True
     while loop == True:
@@ -19,7 +19,7 @@ def search_loop():
             errormsg = 'Unrecognized action',
             valids = valid_options).prompt()
         if user_input == 'search':
-            search_config.new_search()
+            search_config.new_search(goat_dir)
         elif user_input == 'results':
             search_config.get_search_results()
         elif user_input == 'summary':

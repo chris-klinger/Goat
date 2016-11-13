@@ -38,14 +38,16 @@ def get_query_db(search_dir, search_name):
     """Gets the query database for the search"""
     return search_query.QueryDB(os.path.join(search_dir, search_name))
 
-def new_search(search_name, target_dir=None, queries=None, databases=None):
+def new_search(goat_dir, search_name=None, target_dir=None,
+        queries=None, databases=None):
     """
     Initiates the process of setting up a new search. New searches are
     named, and require one or more query files, which themselves may have
     one or more queries, one or more databases, and can specify additional
     parameters as needed.
     """
-    search_name = search_util.name_search()
+    if search_name is None:
+        search_name = search_util.name_search()
     if target_dir is None:
         use_current_dir = prompts.YesNoPrompt(
             message = 'Do you want to use the current directory for this search?').prompt()
@@ -60,7 +62,7 @@ def new_search(search_name, target_dir=None, queries=None, databases=None):
     if not queries:
         add_queries_to_search(query_db)
     if not databases:
-        add_databases_to_search(search)
+        add_databases_to_search(goat_dir, search)
 
 def add_queries_to_search(query_db):
     """Adds one or more queries to a search object"""
@@ -71,6 +73,8 @@ def add_queries_to_search(query_db):
             query_db.add_query(seq_record.id, query_file) # identity of the query
             # Add other info?
 
-def add_databases_to_search():
+def add_databases_to_search(goat_dir, db_type, search):
     """Specifies one or more databases to add to a search object"""
-    pass
+    databases = search_util.get_databases(goat_dir, db_type)
+    for database in databases:
+        search.add_db()

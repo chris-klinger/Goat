@@ -166,6 +166,16 @@ def check_record(goat_dir, record=None):
     else:
         print('Could not find record for {} in database'.format(record))
 
+def get_record_attr(goat_dir, attr, record=None):
+    """Returns a requested attribute for a record"""
+    records_db = get_record_db(goat_dir)
+    if record is None:
+        record = database_util.get_record()
+    if records_db.check_record(record):
+        return records_db.check_record_attr(record, attr)
+    else:
+        print('Could not find record for {} in database'.format(record))
+
 def list_records(goat_dir, record_type=None):
     """
     Lists records in the database, either by their attributes or by
