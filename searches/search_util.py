@@ -20,6 +20,26 @@ def name_search():
             pass
     return search_name
 
+def get_search_type():
+    """
+    Prompts user for the type of search. Should eventually involve a more
+    sophisticated interface but for now limit to BLAST or HMMer
+    """
+    loop = True
+    valids = ['BLAST', 'HMMer']
+    while loop:
+        search_type = prompts.LimitedPrompt(
+            message = 'Please choose a search type',
+            error_msg = 'Unrecognized search type',
+            valids = valids).prompt()
+        good_type = prompts.YesNoPrompt(
+            message = 'Is this ok?').prompt()
+        if good_type.lower() in {'yes','y'}:
+            loop = False
+        else:
+            pass
+    return search_type
+
 def specify_search_dir():
     """Prompts user for a parent directory for searches"""
     search_dir = prompts.DirPrompt(
@@ -69,3 +89,37 @@ def get_databases(goat_dir, db_type):
         elif choice == 'quit':
             loop = False
     return databases
+
+def add_query_attribute_loop(add_dict=None):
+    """
+    Collects key, value pairs from a restricted subset of such possible
+    pairs, based on the expected attributes in queries.
+    """
+    if add_dict is None:
+        add_dict = {}
+    valids = ['record','accessions']
+    loop = True
+    while loop is True:
+        attr = prompts.LimitedPrompt(
+            message = 'Please choose either "record" or "accessions"',
+            errormsg = 'Invalid choice',
+            valids = valids).prompt()
+        if attr == 'record':
+            value = prompts.RecordPrompt(
+                message = 'Please choose a record').prompt()
+        elif attr == 'accessions':
+            pass # need to implement redundant accessions somehow
+        user_conf = prompts.YesNoPrompt(
+            message = 'You have entered {} {}, is this correct?'.format(
+                attr,value)).prompt() # again, need to fix this later to make it more general
+        if user_conf.lower() in {'yes','y'}:
+            add_dict[attr] = value
+        elif user_conf.lower() in {'no','n'}:
+            print('Attribute {} will not be added'.format(attr))
+        cont = prompts.YesNoPrompt(
+            message = 'Do you wish to add more attributes?').prompt()
+        if cont.lower() in {'yes','y'}:
+            pass
+        elif cont.lower() in {'no','n'}:
+            loop = False
+    return add_dict

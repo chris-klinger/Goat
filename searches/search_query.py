@@ -13,7 +13,7 @@ import shelve
 
 class Query():
     """Generic Query class"""
-    def __init__(self, identity, location, qtype=None, record=None, redundant_accs=None):
+    def __init__(self, identity, location, qtype, record=None, redundant_accs=None):
         self.identity = identity
         self.location = location
         self.qtype = qtype
@@ -52,7 +52,7 @@ class QueryDB:
         with shelve.open(self.db_name) as db:
             return db[query_name]
 
-    def update_record(self, query_name, query):
+    def update_query(self, query_name, query):
         """Stores back a query"""
         with shelve.open(self.db_name) as db:
             db[query_name] = query
