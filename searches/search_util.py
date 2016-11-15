@@ -4,7 +4,7 @@ in Goat.
 """
 
 from databases import database_config
-from util.input import prompts
+from util.inputs import prompts
 
 def name_search():
     """Prompts user for a name for a search"""
@@ -30,7 +30,7 @@ def get_search_type():
     while loop:
         search_type = prompts.LimitedPrompt(
             message = 'Please choose a search type',
-            error_msg = 'Unrecognized search type',
+            errormsg = 'Unrecognized search type',
             valids = valids).prompt()
         good_type = prompts.YesNoPrompt(
             message = 'Is this ok?').prompt()
@@ -39,6 +39,27 @@ def get_search_type():
         else:
             pass
     return search_type
+
+def get_db_type():
+    """
+    Prompts user for the type of database to be searched against. Should
+    eventually involve a more sophisticated interface but for not limit
+    to either protein or genomic
+    """
+    loop = True
+    valids = ['protein','genomic']
+    while loop:
+        db_type = prompts.LimitedPrompt(
+            message = 'Please choose target db type',
+            errormsg = 'Uncrecognized db type',
+            valids = valids).prompt()
+        good_type = prompts.YesNoPrompt(
+            message = 'Is this ok?').prompt()
+        if good_type.lower() in {'yes','y'}:
+            loop = False
+        else:
+            pass
+    return db_type
 
 def specify_search_dir():
     """Prompts user for a parent directory for searches"""

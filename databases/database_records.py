@@ -52,7 +52,7 @@ class RecordsDB:
         with shelve.open(self.db_name) as db:
             db[record] = Record(genus, species)
         if len(kwargs) > 0:
-            self.extend_record(record, kwargs)
+            self.extend_record(record, **kwargs)
 
     def remove_record_obj(self, record):
         """Removes a record from the database"""

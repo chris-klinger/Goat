@@ -13,10 +13,12 @@ import shelve
 
 class Query():
     """Generic Query class"""
-    def __init__(self, identity, location, qtype, record=None, redundant_accs=None):
+    def __init__(self, identity, location=None, qtype=None,
+            sequence=None, record=None, redundant_accs=None):
         self.identity = identity
         self.location = location
         self.qtype = qtype
+        self.sequence = sequence
         self.record = record
         self.redundant_accs = redundant_accs
 
@@ -37,7 +39,7 @@ class QueryDB:
 
     def check_query(self, query_name):
         """Checks whether a query is present"""
-        for entry in self.list_queries:
+        for entry in self.list_queries():
             if entry == query_name:
                 return True
         return False
@@ -62,12 +64,12 @@ class QueryDB:
         with shelve.open(self.db_name) as db:
             db[query_name] = Query(query_name)
         if len(kwargs) > 0:
-            self.add_query_info(query_name, kwargs)
+            self.add_query_info(query_name, **kwargs)
 
     def add_query_info(self, query_name, **kwargs):
         """Adds information to pre-existing records"""
         if self.check_query(query_name):
-            query = self.fetch_record(query_name)
+            query = self.fetch_query(query_name)
             for attr,value in kwargs.items():
                 try:
                     setattr(query, attr, value)

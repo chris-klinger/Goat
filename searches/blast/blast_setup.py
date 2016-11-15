@@ -28,21 +28,24 @@ class BLAST():
         self.out = out
         self.kwargs = kwargs
 
-    def run(self, blast_type, valid_options):
+    def run(self, blast_type, valid_options=valid_options):
         """Runs the actual BLAST search"""
+        print(self.blast_path)
         args = []
         # first argument should always be the type of BLAST
         args.append(os.path.join(self.blast_path, blast_type))
         for k,v in self.__dict__.items():
-            args.append(str(k))
-            args.append(str(v))
+            if not str(k) in ['blast_path','kwargs']: # ignore these
+                args.append('-' + str(k))
+                args.append(str(v))
         if self.kwargs:
             for k,v in self.kwargs:
                 if str(k) in valid_options: # will the program understand it?
-                    args.append(str(k))
+                    args.append('-' + str(k))
                     args.append(str(v))
+        #print(args)
         try:
-            subprocess.run(*args)
+            subprocess.run(args)
         except(Exception):
             print("Could not run BLAST for {} in {}".format(
                 self.query, self.db))
@@ -69,5 +72,5 @@ class BLASTp(BLAST):
         'xdrop_gap_final', 'window_size', 'use_sw_tback']
     valid_options = BLAST.valid_options.extend(blastp_options)
 
-    def run(self, valid_options):
-        BLAST.run("blastp", valid_options)
+    def run(self, valid_options=valid_options):
+        BLAST.run(self, "blastp", valid_options)
