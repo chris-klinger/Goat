@@ -69,6 +69,8 @@ def new_search(goat_dir, search_name=None, search_type=None,
         databases = add_databases_to_search(goat_dir)
     search_file = make_search_file(target_dir, search_name, search_type,
             query_db, databases)
+    search = SearchFile(search_file)
+    search.run()
 
 def add_queries_to_search(query_db, search_type):
     """Adds one or more queries to a search object"""
