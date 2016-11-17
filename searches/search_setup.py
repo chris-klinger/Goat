@@ -2,8 +2,12 @@
 Module explanation.
 """
 
+import os,pickle
+
+#from Bio import SearchIO
+from Bio.Blast import NCBIXML
+
 from searches.blast import blast_setup
-import pickle
 
 # Placeholder - should be through settings eventually
 blast_path = '/usr/local/ncbi/blast/bin'
@@ -11,13 +15,14 @@ blast_path = '/usr/local/ncbi/blast/bin'
 class Search:
     """Generic search object. Interaction is through a separate class."""
     def __init__(self, search_type, queries, databases, db_type,
-                keep_output, output_location, *params):
+                keep_output, output_location, results, *params):
         self.search_type = search_type
         self.queries = queries # pointer to the shelve object containing the instances
         self.databases = databases
         self.db_type = db_type
         self.keep_output = keep_output
         self.output_location = output_location
+        self.results = results
         self.params = params
 
 class SearchFile:
@@ -25,31 +30,56 @@ class SearchFile:
     def __init__(self, search_name):
         self.__dict__['search_name'] = search_name
 
+    def get_db_name(self, db_path):
+        """Utility function"""
+        return os.path.basename(db_path).rsplit('.',1)[0]
+
+    def get_uniq_out(self, query_obj, db_path, sep='-'):
+        """Returns a path for a given query and database"""
+        out_string = sep.join([query_obj.identity,
+                self.get_db_name(db_path),'out.txt'])
+        return os.path.join(self.__getattr__('output_location'),out_string)
+
+    def get_result_id(self, query_obj, db_path, sep='-'):
+        """Returns a unique name for each result"""
+        return sep.join([query_obj.identity,self.get_db_name(db_path)])
+
     def run(self):
         """Runs the actual search specified by the search file"""
         query_db = self.__getattr__('queries')
+        result_db = self.__getattr__('results')
         for query in query_db.list_queries():
-            print(query)
+            #print(query)
             query_obj = query_db.fetch_query(query)
             for db in self.__getattr__('databases'):
-                print(db)
+                #print(db)
+                uniq_out = self.get_uniq_out(query_obj,db)
                 if self.__getattr__('search_type') == 'BLAST':
-                    print("Running BLAST")
+                    #print("Running BLAST")
                     if self.__getattr__('db_type') == 'protein':
-                        print("Protein BLAST")
+                        #print("Protein BLAST")
                         blast_search = blast_setup.BLASTp(blast_path, # placeholder
-                            query_obj, db, self.__getattr__('output_location'))
+                            query_obj, db, uniq_out)
                     elif self.__getattr__('search_type') == 'genomic':
                         pass # should change depending on search type
-                    blast_search.run_stdin()
+                    blast_search.run_from_stdin()
+                    result_db.add_result(self.get_result_id(query_obj,db),
+                        query=query_obj, database=db, location=uniq_out)
 
     def parse(self):
         """Parses the search output"""
-        pass
+        result_db = self.__getattr__('results')
+        for result_name in result_db.list_results():
+            result_obj = result_db.fetch_result(result_name)
+            if self.__getattr__('search_type') == 'BLAST':
+                # Must use read, not parse! Cannot pickle a generator!!!
+                blast_result = NCBIXML.read(open(result_obj.location))
+                result_db.add_result_info(result_name, parsed_obj=blast_result)
 
     def execute(self):
         """Convenience function to run searches and parse output"""
-        pass
+        self.run()
+        self.parse()
 
     def __getattr__(self, attr):
         """Gets attribute from settings object"""

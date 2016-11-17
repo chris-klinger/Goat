@@ -21,45 +21,63 @@ class BLAST():
         'dbsize', 'searchhsp', 'import_search_strategy', 'export_search_strategy',
         'parse_deflines', 'num_threads', 'remote', 'outfmt']
 
-    def __init__(self, blast_path, query, db, out, **kwargs):
+    def __init__(self, blast_path, query, db, out, outfmt=5, **kwargs):
         self.blast_path = blast_path
         self.query = query
         self.db = db
         self.out = out
+        self.outfmt = outfmt
         self.kwargs = kwargs
 
-    def run(self, blast_type, valid_options=valid_options):
-        """Runs the actual BLAST search"""
-        print(self.blast_path)
+    def get_uniq_out(self, sep):
+        """Gets a unique output file name"""
+        db_name = os.path.basename(self.db)
+        out_string = str(self.query.identity + sep + db_name + sep + 'out.txt')
+        return os.path.join(self.out, out_string)
+
+    def run_from_file(self, blast_type, valid_options=valid_options, sep='_'):
+        """Runs BLAST using file as input"""
         args = []
         # first argument should always be the type of BLAST
         args.append(os.path.join(self.blast_path, blast_type))
-        for k,v in self.__dict__.items():
-            if not str(k) in ['blast_path','kwargs']: # ignore these
-                args.append('-' + str(k))
-                args.append(str(v))
+        #out = self.get_uniq_out(sep)
+        # note, query location here needs to be changed once a scheme is in place
+        # to hold separate query files for each
+        args.extend(['-query', self.query.location, '-db', self.db, '-out', self.out,
+            '-outfmt', str(self.outfmt)])
         if self.kwargs:
             for k,v in self.kwargs:
                 if str(k) in valid_options: # will the program understand it?
                     args.append('-' + str(k))
                     args.append(str(v))
-        #print(args)
         try:
             subprocess.run(args)
         except(Exception):
             print("Could not run BLAST for {} in {}".format(
-                self.query, self.db))
+                self.query.identity, self.db))
 
-    def run_stdin(self, blast_type, valid_options=valid_options):
+    def run_from_stdin(self, blast_type, valid_options=valid_options, sep='_'):
         """Runs BLAST using obj as stdin"""
         args = []
+        # first argument should always be the type of BLAST
         args.append(os.path.join(self.blast_path, blast_type))
-        args.extend(['-db', self.db, '-out', self.out])
-        print(args)
-        blast = subprocess.Popen(args, stdin=subprocess.PIPE) #stdout=self.db,stderr=subprocess.PIPE)
-        blast_query = '>' + str(self.query.description) + '\n' + str(self.query.sequence)
-        blast.stdin.write(blast_query.encode('utf-8'))
-        blast.communicate()
+        #out = self.get_uniq_out(sep='_')
+        args.extend(['-db', self.db, '-out', self.out, '-outfmt', str(self.outfmt)])
+        if self.kwargs:
+            for k,v in self.kwargs:
+                if str(k) in valid_options:
+                    args.append('-' + str(k))
+                    args.append(str(v))
+        try:
+            # input is from stdin
+            blast = subprocess.Popen(args, stdin=subprocess.PIPE)
+            # description and sequence recapitulates the original FASTA format
+            blast_query = '>' + str(self.query.description) + '\n' + str(self.query.sequence)
+            blast.stdin.write(blast_query.encode('utf-8')) # note the encoding
+            blast.communicate() # actually runs the search
+        except(Exception):
+            print("Could not run BLAST for {} in {}".format(
+                self.query.identity, self.db))
 
 class BLASTn(BLAST):
     """Subclass for BLASTn searches"""
@@ -72,8 +90,8 @@ class BLASTn(BLAST):
         'window_size']
     valid_options = BLAST.valid_options.extend(blastn_options)
 
-    def run(self, valid_options):
-        BLAST.run("blastn", valid_options)
+    def run_from_file(self, valid_options=valid_options, sep='_'):
+        BLAST.run_from_file("blastn", valid_options, sep)
 
 class BLASTp(BLAST):
     """Subclass for BLASTp searches"""
@@ -83,8 +101,8 @@ class BLASTp(BLAST):
         'xdrop_gap_final', 'window_size', 'use_sw_tback']
     valid_options = BLAST.valid_options.extend(blastp_options)
 
-    def run(self, valid_options=valid_options):
-        BLAST.run(self, "blastp", valid_options)
+    def run_from_file(self, valid_options=valid_options, sep='_'):
+        BLAST.run_from_file(self, "blastp", valid_options, sep)
 
-    def run_stdin(self, valid_options=valid_options):
-        BLAST.run_stdin(self, "blastp", valid_options)
+    def run_from_stdin(self, valid_options=valid_options, sep='_'):
+        BLAST.run_from_stdin(self, "blastp", valid_options, sep)

@@ -18,13 +18,13 @@ import os, pickle
 from Bio import SeqIO
 
 from searches.search_setup import Search, SearchFile
-from searches import search_util, search_query
+from searches import search_util, search_query, search_database
 from util.inputs import prompts
 
 def get_search_file(search_dir, search_name):
     """Retrieves the search object in question"""
     search_file = search_name + '.pkl'
-    return os.path.join(search_dir, search_file)
+    return os.path.join(search_dir, search_name, search_file)
 
 def make_search_file(search_dir, search_name, search_type=None,
         queries=None, databases=None, db_type=None, keep_output=False,
@@ -39,7 +39,13 @@ def make_search_file(search_dir, search_name, search_type=None,
 
 def get_query_db(search_dir, search_name):
     """Gets the query database for the search"""
-    return search_query.QueryDB(os.path.join(search_dir, search_name))
+    db_file = search_name + '_queryDB'
+    return search_query.QueryDB(os.path.join(search_dir, search_name, db_file))
+
+def get_results_db(search_dir, search_name):
+    """Gets the result database for the search"""
+    db_file = search_name + '_resultsDB'
+    return search_database.ResultsDB(os.path.join(search_dir, search_name, db_file))
 
 def new_search(goat_dir, search_name=None, search_type=None, db_type=None,
         target_dir=None, queries=None, databases=None):
@@ -65,6 +71,7 @@ def new_search(goat_dir, search_name=None, search_type=None, db_type=None,
             target_dir = search_util.specify_search_dir()
     os.mkdir(os.path.join(target_dir, search_name))
     query_db = get_query_db(target_dir, search_name)
+    result_db = get_results_db(target_dir, search_name)
     if not queries:
         # May eventually want to update this to be similar to the
         # interface for adding files for database records
@@ -75,14 +82,15 @@ def new_search(goat_dir, search_name=None, search_type=None, db_type=None,
         message = 'Do you want to keep the output files from this search?').prompt()
     if keep_output_files.lower() in {'yes','y'}:
         keep_output = True
-        output_location = os.path.join(target_dir, search_name, 'output')
+        output_location = search_util.get_output_dir(target_dir, search_name)
     elif keep_output_files.lower() in {'no','n'}:
         keep_output = False
-        output_location = os.path.join(goat_dir, 'tmp', search_name, 'output')
+        output_location = search_util.get_output_dir(goat_dir, 'tmp')
     search_file = make_search_file(target_dir, search_name, search_type,
-            query_db, databases, db_type, keep_output, output_location)
+            query_db, databases, db_type, keep_output, output_location, result_db)
     search = SearchFile(search_file)
-    search.run()
+    #search.run()
+    search.execute()
 
 def add_queries_to_search(query_db, search_type):
     """Adds one or more queries to a search object"""

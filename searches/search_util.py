@@ -3,6 +3,8 @@ This module contains utility code associated with searching operations
 in Goat.
 """
 
+import os
+
 from databases import database_config
 from util.inputs import prompts
 
@@ -144,3 +146,9 @@ def add_query_attribute_loop(add_dict=None):
         elif cont.lower() in {'no','n'}:
             loop = False
     return add_dict
+
+def get_output_dir(target_dir, search_name, name='output'):
+    """Makes and returns path to output location"""
+    output = os.path.join(target_dir, search_name, name)
+    os.mkdir(output)
+    return output

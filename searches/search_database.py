@@ -17,22 +17,58 @@ class Result:
     represents the parsed output file object for persistence even in
     the absence of the file
     """
-    def __init__(self, query, database, output):
+    def __init__(self, identity, query=None, database=None, location=None,
+            qtype=None, record=None):
+        self.identity = identity
         self.query = query
         self.database = database
-        self.output = output
+        self.location = location
+        self.qtype = qtype
+        self.record = record
 
 class ResultsDB:
     """Abstracts the underlying shelve database"""
     def __init__(self, db_name):
         self.db_name = db_name
 
-    def list_records(self):
+    def check_result(self, result_name):
+        """Checks whether a query is present"""
+        for entry in self.list_results():
+            if entry == result_name:
+                return True
+        return False
+
+    def list_results(self):
         """Utility function"""
         with shelve.open(self.db_name) as db:
             return list(db.keys())
 
-    def fetch_record(self, query, database): # will likely change
-        """Fetches a record"""
+    def fetch_result(self, result_name):
+        """Fetches a query"""
         with shelve.open(self.db_name) as db:
-            return db[query] # will definitely change
+            return db[result_name]
+
+    def update_result(self, result_name, result):
+        """Stores back a query"""
+        with shelve.open(self.db_name) as db:
+            db[result_name] = result
+
+    def add_result(self, result_name, **kwargs):
+        """Adds information to already existing records"""
+        with shelve.open(self.db_name) as db:
+            db[result_name] = Result(result_name)
+        if len(kwargs) > 0:
+            self.add_result_info(result_name, **kwargs)
+
+    def add_result_info(self, result_name, **kwargs):
+        """Adds information to pre-existing records"""
+        if self.check_result(result_name):
+            result = self.fetch_result(result_name)
+            for attr,value in kwargs.items():
+                try:
+                    setattr(result, attr, value)
+                except(Exception):
+                    print('Error when adding value {} to record {}'.format(attr, result))
+            self.update_result(result_name, result)
+        else:
+            print('Could not extend {}, no such record'.format(result_name))
