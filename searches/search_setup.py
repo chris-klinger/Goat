@@ -38,10 +38,10 @@ class SearchFile:
                     if self.__getattr__('db_type') == 'protein':
                         print("Protein BLAST")
                         blast_search = blast_setup.BLASTp(blast_path, # placeholder
-                            query_obj.sequence, db, self.__getattr__('output_location'))
+                            query_obj, db, self.__getattr__('output_location'))
                     elif self.__getattr__('search_type') == 'genomic':
                         pass # should change depending on search type
-                    blast_search.run()
+                    blast_search.run_stdin()
 
     def parse(self):
         """Parses the search output"""

@@ -96,11 +96,13 @@ def add_queries_to_search(query_db, search_type):
     for query_file in query_files:
         parsed_queries = SeqIO.parse(query_file, "fasta") # assumes FASTA, needs to be changed later
         for seq_record in parsed_queries:
-            query_db.add_query(seq_record.id, location=query_file,
-                    qtype=search_type, sequence=seq_record.seq) # identity of the query
+            query_db.add_query(seq_record.id, name=seq_record.name,
+                description=seq_record.description, location=query_file,
+                qtype=search_type, sequence=seq_record.seq) # identity of the query
             if add_annotations:
-                query_db.add_query_info(seq_record.id, location=query_file,
-                    qtype=search_type, sequence=seq_record.seq,
+                query_db.add_query_info(seq_record.id, name=seq_record.name,
+                    description=seq_record.description, location=query_file,
+                    qtype=search_type,sequence=seq_record.seq,
                     **search_util.add_query_attribute_loop())
 
 def add_databases_to_search(goat_dir, db_type):

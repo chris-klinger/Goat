@@ -13,9 +13,11 @@ import shelve
 
 class Query():
     """Generic Query class"""
-    def __init__(self, identity, location=None, qtype=None,
-            sequence=None, record=None, redundant_accs=None):
+    def __init__(self, identity, name=None, description=None, location=None,
+            qtype=None, sequence=None, record=None, redundant_accs=None):
         self.identity = identity
+        self.name = name
+        self.description = description
         self.location = location
         self.qtype = qtype
         self.sequence = sequence

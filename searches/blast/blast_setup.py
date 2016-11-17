@@ -50,6 +50,17 @@ class BLAST():
             print("Could not run BLAST for {} in {}".format(
                 self.query, self.db))
 
+    def run_stdin(self, blast_type, valid_options=valid_options):
+        """Runs BLAST using obj as stdin"""
+        args = []
+        args.append(os.path.join(self.blast_path, blast_type))
+        args.extend(['-db', self.db, '-out', self.out])
+        print(args)
+        blast = subprocess.Popen(args, stdin=subprocess.PIPE) #stdout=self.db,stderr=subprocess.PIPE)
+        blast_query = '>' + str(self.query.description) + '\n' + str(self.query.sequence)
+        blast.stdin.write(blast_query.encode('utf-8'))
+        blast.communicate()
+
 class BLASTn(BLAST):
     """Subclass for BLASTn searches"""
     blastn_options = ['word_size', 'gapopen', 'gapextend', 'reward',
@@ -74,3 +85,6 @@ class BLASTp(BLAST):
 
     def run(self, valid_options=valid_options):
         BLAST.run(self, "blastp", valid_options)
+
+    def run_stdin(self, valid_options=valid_options):
+        BLAST.run_stdin(self, "blastp", valid_options)
