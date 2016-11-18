@@ -3,7 +3,7 @@ This module contains utility code associated with searching operations
 in Goat.
 """
 
-import os
+import os,re
 
 from databases import database_config
 from util.inputs import prompts
@@ -152,3 +152,10 @@ def get_output_dir(target_dir, search_name, name='output'):
     output = os.path.join(target_dir, search_name, name)
     os.mkdir(output)
     return output
+
+def remove_blast_header(instring):
+    """
+    Removes BLAST formatting introduced into header line in XML output
+    that prevents comparison to the original sequence file.
+    """
+    return re.sub(r'gnl\|BL_ORD_ID\|\d+ ','', instring)

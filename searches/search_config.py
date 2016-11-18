@@ -18,7 +18,7 @@ import os, pickle
 from Bio import SeqIO
 
 from searches.search_setup import Search, SearchFile
-from searches import search_util, search_query, search_database
+from searches import search_util, search_query, search_database, search_results
 from util.inputs import prompts
 
 def get_search_file(search_dir, search_name):
@@ -116,3 +116,23 @@ def add_queries_to_search(query_db, search_type):
 def add_databases_to_search(goat_dir, db_type):
     """Specifies one or more databases to add to a search object"""
     return search_util.get_databases(goat_dir, db_type)
+
+def get_search_results(result_name=None, summary_name=None, output=None,
+        outdir=os.getcwd(), outfile=None):
+    """
+    Retrieves results from a given result database or summary file. Results
+    can be output as spreadsheets, graphical displays, or sequence files.
+    """
+    if result_name is None:
+        result_name = prompts.StringPrompt(
+            message = 'Please input a valid db name').prompt()
+    if output is None:
+        output = prompts.LimitedPrompt(
+            message = 'Please choose an output [sequence,spreadsheet]',
+            errormsg = 'Unrecognized output',
+            valids = ['sequence','spreadsheet']).prompt()
+    #if outfile is None:
+        #outfile = prompts.StringPrompt(
+            #message = 'Please input a valid file name').prompt()
+    if output == 'sequence':
+        search_results.seq_from_result(result_name, outdir)
