@@ -18,7 +18,7 @@ import os, pickle
 from Bio import SeqIO
 
 from searches.search_setup import Search, SearchFile
-from searches import search_util, search_query, search_database, search_results
+from searches import search_util,search_query,search_database,search_results,search_summarizer
 from util.inputs import prompts
 
 def get_search_file(search_dir, search_name):
@@ -136,3 +136,18 @@ def get_search_results(result_name=None, summary_name=None, output=None,
             #message = 'Please input a valid file name').prompt()
     if output == 'sequence':
         search_results.seq_from_result(result_name, outdir)
+
+def summarize_search_results(summary_type=None):
+    """
+    Summarizes searches from one or more result databases. Cutoff criteria
+    depends on whether one or two databases are specified.
+    """
+    if summary_type is None:
+        summary_type = prompts.LimitedPrompt(
+            message = 'Summarize from how many results? [one,two]',
+            erromsg = 'Please choose "one" or "two"',
+            valids = ['one','two']).prompt()
+    if summary_type == 'one':
+        search_summarizer.summarize_one_result()
+    elif summary_type == 'two':
+        search_summarizer.summarize_two_results()
