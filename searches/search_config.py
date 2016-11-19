@@ -56,7 +56,7 @@ def new_search(goat_dir, search_name=None, search_type=None, db_type=None,
     parameters as needed.
     """
     if search_name is None:
-        search_name = search_util.name_search()
+        search_name = search_util.name_file('search')
     if search_type is None:
         search_type = search_util.get_search_type()
     if db_type is None:
@@ -137,17 +137,29 @@ def get_search_results(result_name=None, summary_name=None, output=None,
     if output == 'sequence':
         search_results.seq_from_result(result_name, outdir)
 
-def summarize_search_results(summary_type=None):
+def summarize_search_results(summary_name=None, summary_type=None):
     """
     Summarizes searches from one or more result databases. Cutoff criteria
     depends on whether one or two databases are specified.
     """
+    if summary_name is None:
+        summary_name = search_util.name_file('summary')
     if summary_type is None:
         summary_type = prompts.LimitedPrompt(
             message = 'Summarize from how many results? [one,two]',
             erromsg = 'Please choose "one" or "two"',
             valids = ['one','two']).prompt()
+    add_cutoffs = prompts.YesNoPrompt(
+        message = 'Do you want to add evalue cutoff criteria?').prompt()
+    if add_cutoffs.lower() in {'yes','y'}:
+        add_cutoffs = True
+    else:
+        add_cutoffs = False
     if summary_type == 'one':
-        search_summarizer.summarize_one_result()
+        if add_cutoffs:
+            cutoffs = search_util.get_cutoff_values('one')
+        search_summarizer.summarize_one_result(**cutoffs)
     elif summary_type == 'two':
-        search_summarizer.summarize_two_results()
+        if add_cutoffs:
+            cutoffs = search_util.get_cutoff_values('two')
+        search_summarizer.summarize_two_results(**cutoffs)

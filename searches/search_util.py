@@ -8,19 +8,20 @@ import os,re
 from databases import database_config
 from util.inputs import prompts
 
-def name_search():
+def name_file(file_type):
     """Prompts user for a name for a search"""
     loop = True
     while loop:
-        search_name = prompts.StringPrompt(
-            message = 'Please enter a name for this search').prompt()
+        file_name = prompts.StringPrompt(
+            message = 'Please enter a name for this {}'.format(
+                file_type)).prompt()
         good_name = prompts.YesNoPrompt(
             message = 'Is this ok?').prompt()
         if good_name.lower() in {'yes','y'}:
             loop = False
         else:
             pass
-    return search_name
+    return file_name
 
 def get_search_type():
     """
@@ -159,3 +160,40 @@ def remove_blast_header(instring):
     that prevents comparison to the original sequence file.
     """
     return re.sub(r'gnl\|BL_ORD_ID\|\d+ ','', instring)
+
+def get_cutoff_values(summary_type):
+    """
+    Prompts user for evalue cutoff criteria for summarizing searches. Varies depending
+    on the number of results being summarized (one or two). Can probably improve this
+    at some point in the future.
+    """
+    cutoffs = {}
+    loop = True
+    while loop:
+        add_evalue = prompts.YesNoPrompt(
+            message = 'Add another evalue criterion?').prompt()
+        if add_evalue.lower() in {'yes','y'}:
+            if summary_type == 'one':
+                possible_cutoffs = ['min_fwd_evalue_threshold',
+                        'next_hit_evalue_threshold']
+            elif summary_type == 'two':
+                possible_cutoffs = ['min_fwd_evalue_threshold',
+                    'min_rev_evalue_threshold', 'next_hit_evalue_threshold']
+            for k in possible_cutoffs:
+                try:
+                    cutoffs[k] = get_evalue(k)
+                except(Exception):
+                    pass
+        else:
+            loop = False
+    return cutoffs
+
+def get_evalue(possible_evalue):
+    """Convenience function to get evalues"""
+    specify_evalue = prompts.YesNoPrompt(
+        message = 'Specify a value for {}?'.format(
+                possible_evalue)).prompt()
+    if specify_evalue.lower() in {'yes','y'}:
+        evalue = float(prompts.StringPrompt(
+            message = 'Please enter a value').prompt())
+    return evalue
