@@ -197,3 +197,28 @@ def get_evalue(possible_evalue):
         evalue = float(prompts.StringPrompt(
             message = 'Please enter a value').prompt())
     return evalue
+
+def return_positive_hits(fwd_hit_list, rev_hit_list=None, min_fwd_evalue_threshold=None,
+        min_rev_evalue_threshold=None, next_hit_evalue_threshold=None):
+    """Determines positive hits from one or two lists depending on criteria"""
+    positive_hits = []
+    if rev_hit_list is None:
+        hit_index = 0
+        for hit in fwd_hit_list:
+            if min_fwd_evalue_threshold is None and next_hit_evalue_threshold is None:
+                positive_hits.append(hit)
+            elif min_fwd_evalue_threshold is not None and next_hit_evalue_threshold is None:
+                if hit.e < min_fwd_evalue_threshold:
+                    positive_hits.append(hit)
+            elif min_fwd_evalue_threshold is None and next_hit_evalue_threshold is not None:
+                if (hit.e + next_hit_evalue_threshold) < fwd_hit_list[hit_index+1].e: # what about index error?
+                    positive_hits.append(hit)
+            else:
+                if hit.e < min_fwd_evalue_threshold and ((hit.e + next_hit_evalue_threshold) <
+                        fwd_hit_list[hit_index+1].e):
+                    positive_hits.append(hit)
+            hit_index += 1
+    else:
+        #fwd_hit_index = 0
+        #rev_hit_index = 0
+        pass # do something

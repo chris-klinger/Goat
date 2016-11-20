@@ -3,7 +3,7 @@ Module explanation
 """
 
 import shelve
-from searches import search_database
+from searches import search_database, search_util
 from util.inputs import prompts
 
 class Summary:
@@ -31,6 +31,11 @@ class Summary:
         self.min_fwd_evalue_threshold = min_fwd_evalue_threshold
         self.min_rev_evalue_threshold = min_rev_evalue_threshold
         self.next_hit_evalue_threshold = next_hit_evalue_threshold
+
+    def add_search_result(self, result):
+        """Adds a search result to the Summary"""
+        self.databases.append(SearchResult(result))
+        return SearchResult(result)
 
 class SearchResult:
     """
@@ -81,6 +86,15 @@ def summarize_one_result(summary_name, result_name=None, **kwargs):
             message = 'Please input a valid db name').prompt()
     summary_db = SummaryDB(summary_name)
     result_db = search_database.ResultsDB(result_name)
+    for result in result_db.list_results():
+        if summary_db.check_summary(result.query): # does the entry already exist?
+            summary_obj = summary_db.fetch_summary(result.query)
+            search_result = summary_obj.add_search_result(result.database)
+            for positive_hit in search_util.return_positive_hits(search_result.parsed_obj.descriptions):
+                search_result.add_positive_hit()
+        else:
+            pass # do something else
+
 
 def summarize_two_results(fwd_result_name=None, rev_result_name=None,
     min_fwd_evalue_threshold=None, min_rev_evalue_threshold=None,
