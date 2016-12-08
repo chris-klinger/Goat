@@ -91,10 +91,13 @@ def summarize_one_result(summary_name, result_name=None, **kwargs):
             summary_obj = summary_db.fetch_summary(result.query)
             search_result = summary_obj.add_search_result(result.database)
             for positive_hit in search_util.return_positive_hits(search_result.parsed_obj.descriptions):
-                search_result.add_positive_hit()
+                search_result.add_positive_hit(*positive_hit)
         else:
-            pass # do something else
-
+            summary_db.add_summary(result.query)
+            summary_obj = summary_db.fetch_summary(result.query)
+            search_result = summary_obj.add_search_result(result.database)
+            for positive_hit in search_util.return_positive_hits(search_result.parsed_obj.descriptions):
+                search_result.add_positive_hit(*positive_hit)
 
 def summarize_two_results(fwd_result_name=None, rev_result_name=None,
     min_fwd_evalue_threshold=None, min_rev_evalue_threshold=None,
