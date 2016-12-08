@@ -99,7 +99,7 @@ def summarize_one_result(summary_name, result_name=None, **kwargs):
             for positive_hit in search_util.return_positive_hits(search_result.parsed_obj.descriptions):
                 search_result.add_positive_hit(*positive_hit)
 
-def summarize_two_results(fwd_result_name=None, rev_result_name=None,
+def summarize_two_results(summary_name, fwd_result_name=None, rev_result_name=None,
     min_fwd_evalue_threshold=None, min_rev_evalue_threshold=None,
     next_hit_evalue_threshold=None):
     """
@@ -107,7 +107,25 @@ def summarize_two_results(fwd_result_name=None, rev_result_name=None,
     other representing the reverse search. In this case, hits can be
     limited by an evalue cutoff in both directions, and between hits.
     """
-    pass
+    if fwd_result_name is None:
+        fwd_result_name = prompts.StringPrompt(
+            message = 'Please input a valid fwd db name').prompt()
+    if rev_result_name is None:
+        rev_result_name = prompts.StringPrompt(
+            message = 'Please input a valid rev db name').prompt()
+    summary_db = SummaryDB(summary_name)
+    fwd_result_db = search_database.ResultsDB(fwd_result_name)
+    rev_result_db = search_database.ResultsDB(rev_result_name)
+    for fwd_result in fwd_result_db.list_results():
+        rev_result = 1 # placeholder value; need to determine this
+        if summary_db.check_sumary(fwd_result.query):
+            summary_obj = summary_db.fetch_summary(fwd_result.query)
+            search_result = summary_obj.add_search_results(fwd_result.database)
+            for positive_hit in search_util.return_positive_hits(
+                    search_result.parsed_obj.descriptions,
+                    rev_result.parsed_obj.descriptions):
+                search_result.add_positive_hit(*positive_hit)
+
 
 class SummaryDB:
     """Abstracts the underlying shelve database"""
