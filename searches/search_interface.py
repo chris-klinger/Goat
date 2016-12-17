@@ -19,7 +19,14 @@ def search_loop(goat_dir):
             errormsg = 'Unrecognized action',
             valids = valid_options).prompt()
         if user_input == 'search':
-            search_config.new_search(goat_dir)
+            search_type = prompts.LimitedPrompt(
+                message = 'Please choose ["new","old"]',
+                errormsg = 'Unrecognized action',
+                valids = ['new','old']).prompt()
+            if search_type == 'new':
+                search_config.new_search(goat_dir)
+            else:
+                search_config.search_from_result(goat_dir)
         elif user_input == 'results':
             search_config.get_search_results()
         elif user_input == 'summary':

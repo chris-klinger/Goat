@@ -44,27 +44,49 @@ class SearchFile:
         """Returns a unique name for each result"""
         return sep.join([query_obj.identity,self.get_db_name(db_path)])
 
-    def run(self):
+    def run_all(self):
         """Runs the actual search specified by the search file"""
         query_db = self.__getattr__('queries')
         result_db = self.__getattr__('results')
         for query in query_db.list_queries():
             #print(query)
             query_obj = query_db.fetch_query(query)
-            for db in self.__getattr__('databases'):
-                #print(db)
-                uniq_out = self.get_uniq_out(query_obj,db)
-                if self.__getattr__('search_type') == 'BLAST':
+            if query_obj.target_db is not None:
+                uniq_out = self.get_uniq_out(query_obj,query_obj.target_db)
+                result_id = self.get_result_id(query_obj,query_obj.target_db)
+                self.run_one(query_obj,query_obj.target_db,uniq_out,result_db,
+                        result_id)
+            else: # Need to run for all databases
+                for db in self.__getattr__('databases'):
+                    #print(db)
+                    uniq_out = self.get_uniq_out(query_obj,db)
+                    result_id = self.get_result_id(query_obj,db)
+                    self.run_one(query_obj,db,uniq_out,result_db,result_id)
+                #if self.__getattr__('search_type') == 'BLAST':
                     #print("Running BLAST")
-                    if self.__getattr__('db_type') == 'protein':
+                    #if self.__getattr__('db_type') == 'protein':
                         #print("Protein BLAST")
-                        blast_search = blast_setup.BLASTp(blast_path, # placeholder
-                            query_obj, db, uniq_out)
-                    elif self.__getattr__('search_type') == 'genomic':
-                        pass # should change depending on search type
-                    blast_search.run_from_stdin()
-                    result_db.add_result(self.get_result_id(query_obj,db),
-                        query=query_obj, database=db, location=uniq_out)
+                        #blast_search = blast_setup.BLASTp(blast_path, # placeholder
+                            #query_obj, db, uniq_out)
+                    #elif self.__getattr__('search_type') == 'genomic':
+                        #pass # should change depending on search type
+                    #blast_search.run_from_stdin()
+                    #result_db.add_result(self.get_result_id(query_obj,db),
+                        #query=query_obj, database=db, location=uniq_out)
+
+    def run_one(self, query_obj, target_db, uniq_out, result_db, result_id):
+        """Runs each individual search"""
+        if self.search_type == 'BLAST':
+            if self.db_type == 'protein':
+                blast_search = blast_setup.BLASTp(blast_path,
+                    query_obj, target_db, uniq_out)
+            elif self.search_type == 'genomic':
+                pass
+            blast_search.run_from_stdin()
+            result_db.add_result(result_id, query=query_obj, database=target_db,
+                location=uniq_out)
+        elif self.search_type == 'HMMer':
+            pass # elaborate later
 
     def parse(self):
         """Parses the search output"""
@@ -78,7 +100,7 @@ class SearchFile:
 
     def execute(self):
         """Convenience function to run searches and parse output"""
-        self.run()
+        self.run_all()
         self.parse()
 
     def __getattr__(self, attr):
