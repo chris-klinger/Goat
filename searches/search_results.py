@@ -32,10 +32,12 @@ def seqs_from_result(result_obj):
     seq_records = []
     db = result_obj.database
     for hit in result_obj.parsed_obj.descriptions:
-        desired_seqs.append(search_util.remove_blast_header(hit.title))
-        for record in SeqIO.parse(db, "fasta"):
-            if record.description in desired_seqs:
-                seq_records.append(record)
+        new_title = search_util.remove_blast_header(hit.title)
+        if not new_title in desired_seqs:
+            desired_seqs.append(new_title)
+    for record in SeqIO.parse(db, "fasta"):
+        if record.description in desired_seqs:
+            seq_records.append(record)
     return seq_records
 
 def seqfile_from_result_db(result_name, location=None, evalue_cutoff=None):

@@ -99,7 +99,7 @@ def search_from_result(goat_dir, result_name=None, search_name=None, search_type
     Executes a search based on a previous result db. Adds a new query for each
     hit in the result's 'parsed_obj' attribute and then runs the search. User has
     the option to execute a reverse search (requires that the original query has
-    an associated 'record' attribute, or a search into one or more other DB's
+    an associated 'record' attribute), or a search into one or more other DB's
     """
     reverse_search = False
     pick_dbs = prompts.LimitedPrompt(
@@ -111,6 +111,8 @@ def search_from_result(goat_dir, result_name=None, search_name=None, search_type
     if result_name is None:
         result_name = prompts.FilePrompt(
             message = 'Please input a valid db name').prompt()
+        result_name = result_name.rsplit('.',1)[0]
+        result_name = search_database.ResultsDB(result_name)
     if search_name is None:
         search_name = search_util.name_file('search')
     if search_type is None:
@@ -132,12 +134,15 @@ def search_from_result(goat_dir, result_name=None, search_name=None, search_type
         for result in result_name.list_results():
             result_obj = result_name.fetch_result(result)
             for record in search_results.seqs_from_result(result_obj):
+                print(record)
+                print()
                 if reverse_search:
                     try:
                         target_db = database_config.get_record_attr(
-                            goat_dir, db_type, record.query_obj.record)
+                            goat_dir, db_type, result_obj.query.record)
                     except Exception:
                         target_db = None
+                    print(target_db)
                     query_db.add_query(record.id, name=record.name,
                         description=record.description, location=None,
                         qtype=search_type, sequence=record.seq, target_db=target_db)

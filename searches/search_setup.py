@@ -92,11 +92,15 @@ class SearchFile:
         """Parses the search output"""
         result_db = self.__getattr__('results')
         for result_name in result_db.list_results():
+            print(result_name)
             result_obj = result_db.fetch_result(result_name)
             if self.__getattr__('search_type') == 'BLAST':
                 # Must use read, not parse! Cannot pickle a generator!!!
                 blast_result = NCBIXML.read(open(result_obj.location))
-                result_db.add_result_info(result_name, parsed_obj=blast_result)
+                try:
+                    result_db.add_result_info(result_name, parsed_obj=blast_result)
+                except Exception:
+                    print("Could not update for {}".format(result_name))
 
     def execute(self):
         """Convenience function to run searches and parse output"""
