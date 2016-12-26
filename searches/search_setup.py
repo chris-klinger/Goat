@@ -102,6 +102,7 @@ class SearchFile:
                 except Exception:
                     print("Could not update for {}".format(result_name))
 
+    # Might not need this function in the end...
     def execute(self):
         """Convenience function to run searches and parse output"""
         self.run_all()

@@ -5,6 +5,8 @@ in Goat.
 
 import os,re
 
+from Bio.Blast import NCBIXML
+
 from databases import database_config
 from searches import search_summarizer
 from util.inputs import prompts
@@ -122,7 +124,7 @@ def add_query_attribute_loop(add_dict=None):
     """
     if add_dict is None:
         add_dict = {}
-    valids = ['record','accessions']
+    valids = ['record','redundant_accs']
     loop = True
     while loop is True:
         attr = prompts.LimitedPrompt(
@@ -132,8 +134,11 @@ def add_query_attribute_loop(add_dict=None):
         if attr == 'record':
             value = prompts.RecordPrompt(
                 message = 'Please choose a record').prompt()
-        elif attr == 'accessions':
-            pass # need to implement redundant accessions somehow
+        elif attr == 'redundant_accs':
+            value = prompts.LimitedPrompt(
+                message = 'How to add accessions? [manual,auto]',
+                errormsg = 'Invalid choice',
+                valids = ['manual','auto']).prompt()
         user_conf = prompts.YesNoPrompt(
             message = 'You have entered {} {}, is this correct?'.format(
                 attr,value)).prompt() # again, need to fix this later to make it more general
@@ -198,6 +203,19 @@ def get_evalue(possible_evalue):
         evalue = float(prompts.StringPrompt(
             message = 'Please enter a value').prompt())
     return evalue
+
+def parse_output_file(filepath, filetype='BLAST'):
+    """
+    Invokes a parser to parse the given filetype and returns the parsed
+    object. In future, may even make this so that the function can guess
+    at the filetype if it is not provided.
+    """
+    if filetype == 'BLAST':
+        # note, for now still using 'read' instead of 'parse'
+        result_obj = NCBIXML.read(open(filepath))
+    else:
+        pass # need to implement
+    return result_obj
 
 def return_positive_hits(fwd_hit_list, rev_result_list=None, min_fwd_evalue_threshold=None,
         min_rev_evalue_threshold=None, next_hit_evalue_threshold=None, original_query=None):

@@ -11,6 +11,12 @@ query or not.
 
 import shelve
 
+from databases import database_config
+from searches.blast import blast_setup
+
+# Placeholder - should be through settings eventually
+blast_path = '/usr/local/ncbi/blast/bin'
+
 class Query():
     """Generic Query class"""
     def __init__(self, identity, name=None, description=None, location=None,
@@ -25,16 +31,6 @@ class Query():
         self.target_db = target_db
         self.record = record
         self.redundant_accs = redundant_accs
-
-    def get_redundant_accs(self):
-        """
-        Should define a function that allows for retrieval of redundant
-        accessions, either manually or automatically through some kind of
-        cutoff criteria. Either way, needs to carry out a query vs. self
-        search and analyze the results to determine presence/absence of
-        orthologues in the database
-        """
-        pass
 
 class QueryDB:
     """Abstracts underlying shelve database"""
@@ -82,3 +78,27 @@ class QueryDB:
             self.update_query(query_name, query)
         else:
             print('Could not extend {}, no such record'.format(query_name))
+
+    def add_redundant_accs(self, query_name):
+        """Gets redundant accs by query_name"""
+        if self.check_query(query_name):
+            query = self.fetch_query(query_name)
+            if query.redundant_accs is not None:
+                if query.record is None:
+                    print('Could not determine redundant accs for {}, no associated record'.format(query_name))
+                else:
+                    target_db = database_config.get_record_attr(goat_dir,
+                        query.qtype, query.record)
+                    if query.qtype == 'protein':
+                        blast_search = blast_setup.BLASTp(blast_path, query, target_db, 'outpath')
+                    elif query.qtype == 'genomic':
+                        pass
+                    blast_search.run_from_stdin()
+                    if query.redundant_accs == 'manual':
+                        pass # call some other function
+                    elif query.redundant_accs == 'auto':
+                        pass # call some other function
+            self.update_query(query_name, query)
+        else:
+            print('Could not get accs for {}, no such record'.format(query_name))
+

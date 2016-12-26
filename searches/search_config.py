@@ -91,7 +91,8 @@ def new_search(goat_dir, search_name=None, search_type=None, db_type=None,
             query_db, databases, db_type, keep_output, output_location, result_db)
     search = SearchFile(search_file)
     #search.run()
-    search.execute()
+    #search.execute()
+    search.run_all() # for now, not using execute to avoid parsing output
 
 def search_from_result(goat_dir, result_name=None, search_name=None, search_type=None,
         db_type=None, target_dir=None, queries=None, databases=None):
@@ -165,7 +166,8 @@ def search_from_result(goat_dir, result_name=None, search_name=None, search_type
             query_db, databases, db_type, keep_output, output_location, result_db)
     search = SearchFile(search_file)
     #search.run()
-    search.execute()
+    #search.execute()
+    search.run_all() # again, avoid actually adding parsed output to result object
 
 def add_queries_to_search(query_db, search_type):
     """Adds one or more queries to a search object"""
@@ -187,6 +189,7 @@ def add_queries_to_search(query_db, search_type):
                     description=seq_record.description, location=query_file,
                     qtype=search_type,sequence=seq_record.seq,
                     **search_util.add_query_attribute_loop())
+                query_db.add_redundant_accs(seq_record.id) # tries to add redundant accessions
 
 def add_databases_to_search(goat_dir, db_type):
     """Specifies one or more databases to add to a search object"""
@@ -201,6 +204,7 @@ def get_search_results(result_name=None, summary_name=None, output=None,
     if result_name is None:
         result_name = prompts.FilePrompt(
             message = 'Please input a valid db name').prompt()
+        result_name = result_name.rsplit('.',1)[0]
     if output is None:
         output = prompts.LimitedPrompt(
             message = 'Please choose an output [sequence,spreadsheet]',

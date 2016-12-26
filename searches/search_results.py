@@ -31,7 +31,7 @@ def seqs_from_result(result_obj):
     desired_seqs = []
     seq_records = []
     db = result_obj.database
-    for hit in result_obj.parsed_obj.descriptions:
+    for hit in search_util.parse_output_file(result_obj.location).descriptions:
         new_title = search_util.remove_blast_header(hit.title)
         if not new_title in desired_seqs:
             desired_seqs.append(new_title)
