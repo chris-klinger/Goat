@@ -134,15 +134,15 @@ def search_from_result(goat_dir, result_name=None, search_name=None, search_type
         for result in result_name.list_results():
             result_obj = result_name.fetch_result(result)
             for record in search_results.seqs_from_result(result_obj):
-                print(record)
-                print()
+                #print(record)
+                #print()
                 if reverse_search:
                     try:
                         target_db = database_config.get_record_attr(
                             goat_dir, db_type, result_obj.query.record)
                     except Exception:
                         target_db = None
-                    print(target_db)
+                    #print(target_db)
                     query_db.add_query(record.id, name=record.name,
                         description=record.description, location=None,
                         qtype=search_type, sequence=record.seq, target_db=target_db)
