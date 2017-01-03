@@ -261,3 +261,13 @@ def return_positive_hits(fwd_hit_list, rev_result_list=None, min_fwd_evalue_thre
                 pass # do something
             fwd_hit_index += 1
     return positive_hits
+
+def get_temporary_outpath(goat_dir, query_name):
+    """
+    Provides a temporary filepath for a given query file for use in
+    determining redundant accessions.
+    """
+    outdir = os.path.join(goat_dir, 'tmp') # might be replaced by a set tmp directory later
+    if not os.path.isdir(outdir):
+        os.mkdir(outdir)
+    return os.path.join(outdir, (str(query_name) + '.txt'))

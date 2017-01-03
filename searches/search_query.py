@@ -10,8 +10,12 @@ query or not.
 """
 
 import shelve
+import curses
+
+from Bio.Blast import NCBIXML
 
 from databases import database_config
+from searches import search_util
 from searches.blast import blast_setup
 
 # Placeholder - should be through settings eventually
@@ -20,13 +24,14 @@ blast_path = '/usr/local/ncbi/blast/bin'
 class Query():
     """Generic Query class"""
     def __init__(self, identity, name=None, description=None, location=None,
-            qtype=None, sequence=None, target_db=None, record=None,
-            redundant_accs=None):
+            search_type=None, db_type=None, sequence=None, target_db=None,
+            record=None, redundant_accs=None):
         self.identity = identity
         self.name = name
         self.description = description
         self.location = location
-        self.qtype = qtype
+        self.search_type = search_type
+        self.db_type = db_type
         self.sequence = sequence
         self.target_db = target_db
         self.record = record
@@ -79,7 +84,7 @@ class QueryDB:
         else:
             print('Could not extend {}, no such record'.format(query_name))
 
-    def add_redundant_accs(self, query_name):
+    def add_redundant_accs(self, goat_dir, query_name):
         """Gets redundant accs by query_name"""
         if self.check_query(query_name):
             query = self.fetch_query(query_name)
@@ -88,17 +93,54 @@ class QueryDB:
                     print('Could not determine redundant accs for {}, no associated record'.format(query_name))
                 else:
                     target_db = database_config.get_record_attr(goat_dir,
-                        query.qtype, query.record)
-                    if query.qtype == 'protein':
-                        blast_search = blast_setup.BLASTp(blast_path, query, target_db, 'outpath')
-                    elif query.qtype == 'genomic':
+                        query.db_type, query.record)
+                    print(target_db)
+                    outpath = search_util.get_temporary_outpath(goat_dir, query_name)
+                    print(outpath)
+                    print(query.db_type)
+                    if query.db_type == 'protein':
+                        blast_search = blast_setup.BLASTp(blast_path, query, target_db, outpath)
+                    elif query.db_type == 'genomic':
                         pass
                     blast_search.run_from_stdin()
                     if query.redundant_accs == 'manual':
-                        pass # call some other function
+                        add_redundant_accs_manual(outpath) # call some other function
                     elif query.redundant_accs == 'auto':
                         pass # call some other function
             self.update_query(query_name, query)
         else:
             print('Could not get accs for {}, no such record'.format(query_name))
 
+def add_redundant_accs_manual(filepath, max_length=82):
+    """
+    Allows the user to select accessions manually using a curses-based
+    interface.
+    """
+    # first, get a list of information to be displayed
+    lines = []
+    seen = set()
+    blast_result = NCBIXML.read(open(filepath))
+    for hit in blast_result.descriptions:
+        new_title = search_util.remove_blast_header(hit.title)
+        if not new_title in seen:
+            if len(new_title) > max_length:
+                lines.append(new_title[:max_length])
+            else:
+                lines.append(new_title)
+            seen.add(new_title)
+    main_scr = curses.initscr()
+    curses.noecho()
+    main_scr.keypad(1)
+    try:
+        for aline in range(len(lines)):
+            y = aline + 1
+            main_scr.addstr(y, 1, lines[aline])
+    except Exception:
+        curses.endwin()
+    try:
+        while True:
+            event = main_scr.getch()
+            if event == ord('q'):
+                break
+    finally:
+        curses.endwin()

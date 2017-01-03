@@ -76,7 +76,7 @@ def new_search(goat_dir, search_name=None, search_type=None, db_type=None,
     if not queries:
         # May eventually want to update this to be similar to the
         # interface for adding files for database records
-        add_queries_to_search(query_db, search_type)
+        add_queries_to_search(goat_dir, query_db, search_type, db_type)
     if not databases:
         databases = add_databases_to_search(goat_dir, db_type)
     keep_output_files = prompts.YesNoPrompt(
@@ -169,7 +169,7 @@ def search_from_result(goat_dir, result_name=None, search_name=None, search_type
     #search.execute()
     search.run_all() # again, avoid actually adding parsed output to result object
 
-def add_queries_to_search(query_db, search_type):
+def add_queries_to_search(goat_dir, query_db, search_type, db_type):
     """Adds one or more queries to a search object"""
     query_files = search_util.get_query_files()
     add_annotations = prompts.YesNoPrompt(
@@ -183,13 +183,13 @@ def add_queries_to_search(query_db, search_type):
         for seq_record in parsed_queries:
             query_db.add_query(seq_record.id, name=seq_record.name,
                 description=seq_record.description, location=query_file,
-                qtype=search_type, sequence=seq_record.seq) # identity of the query
+                qtype=search_type, db_type=db_type, sequence=seq_record.seq) # identity of the query
             if add_annotations:
                 query_db.add_query_info(seq_record.id, name=seq_record.name,
                     description=seq_record.description, location=query_file,
-                    qtype=search_type,sequence=seq_record.seq,
+                    qtype=search_type, db_type=db_type, sequence=seq_record.seq,
                     **search_util.add_query_attribute_loop())
-                query_db.add_redundant_accs(seq_record.id) # tries to add redundant accessions
+                query_db.add_redundant_accs(goat_dir, seq_record.id) # tries to add redundant accessions
 
 def add_databases_to_search(goat_dir, db_type):
     """Specifies one or more databases to add to a search object"""
