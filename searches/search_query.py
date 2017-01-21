@@ -15,7 +15,7 @@ import curses
 from Bio.Blast import NCBIXML
 
 from databases import database_config
-from searches import search_util
+from searches import search_util, get_raccs
 from searches.blast import blast_setup
 
 # Placeholder - should be through settings eventually
@@ -94,53 +94,22 @@ class QueryDB:
                 else:
                     target_db = database_config.get_record_attr(goat_dir,
                         query.db_type, query.record)
-                    print(target_db)
+                    #print(target_db)
                     outpath = search_util.get_temporary_outpath(goat_dir, query_name)
-                    print(outpath)
-                    print(query.db_type)
+                    #print(outpath)
+                    #print(query.db_type)
                     if query.db_type == 'protein':
                         blast_search = blast_setup.BLASTp(blast_path, query, target_db, outpath)
                     elif query.db_type == 'genomic':
                         pass
                     blast_search.run_from_stdin()
                     if query.redundant_accs == 'manual':
-                        add_redundant_accs_manual(outpath) # call some other function
+                        raccs = get_raccs.add_redundant_accs_manual(outpath) # call some other function
+                        print(raccs)
                     elif query.redundant_accs == 'auto':
                         pass # call some other function
-            self.update_query(query_name, query)
+            self.add_query_info(query_name, redundant_accs=raccs)
         else:
             print('Could not get accs for {}, no such record'.format(query_name))
 
-def add_redundant_accs_manual(filepath, max_length=82):
-    """
-    Allows the user to select accessions manually using a curses-based
-    interface.
-    """
-    # first, get a list of information to be displayed
-    lines = []
-    seen = set()
-    blast_result = NCBIXML.read(open(filepath))
-    for hit in blast_result.descriptions:
-        new_title = search_util.remove_blast_header(hit.title)
-        if not new_title in seen:
-            if len(new_title) > max_length:
-                lines.append(new_title[:max_length])
-            else:
-                lines.append(new_title)
-            seen.add(new_title)
-    main_scr = curses.initscr()
-    curses.noecho()
-    main_scr.keypad(1)
-    try:
-        for aline in range(len(lines)):
-            y = aline + 1
-            main_scr.addstr(y, 1, lines[aline])
-    except Exception:
-        curses.endwin()
-    try:
-        while True:
-            event = main_scr.getch()
-            if event == ord('q'):
-                break
-    finally:
-        curses.endwin()
+
