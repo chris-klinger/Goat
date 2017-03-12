@@ -241,24 +241,27 @@ def return_positive_hits(fwd_hit_list, rev_result_list=None, min_fwd_evalue_thre
         fwd_hit_index = 0
         rev_result_index = 0
         for fwd_hit in fwd_hit_list:
-            if min_fwd_evalue_threshold is None: # need to make more robust soon
+            if (min_fwd_evalue_threshold is None) or (fwd_hit.e < min_fwd_evalue_threshold):
                 for rev_result in rev_result_list:
                     if fwd_hit == rev_result.query: # found a match
                         rev_hit_index = 0
                         for rev_hit in rev_result.descriptions:
-                            if min_rev_evalue_threshold is None and next_hit_evalue_threshold is None:
-                                if rev_hit == original_query:
-                                    positive_hits.append(fwd_hit)
-                            elif min_rev_evalue_threshold is None and next_hit_evalue_threshold is not None:
-                                pass # do something
-                            elif min_rev_evalue_threshold is not None and next_hit_evalue_threshold is None:
-                                pass # do something
-                            else: # both are 'not None'
-                                pass # do something
+                            if (rev_hit == original_query) or (rev_hit in original_query.redundant_accs):
+                                if min_rev_evalue_threshold is None and next_hit_evalue_threshold is None:
+                                    positive_hits.append([fwd_hit.title,fwd_hit.e])
+                                elif min_rev_evalue_threshold is not None and next_hit_evalue_threshold is None:
+                                    if rev_hit.e < min_rev_evalue_threshold:
+                                        positive_hits.append([fwd_hit.title,fwd_hit.e])
+                                elif min_rev_evalue_threshold is None and next_hit_evalue_threshold is not None:
+                                    if (rev_hit.e + next_hit_evalue_threshold) < \
+                                            rev_result.descriptions[rev_hit_index+1].e:
+                                        positive_hits.append([fwd_hit.title,fwd_hit.e])
+                                else: # both are 'not None'
+                                    if (rev_hit.e < min_rev_evalue_threshold) and ((rev_hit.e +\
+                                    next_hit_evalue_threshold) < (rev_result.descriptions[rev_hit_index+1].e)):
+                                        positive_hits.append([fwd_hit.title,fwd_hit.e])
                             rev_hit_index += 1
                     rev_result_index += 1
-            elif min_fwd_evalue_threshold is not None:
-                pass # do something
             fwd_hit_index += 1
     return positive_hits
 

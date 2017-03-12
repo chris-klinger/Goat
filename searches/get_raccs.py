@@ -101,7 +101,11 @@ class NewChoiceButton(urwid.SelectableIcon):
     def render(self, size, focus=False):
         """Overrides default render activity"""
         (maxcol,) = size
-        self.clip_text(maxcol) # function to change self._text
+        #self.clip_text(maxcol) # function to change self._text
+        string = ' '.join(self._original_text.split()[:-1])
+        evalue = self._original_text.split()[-1]
+        new_string,evalue,num_pads = calculate_padding(string,evalue,maxcol)
+        self.set_text(new_string + (' ' * num_pads) + evalue + ' ')
         text, attr = self.get_text()
         trans = self.get_line_translation(maxcol, (text,attr))
         c = apply_text_layout(text, attr, trans, maxcol)
@@ -110,12 +114,12 @@ class NewChoiceButton(urwid.SelectableIcon):
              c.cursor = self.get_cursor_coords(size)
         return c
 
-    def clip_text(self, maxcol):
-        """clips first part of text on screen render"""
-        string = ' '.join(self._original_text.split()[:-1])
-        evalue = self._original_text.split()[-1]
-        new_string,evalue,num_pads = calculate_padding(string,evalue,maxcol)
-        self._text = new_string + (' ' * num_pads) + evalue + '  '
+    #def clip_text(self, maxcol):
+        #"""clips first part of text on screen render"""
+        #string = ' '.join(self._original_text.split()[:-1])
+        #evalue = self._original_text.split()[-1]
+        #new_string,evalue,num_pads = calculate_padding(string,evalue,maxcol)
+        #self._text = new_string + (' ' * num_pads) + evalue + '  '
 
     def keypress(self, size, key):
         """send a signal on 'click'"""
@@ -125,7 +129,7 @@ class NewChoiceButton(urwid.SelectableIcon):
 
 def calculate_padding(instring, evalue, max_size, padding=5):
     """Calculates number of spaces necessary to line up evalue"""
-    max_size = int(max_size - 30) # gives some leeway
+    max_size = int(max_size - 5) # gives some leeway
     length_string = len(instring)
     length_evalue = len(evalue)
     num_pads = 0
