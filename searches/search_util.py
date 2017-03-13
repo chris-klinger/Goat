@@ -239,31 +239,69 @@ def return_positive_hits(fwd_hit_list, rev_result_list=None, min_fwd_evalue_thre
             hit_index += 1
     else:
         fwd_hit_index = 0
-        rev_result_index = 0
+        #rev_result_index = 0
         for fwd_hit in fwd_hit_list:
+            print(fwd_hit)
             if (min_fwd_evalue_threshold is None) or (fwd_hit.e < min_fwd_evalue_threshold):
-                for rev_result in rev_result_list:
-                    if fwd_hit == rev_result.query: # found a match
-                        rev_hit_index = 0
-                        for rev_hit in rev_result.descriptions:
-                            if (rev_hit == original_query) or (rev_hit in original_query.redundant_accs):
-                                if min_rev_evalue_threshold is None and next_hit_evalue_threshold is None:
-                                    positive_hits.append([fwd_hit.title,fwd_hit.e])
-                                elif min_rev_evalue_threshold is not None and next_hit_evalue_threshold is None:
-                                    if rev_hit.e < min_rev_evalue_threshold:
-                                        positive_hits.append([fwd_hit.title,fwd_hit.e])
-                                elif min_rev_evalue_threshold is None and next_hit_evalue_threshold is not None:
-                                    if (rev_hit.e + next_hit_evalue_threshold) < \
-                                            rev_result.descriptions[rev_hit_index+1].e:
-                                        positive_hits.append([fwd_hit.title,fwd_hit.e])
-                                else: # both are 'not None'
-                                    if (rev_hit.e < min_rev_evalue_threshold) and ((rev_hit.e +\
-                                    next_hit_evalue_threshold) < (rev_result.descriptions[rev_hit_index+1].e)):
-                                        positive_hits.append([fwd_hit.title,fwd_hit.e])
-                            rev_hit_index += 1
-                    rev_result_index += 1
+                #for rev_hit in rev_result_list:
+                    #print(rev_hit)
+                    #if fwd_hit == rev_result.query: # found a match
+                    #rev_hit_index = 0
+                rev_hit_index = 0
+                for rev_hit in rev_result_list:
+                    print(rev_hit)
+                    if (rev_hit == original_query) or (rev_hit in original_query.redundant_accs):
+                        if min_rev_evalue_threshold is None and next_hit_evalue_threshold is None:
+                            positive_hits.append([fwd_hit.title,fwd_hit.e])
+                        elif min_rev_evalue_threshold is not None and next_hit_evalue_threshold is None:
+                            if rev_hit.e < min_rev_evalue_threshold:
+                                positive_hits.append([fwd_hit.title,fwd_hit.e])
+                        elif min_rev_evalue_threshold is None and next_hit_evalue_threshold is not None:
+                            if (rev_hit.e + next_hit_evalue_threshold) < \
+                                    rev_result_list[rev_hit_index+1].e:
+                                positive_hits.append([fwd_hit.title,fwd_hit.e])
+                        else: # both are 'not None'
+                            if (rev_hit.e < min_rev_evalue_threshold) and ((rev_hit.e +\
+                            next_hit_evalue_threshold) < (rev_result_list[rev_hit_index+1].e)):
+                                positive_hits.append([fwd_hit.title,fwd_hit.e])
+                    rev_hit_index += 1
+                    #rev_result_index += 1
             fwd_hit_index += 1
     return positive_hits
+
+def return_positive_reverse_hits(fwd_hit, rev_hit_list, min_rev_evalue_threshold=None,
+        next_hit_evalue_threshold=None, original_query=None):
+    """Determines positive reverse hits"""
+    positive_hits = []
+    rev_hit_index = 0
+    for rev_hit in rev_hit_list:
+        print(rev_hit)
+        if (remove_blast_header(rev_hit.title) == original_query.identity) or\
+            (remove_blast_header(rev_hit.title) in original_query.redundant_accs):
+            print('possible positive hit')
+            if min_rev_evalue_threshold is None and next_hit_evalue_threshold is None:
+                print('adding due to no evalue cutoffs')
+                positive_hits.append([fwd_hit.title,fwd_hit.e])
+            elif min_rev_evalue_threshold is not None and next_hit_evalue_threshold is None:
+                if rev_hit.e < min_rev_evalue_threshold:
+                    print('adding due to passing min evalue only')
+                    positive_hits.append([fwd_hit.title,fwd_hit.e])
+            elif min_rev_evalue_threshold is None and next_hit_evalue_threshold is not None:
+                if (rev_hit.e + next_hit_evalue_threshold) < \
+                    rev_hit_list[rev_hit_index+1].e:
+                    print('adding due to passing next hit only')
+                    positive_hits.append([fwd_hit.title,fwd_hit.e])
+            else: # both are 'not None'
+                if (rev_hit.e < min_rev_evalue_threshold) and ((rev_hit.e +\
+                    next_hit_evalue_threshold) < (rev_hit_list[rev_hit_index+1].e)):
+                    print('adding due to passing both')
+                    positive_hits.append([fwd_hit.title,fwd_hit.e])
+        rev_hit_index += 1
+    print('returning positive hits')
+    print(positive_hits)
+    return positive_hits
+
+
 
 def get_temporary_outpath(goat_dir, query_name):
     """

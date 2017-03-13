@@ -25,7 +25,7 @@ class Query():
     """Generic Query class"""
     def __init__(self, identity, name=None, description=None, location=None,
             search_type=None, db_type=None, sequence=None, target_db=None,
-            record=None, redundant_accs=None):
+            record=None, original_query=None, redundant_accs=None):
         self.identity = identity
         self.name = name
         self.description = description
@@ -35,6 +35,7 @@ class Query():
         self.sequence = sequence
         self.target_db = target_db
         self.record = record
+        self.original_query = original_query
         self.redundant_accs = redundant_accs
 
 class QueryDB:

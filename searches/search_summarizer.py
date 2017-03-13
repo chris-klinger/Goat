@@ -117,15 +117,52 @@ def summarize_two_results(summary_name, fwd_result_name=None, rev_result_name=No
     fwd_result_db = search_database.ResultsDB(fwd_result_name)
     rev_result_db = search_database.ResultsDB(rev_result_name)
     for fwd_result in fwd_result_db.list_results():
-        rev_result = 1 # placeholder value; need to determine this
-        if summary_db.check_sumary(fwd_result.query):
-            summary_obj = summary_db.fetch_summary(fwd_result.query)
-            search_result = summary_obj.add_search_results(fwd_result.database)
-            for positive_hit in search_util.return_positive_hits(
-                    search_result.parsed_obj.descriptions,
-                    rev_result.parsed_obj.descriptions):
-                search_result.add_positive_hit(*positive_hit)
-
+        print(str(fwd_result))
+        fwd_result_obj = fwd_result_db.fetch_result(fwd_result)
+        print(str(fwd_result_obj.query.identity))
+        if summary_db.check_summary(fwd_result_obj.query.identity):
+            summary_obj = summary_db.fetch_summary(fwd_result_obj.query)
+            search_result = summary_obj.add_search_result(fwd_result_obj.database)
+            for rev_result in rev_result_db.list_results():
+                print('additional hit ' + str(rev_result))
+                rev_result_obj = rev_result_db.fetch_result(rev_result)
+                if rev_result_obj.query.original_query == fwd_result_obj.query: # matching pair of results
+                    for positive_hit in search_util.return_positive_hits(
+                        search_result.parsed_obj.descriptions,
+                        rev_result_obj.parsed_obj.descriptions):
+                            print(positive_hit)
+                            search_result.add_positive_hit(*positive_hit)
+        else:
+            summary_db.add_summary(fwd_result_obj.query.identity, fwd_result_name,
+                    fwd_result_obj.qtype)
+            summary_obj = summary_db.fetch_summary(fwd_result_obj.query.identity)
+            search_result = summary_obj.add_search_result(fwd_result_obj.database)
+            for rev_result in rev_result_db.list_results():
+                print(str(rev_result))
+                rev_result_obj = rev_result_db.fetch_result(rev_result)
+                print(str(rev_result_obj.query.original_query))
+                if rev_result_obj.query.original_query == fwd_result_obj.query.identity: # results match
+                    print('got matching result hit')
+                    fwd_hits = search_util.parse_output_file(fwd_result_obj.location).descriptions
+                    for fwd_hit in fwd_hits:
+                        #print(fwd_hit)
+                        if (min_fwd_evalue_threshold is None) or (fwd_hit.e < min_fwd_evalue_threshold):
+                            #print(search_util.remove_blast_header(fwd_hit.title))
+                            #print(rev_result_obj.query.identity)
+                            #if search_util.remove_blast_header(fwd_hit.title) == rev_result_obj.query.identity:
+                            if rev_result_obj.query.identity in fwd_hit.title:
+                                print('got matching hit/reverse search pair')
+                                rev_hits = search_util.parse_output_file(rev_result_obj.location).descriptions
+                                for positive_hit in search_util.return_positive_reverse_hits(
+                                #fwd_result_obj.parsed_obj.descriptions,
+                                #rev_result_obj.parsed_obj.descriptions,
+                                #fwd_hits, rev_hits,
+                                #min_fwd_evalue_threshold, min_rev_evalue_threshold,
+                                #next_hit_evalue_threshold, fwd_result_obj.query):
+                                fwd_hit, rev_hits, min_rev_evalue_threshold, next_hit_evalue_threshold,
+                                fwd_result_obj.query):
+                                    #print('positive hit ' + positive_hit)
+                                    search_result.add_positive_hit(*positive_hit)
 
 class SummaryDB:
     """Abstracts the underlying shelve database"""
@@ -154,10 +191,12 @@ class SummaryDB:
         with shelve.open(self.db_name) as db:
             db[summary_name] = result
 
-    def add_summary(self, summary_name, **kwargs):
+    def add_summary(self, summary_name, fwd_result_name,
+            fwd_search_type, **kwargs):
         """Adds information to already existing records"""
         with shelve.open(self.db_name) as db:
-            db[summary_name] = Summary(summary_name)
+            db[summary_name] = Summary(summary_name,
+                fwd_result_name, fwd_search_type)
         if len(kwargs) > 0:
             self.add_summary_info(summary_name, **kwargs)
 

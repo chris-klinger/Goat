@@ -146,11 +146,13 @@ def search_from_result(goat_dir, result_name=None, search_name=None, search_type
                     #print(target_db)
                     query_db.add_query(record.id, name=record.name,
                         description=record.description, location=None,
-                        qtype=search_type, sequence=record.seq, target_db=target_db)
+                        qtype=search_type, sequence=record.seq,
+                        target_db=target_db, original_query=result_obj.query.identity)
                 else:
                     query_db.add_query(record.id, name=record.name,
                         description=record.description, location=None,
-                        qtype=search_type, sequence=record.seq)
+                        qtype=search_type, sequence=record.seq,
+                        original_query=result_obj.query.identity)
     if not databases:
         if not reverse_search:
             databases = add_databases_to_search(goat_dir, db_type)
@@ -226,7 +228,7 @@ def summarize_search_results(summary_name=None, summary_type=None):
     if summary_type is None:
         summary_type = prompts.LimitedPrompt(
             message = 'Summarize from how many results? [one,two]',
-            erromsg = 'Please choose "one" or "two"',
+            errormsg = 'Please choose "one" or "two"',
             valids = ['one','two']).prompt()
     add_cutoffs = prompts.YesNoPrompt(
         message = 'Do you want to add evalue cutoff criteria?').prompt()
@@ -237,8 +239,8 @@ def summarize_search_results(summary_name=None, summary_type=None):
     if summary_type == 'one':
         if add_cutoffs:
             cutoffs = search_util.get_cutoff_values('one')
-        search_summarizer.summarize_one_result(**cutoffs)
+        search_summarizer.summarize_one_result(summary_name, **cutoffs)
     elif summary_type == 'two':
         if add_cutoffs:
             cutoffs = search_util.get_cutoff_values('two')
-        search_summarizer.summarize_two_results(**cutoffs)
+        search_summarizer.summarize_two_results(summary_name, **cutoffs)
