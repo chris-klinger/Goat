@@ -153,16 +153,10 @@ def summarize_two_results(summary_name, fwd_result_name=None, rev_result_name=No
                             if rev_result_obj.query.identity in fwd_hit.title:
                                 print('got matching hit/reverse search pair')
                                 rev_hits = search_util.parse_output_file(rev_result_obj.location).descriptions
-                                for positive_hit in search_util.return_positive_reverse_hits(
-                                #fwd_result_obj.parsed_obj.descriptions,
-                                #rev_result_obj.parsed_obj.descriptions,
-                                #fwd_hits, rev_hits,
-                                #min_fwd_evalue_threshold, min_rev_evalue_threshold,
-                                #next_hit_evalue_threshold, fwd_result_obj.query):
-                                fwd_hit, rev_hits, min_rev_evalue_threshold, next_hit_evalue_threshold,
-                                fwd_result_obj.query):
-                                    #print('positive hit ' + positive_hit)
-                                    search_result.add_positive_hit(*positive_hit)
+                                print(search_util.determine_reverse_positive(fwd_result_obj.query,
+                                rev_hits, min_rev_evalue_threshold, next_hit_evalue_threshold,
+                                next_hit_evalue_threshold,10))
+                                print()
 
 class SummaryDB:
     """Abstracts the underlying shelve database"""

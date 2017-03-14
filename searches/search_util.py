@@ -272,36 +272,99 @@ def return_positive_hits(fwd_hit_list, rev_result_list=None, min_fwd_evalue_thre
 def return_positive_reverse_hits(fwd_hit, rev_hit_list, min_rev_evalue_threshold=None,
         next_hit_evalue_threshold=None, original_query=None):
     """Determines positive reverse hits"""
-    positive_hits = []
+    #positive_hits = []
+    positive = 'No'
+    first_hit_positive = False
+    last_hit_positive = False
     rev_hit_index = 0
     for rev_hit in rev_hit_list:
         print(rev_hit)
+        # Rev hit is the original query, or something like it
         if (remove_blast_header(rev_hit.title) == original_query.identity) or\
             (remove_blast_header(rev_hit.title) in original_query.redundant_accs):
-            print('possible positive hit')
-            if min_rev_evalue_threshold is None and next_hit_evalue_threshold is None:
-                print('adding due to no evalue cutoffs')
-                positive_hits.append([fwd_hit.title,fwd_hit.e])
-            elif min_rev_evalue_threshold is not None and next_hit_evalue_threshold is None:
-                if rev_hit.e < min_rev_evalue_threshold:
-                    print('adding due to passing min evalue only')
-                    positive_hits.append([fwd_hit.title,fwd_hit.e])
-            elif min_rev_evalue_threshold is None and next_hit_evalue_threshold is not None:
-                if (rev_hit.e + next_hit_evalue_threshold) < \
-                    rev_hit_list[rev_hit_index+1].e:
-                    print('adding due to passing next hit only')
-                    positive_hits.append([fwd_hit.title,fwd_hit.e])
-            else: # both are 'not None'
-                if (rev_hit.e < min_rev_evalue_threshold) and ((rev_hit.e +\
-                    next_hit_evalue_threshold) < (rev_hit_list[rev_hit_index+1].e)):
-                    print('adding due to passing both')
-                    positive_hits.append([fwd_hit.title,fwd_hit.e])
+            print('rev hit looks like the original query')
+            if min_rev_evalue_threshold is None or rev_hit.e < min_rev_evalue_threshold:
+                print(rev_hit_index)
+                if rev_hit_index == 0: # first hit
+                    first_hit_positive = True
+                    last_hit_positive = True
+                    print('first hit is a match!')
+                else: # not the first hit, but it is a match
+                    last_hit_positive = True
+                    print('hit other than the first is a match')
+        else: # rev hit does not look like the original query
+            #print('rev hit looks nothing like the original query')
+            if rev_hit_index == (len(rev_hit_list)-1): # We only found positive hits
+                if first_hit_positive:
+                    positive = 'Yes'
+                else:
+                    positive = 'Maybe' # Placeholder for now!
+            if last_hit_positive:
+                if next_hit_evalue_threshold is None or ((rev_hit_list[rev_hit_index-1].e -\
+                    rev_hit.e) > next_hit_evalue_threshold):
+                    if first_hit_positive:
+                        positive = 'Yes'
+                    else:
+                        positive = 'Maybe'
         rev_hit_index += 1
-    print('returning positive hits')
-    print(positive_hits)
-    return positive_hits
+    if positive == 'Yes':
+        print(fwd_hit.title + ' is positive')
+    elif positive == 'Maybe':
+        print(fwd_hit.title + ' may be positive')
+    else:
+        print(fwd_hit.title + ' is negative')
+    return positive
+    #print('returning positive hits')
+    #print(positive_hits)
+    #return positive_hits
 
-
+def determine_reverse_positive(original_query, rev_hit_list, min_rev_evalue_threshold=None,
+    next_hit_positive_evalue_cutoff=None, next_hit_negative_evalue_cutoff=None, max_hits=None):
+    """Determines whether a forward hit is positive by scanning reverse hits"""
+    status = 'negative'
+    first_hit_positive = False
+    last_hit_positive = False
+    first_positive_hit = False
+    first_negative_hit = False
+    if not max_hits:
+        max_hits = len(rev_hit_list)
+    rev_hit_index = 0
+    for rev_hit in rev_hit_list:
+        print(rev_hit)
+        if (rev_hit_index == max_hits) or (rev_hit.e > min_rev_evalue_threshold):
+            break # both of these conditions means we don't need to look more
+        if (remove_blast_header(rev_hit.title) == original_query.identity) or\
+        (remove_blast_header(rev_hit.title) in original_query.redundant_accs):
+            if rev_hit_index == (len(rev_hit_list)-1):
+                status = 'positive'
+                break # we only found positive hits
+            if rev_hit_index == 0:
+                first_hit_positive = True
+            else:
+                last_hit_positive = True
+            if not first_positive_hit:
+                first_positive_hit = rev_hit # store a ref to the first positive hit
+        else: # not a match
+            if not first_negative_hit:
+                first_negative_hit = rev_hit # store a ref to the first negative hit
+            if first_hit_positive: # this is the first non-match hit
+                if next_hit_positive_evalue_cutoff is None or ((first_positive_hit.e -\
+                rev_hit.e) < next_hit_positive_evalue_cutoff):
+                    status = 'positive'
+                else:
+                    status = 'tentative'
+                break
+            elif last_hit_positive: # first hit wasn't a match but we did find one
+                if next_hit_negative_evalue_cutoff is None or ((first_negative_hit.e -\
+                rev_hit.e) < next_hit_negative_evalue_cutoff):
+                    status = 'unlikely'
+                else:
+                    status = 'negative'
+                break
+            else:
+                pass
+        rev_hit_index += 1
+    return status
 
 def get_temporary_outpath(goat_dir, query_name):
     """
