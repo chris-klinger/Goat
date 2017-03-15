@@ -18,7 +18,7 @@ class Summary:
     Each entry in the database list should include a separate class.
     Interaction is through a separate class.
     """
-    def __init__(self, query, fwd_result_name, fwd_search_type,
+    def __init__(self, query, fwd_result_name=None, fwd_search_type=None,
             rev_result_name=None, rev_search_type=None,
             min_fwd_evalue_threshold=None, min_rev_evalue_threshold=None,
             next_hit_evalue_threshold=None):
@@ -32,10 +32,15 @@ class Summary:
         self.min_rev_evalue_threshold = min_rev_evalue_threshold
         self.next_hit_evalue_threshold = next_hit_evalue_threshold
 
-    def add_search_result(self, result):
+    def add_search_result(self, result_database):
         """Adds a search result to the Summary"""
-        self.databases.append(SearchResult(result))
-        return SearchResult(result)
+        self.databases.append(SearchResult(result_database))
+
+    def get_search_result(self, result_database):
+        """Fetches a SearchResult object"""
+        for db in self.databases:
+            if db.database == result_database:
+                return db
 
 class SearchResult:
     """
@@ -65,10 +70,11 @@ class PositiveHit:
     various attributes of the forward and reverse hits themselves,
     such as specific evalues, etc.
     """
-    def __init__(self, fwd_hit_identity, fwd_hit_evalue, rev_hit_identity=None,
-            rev_hit_evalue=None, *args): # can we add even more information?
+    def __init__(self, fwd_hit_identity, fwd_hit_evalue, hit_status,
+            rev_hit_identity=None, rev_hit_evalue=None, *args): # can we add even more information?
         self.fwd_hit_identity = fwd_hit_identity
         self.fwd_hit_evalue = fwd_hit_evalue
+        self.hit_status = hit_status
         self.rev_hit_identity = rev_hit_identity
         self.rev_hit_evalue = rev_hit_evalue
 
@@ -133,30 +139,42 @@ def summarize_two_results(summary_name, fwd_result_name=None, rev_result_name=No
                             print(positive_hit)
                             search_result.add_positive_hit(*positive_hit)
         else:
-            summary_db.add_summary(fwd_result_obj.query.identity, fwd_result_name,
-                    fwd_result_obj.qtype)
+            summary_db.add_summary(fwd_result_obj.query.identity, fwd_result_name=fwd_result_name,
+                    fwd_search_type=fwd_result_obj.qtype)
             summary_obj = summary_db.fetch_summary(fwd_result_obj.query.identity)
-            search_result = summary_obj.add_search_result(fwd_result_obj.database)
+            print(summary_obj)
+            #search_result = summary_obj.add_search_result(fwd_result_obj.database)
+            summary_obj.add_search_result(fwd_result_obj.database)
+            result_obj = summary_obj.get_search_result(fwd_result_obj.database)
+            print(result_obj)
             for rev_result in rev_result_db.list_results():
-                print(str(rev_result))
+                #print(str(rev_result))
                 rev_result_obj = rev_result_db.fetch_result(rev_result)
-                print(str(rev_result_obj.query.original_query))
+                #print(str(rev_result_obj.query.original_query))
                 if rev_result_obj.query.original_query == fwd_result_obj.query.identity: # results match
-                    print('got matching result hit')
+                    #print('got matching result hit')
                     fwd_hits = search_util.parse_output_file(fwd_result_obj.location).descriptions
                     for fwd_hit in fwd_hits:
-                        #print(fwd_hit)
                         if (min_fwd_evalue_threshold is None) or (fwd_hit.e < min_fwd_evalue_threshold):
-                            #print(search_util.remove_blast_header(fwd_hit.title))
-                            #print(rev_result_obj.query.identity)
-                            #if search_util.remove_blast_header(fwd_hit.title) == rev_result_obj.query.identity:
                             if rev_result_obj.query.identity in fwd_hit.title:
-                                print('got matching hit/reverse search pair')
+                                #print('got matching hit/reverse search pair')
                                 rev_hits = search_util.parse_output_file(rev_result_obj.location).descriptions
-                                print(search_util.determine_reverse_positive(fwd_result_obj.query,
+                                (status,rev_hit) = (search_util.determine_reverse_positive(fwd_result_obj.query,
                                 rev_hits, min_rev_evalue_threshold, next_hit_evalue_threshold,
                                 next_hit_evalue_threshold,10))
-                                print()
+                                if status != 'negative':
+                                    print('adding positive hit')
+                                    result_obj.add_positive_hit(fwd_hit.title, fwd_hit.e, status,
+                                        rev_hit.title, rev_hit.e)
+            summary_db.update_summary(fwd_result_obj.query.identity, summary_obj)
+        # Uncomment for testing
+        #for summary in summary_db.list_summaries():
+            #print(summary)
+            #sum_obj = summary_db.fetch_summary(summary)
+            #for result in sum_obj.databases:
+                #print(result.database)
+                #for hit in result.positive_hits:
+                    #print(hit)
 
 class SummaryDB:
     """Abstracts the underlying shelve database"""
@@ -185,12 +203,10 @@ class SummaryDB:
         with shelve.open(self.db_name) as db:
             db[summary_name] = result
 
-    def add_summary(self, summary_name, fwd_result_name,
-            fwd_search_type, **kwargs):
+    def add_summary(self, summary_name, **kwargs):
         """Adds information to already existing records"""
         with shelve.open(self.db_name) as db:
-            db[summary_name] = Summary(summary_name,
-                fwd_result_name, fwd_search_type)
+            db[summary_name] = Summary(summary_name)
         if len(kwargs) > 0:
             self.add_summary_info(summary_name, **kwargs)
 
@@ -203,7 +219,7 @@ class SummaryDB:
                     setattr(summary, attr, value)
                 except(Exception):
                     print('Error when adding value {} to record {}'.format(attr, summary))
-            self.update_result(summary_name, summary)
+            self.update_summary(summary_name, summary)
         else:
             print('Could not extend {}, no such record'.format(summary_name))
 

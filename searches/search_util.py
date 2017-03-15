@@ -217,6 +217,7 @@ def parse_output_file(filepath, filetype='BLAST'):
         pass # need to implement
     return result_obj
 
+# Likely to be removed
 def return_positive_hits(fwd_hit_list, rev_result_list=None, min_fwd_evalue_threshold=None,
         min_rev_evalue_threshold=None, next_hit_evalue_threshold=None, original_query=None):
     """Determines positive hits from one or two lists depending on criteria"""
@@ -269,6 +270,7 @@ def return_positive_hits(fwd_hit_list, rev_result_list=None, min_fwd_evalue_thre
             fwd_hit_index += 1
     return positive_hits
 
+# Likely to be removed
 def return_positive_reverse_hits(fwd_hit, rev_hit_list, min_rev_evalue_threshold=None,
         next_hit_evalue_threshold=None, original_query=None):
     """Determines positive reverse hits"""
@@ -330,7 +332,7 @@ def determine_reverse_positive(original_query, rev_hit_list, min_rev_evalue_thre
         max_hits = len(rev_hit_list)
     rev_hit_index = 0
     for rev_hit in rev_hit_list:
-        print(rev_hit)
+        #print(rev_hit)
         if (rev_hit_index == max_hits) or (rev_hit.e > min_rev_evalue_threshold):
             break # both of these conditions means we don't need to look more
         if (remove_blast_header(rev_hit.title) == original_query.identity) or\
@@ -364,7 +366,9 @@ def determine_reverse_positive(original_query, rev_hit_list, min_rev_evalue_thre
             else:
                 pass
         rev_hit_index += 1
-    return status
+    #print(status)
+    #print(first_positive_hit)
+    return (status, first_positive_hit)
 
 def get_temporary_outpath(goat_dir, query_name):
     """
