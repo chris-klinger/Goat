@@ -5,30 +5,27 @@ including code to create, add, remove, or change settings
 
 import os, pickle
 
+import goat
 from settings.settings_file import Settings, SettingsFile
 from util.inputs import prompts
 
-basename = 'settings/goat_settings.pkl'
+settings_file = goat.get_settings_file()
 
-def get_settings_file(goat_dir):
-    """Returns full pathname to settings file"""
-    return os.path.join(goat_dir, basename)
-
-def check_for_settings(goat_dir):
+def check_for_settings():
     """Checks whether a settings file currently exists"""
-    if os.path.exists(get_settings_file(goat_dir)):
+    if os.path.exists(settings_file):
         return True
     return False
 
-def create_settings(goat_dir):
+def create_settings():
     """Creates the initial settings file"""
-    with open(get_settings_file(goat_dir), 'wb') as o:
+    with open(settings_file, 'wb') as o:
         settings = Settings()
         pickle.dump(settings, o)
 
-def add_setting(goat_dir, **kwargs):
+def add_setting(**kwargs):
     """Adds to settings file"""
-    settings = SettingsFile(get_settings_file(goat_dir))
+    settings = SettingsFile(settings_file)
     if len(kwargs) == 0:
         to_add = prompts.StringPrompt(
             message = 'Please choose a setting to add').prompt()
@@ -39,9 +36,9 @@ def add_setting(goat_dir, **kwargs):
         for key, value in kwargs.items():
             settings.__setattr__(key, value)
 
-def remove_setting(goat_dir, *args):
+def remove_setting(*args):
     """Removes a setting from settings file"""
-    settings = SettingsFile(get_settings_file(goat_dir))
+    settings = SettingsFile(settings_file)
     if len(args) == 0:
         to_del = prompts.StringPrompt(
             message = 'Please choose a setting to delete').prompt()
@@ -50,9 +47,9 @@ def remove_setting(goat_dir, *args):
         for setting in args:
             settings.__delattr__(setting)
 
-def check_setting(goat_dir, *args):
+def check_setting(*args):
     """Returns current value for setting"""
-    settings = SettingsFile(get_settings_file(goat_dir))
+    settings = SettingsFile(settings_file)
     if len(args) == 0:
         to_check = prompts.StringPrompt(
             message = 'Please choose a setting to check').prompt()
@@ -63,25 +60,31 @@ def check_setting(goat_dir, *args):
             if settings.__getattr__(setting) is not None:
                 print(settings.__getattr__(setting))
 
-def change_setting(goat_dir):
+def change_setting(to_change=None, change_to=None):
     """Changes a setting from settings file"""
-    settings = SettingsFile(get_settings_file(goat_dir))
-    to_change = prompts.StringPrompt(
-        message = 'Please choose a setting to change').prompt()
-    change_to = prompts.StringPrompt(
-        message = 'Current value for setting "{}" is "{}". Please choose a new value'\
+    settings = SettingsFile(settings_file)
+    if not to_change:
+        to_change = prompts.StringPrompt(
+            message = 'Please choose a setting to change').prompt()
+    if not change_to:
+        change_to = prompts.StringPrompt(
+            message = 'Current value for setting "{}" is "{}". Please choose a new value'\
                 .format(to_change, settings.__getattr__(to_change))).prompt()
     settings.__setattr__(to_change, change_to)
 
-def list_settings(goat_dir):
+def list_settings():
+    """Utility function"""
+    settings = SettingsFile(settings_file)
+    return settings.list_attrs()
+
+def display_settings():
     """Lists all current settings from settings file"""
-    settings = SettingsFile(get_settings_file(goat_dir))
-    for key, value in settings.list_attrs():
+    for key, value in list_settings():
         print('Setting {} has current value {}'.format(key,value))
 
-def get_setting(goat_dir, setting):
+def get_setting(setting):
     """Returns current value for a setting"""
-    settings = SettingsFile(get_settings_file(goat_dir))
+    settings = SettingsFile(settings_file)
     try:
         return settings.__getattr__(setting)
     except(Exception):
