@@ -117,9 +117,16 @@ class RecordsDB:
         if self.check_record(record):
             with shelve.open(self.db_name) as db:
                 try:
-                    for attr,value in db[record].__dict__.items():
-                        print('value of {} is {}'.format(attr,value))
+                    #for attr,value in db[record].__dict__.items():
+                        #print('value of {} is {}'.format(attr,value))
+                    return db[record].__dict__.items()
                 except(Exception):
                     print('Could not list info for {}'.format(record))
         else:
             print('Could not list info for {}, no such record'.format(record))
+
+    def print_record_info(self, record):
+        """Convenience function"""
+        for attr,value in self.list_record_info:
+            print('value of {} is {}'.format(attr,value))
+

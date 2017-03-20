@@ -9,23 +9,29 @@ import goat
 from settings.settings_file import Settings, SettingsFile
 from util.inputs import prompts
 
-settings_file = goat.get_settings_file()
+#print('from settings config')
+#print(dir(goat))
+#settings_file = goat.get_settings_file()
+
+# deferred call to goat module object due to import issues?!
+def get_settings_file():
+    return goat.get_settings_file()
 
 def check_for_settings():
     """Checks whether a settings file currently exists"""
-    if os.path.exists(settings_file):
+    if os.path.exists(get_settings_file()):
         return True
     return False
 
 def create_settings():
     """Creates the initial settings file"""
-    with open(settings_file, 'wb') as o:
+    with open(get_settings_file, 'wb') as o:
         settings = Settings()
         pickle.dump(settings, o)
 
 def add_setting(**kwargs):
     """Adds to settings file"""
-    settings = SettingsFile(settings_file)
+    settings = SettingsFile(get_settings_file)
     if len(kwargs) == 0:
         to_add = prompts.StringPrompt(
             message = 'Please choose a setting to add').prompt()
@@ -38,7 +44,7 @@ def add_setting(**kwargs):
 
 def remove_setting(*args):
     """Removes a setting from settings file"""
-    settings = SettingsFile(settings_file)
+    settings = SettingsFile(get_settings_file)
     if len(args) == 0:
         to_del = prompts.StringPrompt(
             message = 'Please choose a setting to delete').prompt()
@@ -49,7 +55,7 @@ def remove_setting(*args):
 
 def check_setting(*args):
     """Returns current value for setting"""
-    settings = SettingsFile(settings_file)
+    settings = SettingsFile(get_settings_file)
     if len(args) == 0:
         to_check = prompts.StringPrompt(
             message = 'Please choose a setting to check').prompt()
@@ -62,7 +68,7 @@ def check_setting(*args):
 
 def change_setting(to_change=None, change_to=None):
     """Changes a setting from settings file"""
-    settings = SettingsFile(settings_file)
+    settings = SettingsFile(get_settings_file)
     if not to_change:
         to_change = prompts.StringPrompt(
             message = 'Please choose a setting to change').prompt()
@@ -74,7 +80,7 @@ def change_setting(to_change=None, change_to=None):
 
 def list_settings():
     """Utility function"""
-    settings = SettingsFile(settings_file)
+    settings = SettingsFile(get_settings_file)
     return settings.list_attrs()
 
 def display_settings():
@@ -84,7 +90,7 @@ def display_settings():
 
 def get_setting(setting):
     """Returns current value for a setting"""
-    settings = SettingsFile(settings_file)
+    settings = SettingsFile(get_settings_file)
     try:
         return settings.__getattr__(setting)
     except(Exception):

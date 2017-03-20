@@ -40,7 +40,7 @@ class DefaultValueForm:
         box.pack(expand=YES, fill=X)
         rows = Frame(box, bd=2, relief=GROOVE)
         rows.pack(side=TOP, expand=YES, fill=X)
-        if not buttons:
+        if not buttons: # default values
             self.buttons = [('Cancel', self.onCancel, {'side':RIGHT}),
                         ('Submit', self.onSubmit, {'side':RIGHT})]
         else:

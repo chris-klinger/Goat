@@ -5,14 +5,19 @@ and also general code to perform basic actions: add, remove, update, list
 
 import os
 
+import goat
 from settings import settings_config
 from databases import database_records,database_util,database_dirfiles
 from util.inputs import prompts
 
-def get_record_db(goat_dir):
+#print('from database config')
+#print(dir(goat))
+#record_db = goat.get_record_db()
+
+# deferred call to method in goat module due to import issues?!
+def get_record_db():
     """Gets the records database"""
-    return database_records.RecordsDB(os.path.join(
-        settings_config.get_setting(goat_dir, 'database_directory'),'records'))
+    return goat.get_record_db()
 
 def get_db_dir_path(goat_dir):
     """Returns full pathname to db directory"""

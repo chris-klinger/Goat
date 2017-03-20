@@ -9,12 +9,14 @@ returns True, else returns False
 """
 
 #import os
-#import goat
+import goat
 from settings import settings_config
 from databases import database_config
 
 def initialize(*args):
     """Runs other initialization functions"""
+    #print('from initialize goat')
+    #print(dir(goat))
     initialize_settings(*args)
     #initialize_dbs(*args)
 

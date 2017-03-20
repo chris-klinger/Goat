@@ -60,7 +60,7 @@ class SettingsFile:
         read_file = open(self.db_name, 'rb')
         settings = pickle.load(read_file)
         try:
-            return settings.__dict__.items()
+            return sorted(settings.__dict__.items())
         except(Exception):
             print('Error when accessing settings')
         finally:

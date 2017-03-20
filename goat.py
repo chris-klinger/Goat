@@ -4,7 +4,7 @@ import os, sys
 
 from bin import initialize_goat
 from settings import settings_interface
-from databases import database_interface
+from databases import database_interface,database_records
 from searches import search_interface
 from gui import main_gui
 
@@ -14,6 +14,10 @@ settings_basename = 'settings/goat_settings.pkl'
 def get_settings_file():
     """Returns full pathname to settings file"""
     return os.path.join(goat_dir, settings_basename)
+
+def get_record_db():
+    """Gets the records database"""
+    return database_records.RecordsDB(os.path.join(goat_dir, 'DB','records'))
 
 def main_goat():
     initialize_goat.initialize(goat_dir)

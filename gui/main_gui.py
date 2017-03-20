@@ -7,7 +7,9 @@ from tkinter import *
 from tkinter.messagebox import *
 
 from settings import settings_config
+from databases import database_config
 from gui.settings import settings_form
+from gui.database import database_gui
 
 help_msg="""
 Goat: an integrated platform for bioinformatic sequence analysis
@@ -34,12 +36,17 @@ def make_menu(window):
     top.add_cascade(label='Search', menu=search_menu, underline=0)
 
     db_menu = Menu(top, tearoff=False)
-    db_menu.add_command(label='add database...', command=not_available, underline=0)
+    db_menu.add_command(label='add database...', command=database_popup, underline=0)
     top.add_cascade(label='Databases', menu=db_menu, underline=0)
 
 def settings_popup():
    window = Toplevel()
    settings_form.SettingsForm(settings_config.list_settings(),window)
+
+def database_popup():
+    window = Toplevel()
+    database_gui.DatabaseGui(database_config.get_record_db(),window)
+
 
 def run():
     root = Tk()
