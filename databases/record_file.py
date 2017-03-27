@@ -13,9 +13,10 @@ class File(Persistent):
     Generic file class to store information about files. Subclasses may need
     to override methods, depending on how their structure differs.
     """
-    def __init__(self, filepath='', filetype=None, size=0, num_entries=0,
+    def __init__(self, name='', filepath='', filetype=None, size=0, num_entries=0,
             num_lines=0, num_bases=0):
         self.separator = None # e.g. '>' in FASTA
+        self.name = name
         self.filepath = filepath
         self._cached_file = ''
         self.filetype = filetype
@@ -23,9 +24,9 @@ class File(Persistent):
         self.num_entries = num_entries
         self.num_lines = num_lines
         self.num_bases = num_bases
-        self.update_record()
+        self.update_file()
 
-    def update_record(self):
+    def update_file(self):
         """
         Convenience function, runs on first instantiation and then whenever the
         associated file changes path, either to point at the same file or to a
@@ -73,6 +74,6 @@ class FastaFile(File):
     """
     Fasta file implementation. Sets self.separator to '>'
     """
-    def __init__(self, filepath='', filetype=None, size=0, num_entries=0,
+    def __init__(self, name='', filepath='', filetype=None, size=0, num_entries=0,
             num_lines=0, num_bases=0):
         self.separator = '>'
