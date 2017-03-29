@@ -16,6 +16,7 @@ from util.inputs import prompts
 # deferred call to goat module object due to import issues?!
 def get_settings_file():
     return goat.get_settings_file()
+    #return '/Users/cklinger/git/Goat/settings/goat_settings.pkl'
 
 def check_for_settings():
     """Checks whether a settings file currently exists"""
@@ -31,7 +32,7 @@ def create_settings():
 
 def add_setting(**kwargs):
     """Adds to settings file"""
-    settings = SettingsFile(get_settings_file)
+    settings = SettingsFile(get_settings_file())
     if len(kwargs) == 0:
         to_add = prompts.StringPrompt(
             message = 'Please choose a setting to add').prompt()
@@ -44,7 +45,7 @@ def add_setting(**kwargs):
 
 def remove_setting(*args):
     """Removes a setting from settings file"""
-    settings = SettingsFile(get_settings_file)
+    settings = SettingsFile(get_settings_file())
     if len(args) == 0:
         to_del = prompts.StringPrompt(
             message = 'Please choose a setting to delete').prompt()
@@ -55,7 +56,7 @@ def remove_setting(*args):
 
 def check_setting(*args):
     """Returns current value for setting"""
-    settings = SettingsFile(get_settings_file)
+    settings = SettingsFile(get_settings_file())
     if len(args) == 0:
         to_check = prompts.StringPrompt(
             message = 'Please choose a setting to check').prompt()
@@ -68,7 +69,7 @@ def check_setting(*args):
 
 def change_setting(to_change=None, change_to=None):
     """Changes a setting from settings file"""
-    settings = SettingsFile(get_settings_file)
+    settings = SettingsFile(get_settings_file())
     if not to_change:
         to_change = prompts.StringPrompt(
             message = 'Please choose a setting to change').prompt()
@@ -80,7 +81,7 @@ def change_setting(to_change=None, change_to=None):
 
 def list_settings():
     """Utility function"""
-    settings = SettingsFile(get_settings_file)
+    settings = SettingsFile(get_settings_file())
     return settings.list_attrs()
 
 def display_settings():
@@ -90,7 +91,7 @@ def display_settings():
 
 def get_setting(setting):
     """Returns current value for a setting"""
-    settings = SettingsFile(get_settings_file)
+    settings = SettingsFile(get_settings_file())
     try:
         return settings.__getattr__(setting)
     except(Exception):

@@ -15,12 +15,14 @@ class NewSettingsForm(input_form.Form):
         new_setting = self.content['new setting'].get()
         new_value = self.content['value'].get()
         settings_config.add_setting(**{new_setting:new_value})
+        self.other.update_view('add',new_setting,new_value)
         self.parent.destroy()
 
 class RemoveSettingsForm(input_form.Form):
     def onSubmit(self):
         setting_to_remove = self.content['setting to remove'].get()
         settings_config.remove_setting(setting_to_remove)
+        self.other.update_view('remove',setting_to_remove)
         self.parent.destroy()
 
 class SettingsForm(input_form.DefaultValueForm):
@@ -38,6 +40,17 @@ class SettingsForm(input_form.DefaultValueForm):
             if settings_config.get_setting(key) != self.content[key].get():
                 settings_config.change_setting(key,self.content[key].get())
 
+    def update_view(self, update, setting, value=None):
+        """Function that updates window after changing settings"""
+        if update == 'add':
+            new_row = input_form.EntryRow(setting, self.rows, value, self,
+                    self.labelsize, self.entrysize)
+            self.row_list.append(new_row)
+        elif update == 'remove':
+            for row in self.row_list:
+                if row.label_text == setting:
+                    row.destroy()
+
     def onSubmit(self):
         """Re-binds settings to values entered in form"""
         self.change_settings()
@@ -46,21 +59,15 @@ class SettingsForm(input_form.DefaultValueForm):
     def onApply(self):
         """Applies settings"""
         self.change_settings()
-        self.parent.destroy()
-        main_gui.settings_popup() # refresh after changes
 
     def onAdd(self):
         """Adds a new setting to the settings file"""
         window = Toplevel()
-        NewSettingsForm(('new setting', 'value'),window)
+        NewSettingsForm(('new setting', 'value'),window,self)
         window.wait_window() # blocks execution of following code until new settings added
-        self.parent.destroy()
-        main_gui.settings_popup() # refreshes settings window with changes
 
     def onRemove(self):
         """Removes a setting from the settings file"""
         window = Toplevel()
-        RemoveSettingsForm(('setting to remove',),window)
+        RemoveSettingsForm(('setting to remove',),window,self)
         window.wait_window()
-        self.parent.destroy()
-        main_gui.settings_popup() # refresh after removal too
