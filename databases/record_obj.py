@@ -24,7 +24,7 @@ class Record(Persistent):
         self.files = {} # initialize an empty list
 
     def add_file(self, name, filepath, **kwargs):
-        new_file = record_file.File(filepath, **kwargs)
+        new_file = record_file.File(name, filepath, **kwargs)
         self.files[name] = new_file
         self._p_changed = 1 # else does not update
 

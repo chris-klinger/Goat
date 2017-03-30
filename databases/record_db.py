@@ -52,13 +52,9 @@ class RecordDB:
 
     def add_record(self, record_identity, **kwargs):
         """Creates and populates a new Record"""
-        try:
-            new_record = record_obj.Record(record_identity)
-            self.root[record_identity] = new_record
-            self.update_record(record_identity, **kwargs)
-            self.commit() # change only commits if everything went well
-        except: # What would throw an error?
-            pass # Should raise again to let toplevel know
+        new_record = record_obj.Record(record_identity)
+        self.root[record_identity] = new_record
+        self.update_record(record_identity, **kwargs)
 
     def remove_record(self, record_identity):
         """Removes a Record"""
@@ -70,13 +66,9 @@ class RecordDB:
 
     def update_record(self, record_identity, **kwargs):
         """Updates a pre-existing Record with key,value pairs"""
-        try:
-            record_obj = self.root[record_identity]
-            for attr,value in kwargs:
-                setattr(record_obj, attr, value)
-            self.commit()
-        except:
-            pass
+        record_obj = self.root[record_identity]
+        for attr,value in kwargs.items():
+            setattr(record_obj, attr, value)
 
     def add_record_file(self, record_identity, filename, filepath, **kwargs):
         """Delegates to Record object"""
