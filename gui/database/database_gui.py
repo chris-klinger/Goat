@@ -10,7 +10,8 @@ from gui.util import input_form
 
 # holds a set of types for files
 # note, these act as reserved keywords for Goat record attributes
-valid_file_types = {'protein','genomic'}
+valid_file_types = ['protein','genomic']
+default_attrs = ['record identity','genus','species','strain','supergroup']
 
 class DatabaseFrame(Frame):
     def __init__(self, database, parent=None):
@@ -29,10 +30,31 @@ class DatabaseFrame(Frame):
             Button(self.toolbar, text=label, command=action).pack(where)
 
     def onRemove(self):
+        """Removes an existing record object"""
         pass
 
     def onModify(self):
-        pass
+        """Allows user to modify a pre-existing record.
+
+        Current implementation involves retrieving db information and
+        passing it to a NewRecordForm, which already contains all the
+        methods to deal with adding/removing/changing attributes."""
+        item = self.db_panel.current_item()
+        #print(item)
+        #if item_type == 'record':
+        if item['tags'][0] == 'record': # first (and only) item in list of tags
+            record_obj = self.db[item['text']] # text also holds the ID
+            record_list = [('record identity', record_obj.identity),
+                ('genus', record_obj.genus), ('species', record_obj.species),
+                ('strain', record_obj.strain), ('supergroup', record_obj.supergroup)]
+            for k,v in record_obj.__dict__.items():
+                if not k in default_attrs:
+                    record_list.append((k,v)) # add any other attributes that may be present
+            #print(record_list)
+            window = Toplevel()
+            NewRecordForm(record_list, self.db, self.db_panel, window)
+        elif item_type == 'file':
+            pass # do we want to be able to modify files?
 
     def onAdd(self):
         """Adds a new record object"""
@@ -53,6 +75,13 @@ class DatabaseGui(ttk.Panedwindow):
         self.add(self.info_frame)
         self.pack(expand=YES,fill=BOTH)
 
+    def current_item(self):
+        """Returns the current item of the db_viewer"""
+        #return self.db_viewer.focus()
+        item_name = self.db_viewer.focus()
+        item = self.db_viewer.item(item_name)
+        return item
+
 class DatabaseViewer(ttk.Treeview):
     def __init__(self, database, info_panel, parent=None):
         ttk.Treeview.__init__(self, parent)
@@ -72,13 +101,13 @@ class DatabaseViewer(ttk.Treeview):
 
     def make_tree(self):
         for record in self.db.list_records():
-            print(record)
+            #print(record)
             #record_obj = self.db.fetch_record(record)
             record_obj = self.db[record] # should be able to index
             #for k,v in record_obj.items():
                 #print(k + ' ' + v)
-            record_name = record_obj.genus + ' ' + record_obj.species
-            self.insert('','end',record,text=record_name,tags=('record'))
+            #record_name = record_obj.genus + ' ' + record_obj.species
+            self.insert('','end',record,text=record_obj.identity,tags=('record'))
             #for k,v in self.db.list_record_info(record):
             for k in record_obj.files.keys():
                 #if k in valid_file_types:
@@ -86,13 +115,17 @@ class DatabaseViewer(ttk.Treeview):
 
     def itemClicked(self, item_type):
         item = self.focus()
+        #print(item)
         if item_type == 'record':
             rlist = []
-            record = self.db.fetch_record(item)
-            rlist.extend((record.genus,record.species))
+            #record = self.db.fetch_record(item)
+            record = self.db[item]
+            rlist.extend([record.genus,record.species])
             for k,v in record.__dict__.items():
-                if k not in valid_file_types:
-                    rlist.extend((k,v))
+                #if k not in valid_file_types:
+                if k != 'files': # skip over files
+                    rlist.extend([k,v])
+            #print(rlist)
             self.info.update_info('record', *rlist) # delegates information to display to widget
         elif item_type == 'file':
             flist = []
