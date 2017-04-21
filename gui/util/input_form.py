@@ -74,10 +74,10 @@ class EntryRow(Frame):
         self.label_text = label_text # holds onto instance attributes
         self.pack(fill=X)
         Label(self, text=label_text, width=labelsize).pack(side=LEFT)
-        entry = Entry(self, width=entrysize)
-        entry.pack(side=RIGHT, expand=YES, fill=X)
-        entry.insert(0,entry_value)
-        other_widget.content[label_text] = entry
+        self.entry = Entry(self, width=entrysize)
+        self.entry.pack(side=RIGHT, expand=YES, fill=X)
+        self.entry.insert(0,entry_value)
+        other_widget.content[label_text] = self.entry
 
 class DynamicForm(Form):
     def __init__(self, labels=None):

@@ -3,7 +3,7 @@ This module contains code for dealing with viewing and updating databases
 """
 
 from tkinter import *
-from tkinter import ttk
+from tkinter import ttk, filedialog, messagebox
 
 from databases import database_records
 from gui.util import input_form
@@ -173,28 +173,63 @@ class NewAttrForm(input_form.Form):
     def onSubmit(self):
         new_attr = self.content['new attribute'].get()
         new_value = self.content['value'].get()
-        self.other.update_view('add',new_attr,new_value)
+        self.other.update_attr('add',new_attr,new_value)
         self.parent.destroy()
 
-class NewFileForm(input_form.Form):
+class NewFileForm(input_form.DefaultValueForm):
+    def __init__(self, entry_list, parent=None, other_widget=None, entrysize=40):
+        buttons = [('Cancel', self.onCancel, {'side':RIGHT}),
+                   ('Submit', self.onSubmit, {'side':RIGHT}),
+                   ('Add', self.onAdd, {'side':LEFT})]
+        input_form.DefaultValueForm.__init__(self, entry_list, parent, buttons, entrysize)
+        self.other = other_widget
+
+    def onAdd(self):
+        """Pops up file choice dialogue"""
+        filepath = filedialog.askopenfilename()
+        for entry_row in self.row_list:
+            if entry_row.label_text == 'filepath':
+                entry_row.entry.insert(0,filepath) # update choice in window
+
     def onSubmit(self):
         remaining = {}
-        for key in self.content.keys():
-            if key == 'filename':
-                new_file = self.content[key].get()
-            elif key == 'filepath':
-                filepath = self.content[key].get()
-            else:
-                remaining[key] = self.content[key].get()
-        self.other.update_view('add',new_file,filepath)
-        self.files.extend(new_file, filepath, remaining) # keep track of all info!
-        self.parent.destroy()
+        try:
+            for key in self.content.keys():
+                if self.content[key].get() == '': # no added value
+                    raise AttributeError
+                if key == 'filename':
+                    new_file = self.content[key].get()
+                elif key == 'filepath':
+                    filepath = self.content[key].get()
+                else:
+                    remaining[key] = self.content[key].get()
+            self.other.update_attr('add',new_file,filepath)
+            self.other.files.extend([new_file, filepath, remaining]) # keep track of all info!
+            self.parent.destroy()
+        except(AttributeError):
+            messagebox.showwarning('Add File Warning', 'Cannot leave blank entries')
 
 class RemovalForm(input_form.Form):
     def onSubmit(self):
         item_to_remove = self.content['item to remove'].get()
-        self.other.update_view('remove', item_to_remove)
+        self.other.update_attr('remove', item_to_remove)
         self.parent.destroy()
+
+class RecordFrame(Frame):
+    def __init__(self, entry_list, database, db_widget, parent=None, entrysize=40):
+        Frame.__init__(self, parent)
+        self.pack(expand=YES, fill=BOTH)
+        self.form_panel = NewRecordForm
+        self.db_panel = DatabaseGui(database,self)
+        self.db_panel.pack()
+        self.toolbar = Frame(self)
+        self.toolbar.pack(side=BOTTOM, fill=X)
+
+        self.buttons = [('Remove', self.onRemove, {'side':RIGHT}),
+                        ('Modify', self.onModify, {'side':RIGHT}),
+                        ('Add', self.onAdd, {'side':RIGHT})]
+        for (label, action, where) in self.buttons:
+            Button(self.toolbar, text=label, command=action).pack(where)
 
 class NewRecordForm(input_form.DefaultValueForm):
     def __init__(self, entry_list, database, db_widget, parent=None, entrysize=40):
@@ -241,19 +276,19 @@ class NewRecordForm(input_form.DefaultValueForm):
     def onAttr(self):
         """Adds a new attribute to a record object"""
         window = Toplevel()
-        NewAttrForm(('new attribute', 'value'), window, self).pack()
+        NewAttrForm(('new attribute', 'value'), window, self)
 
     def onAddfile(self):
         """Pops up a new dialog to add a file object"""
         window = Toplevel()
-        NewFileForm(('filename', 'filepath', 'filetype'), window, self).pack()
+        NewFileForm([('filename',''), ('filepath',''), ('filetype','')], window, self)
 
     def onReAttr(self):
         """Removes a record attribute"""
         window = Toplevel()
-        RemovalForm('attribute to remove', window, self).pack()
+        RemovalForm('attribute to remove', window, self)
 
     def onReFile(self):
         """Removes a file from a record"""
         window = Toplevel()
-        RemovalForm('file to remove', window, self).pack()
+        RemovalForm('file to remove', window, self)
