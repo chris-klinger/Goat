@@ -66,7 +66,7 @@ class File(Persistent):
                             tmp_bases += 1
             self.num_entries = tmp_entries
             self.num_lines = tmp_lines
-            self.tmp_bases = tmp_bases
+            self.num_bases = tmp_bases
         except:
             pass # sets nothing
 

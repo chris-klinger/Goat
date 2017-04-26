@@ -17,3 +17,10 @@ def check_path(inpath, wanted=None):
         if os.path.exists(inpath):
             return True
     return False
+
+def nonblank_lines(file_obj):
+    """Yields a generator of only populated lines"""
+    for line in file_obj:
+        line = line.strip('\n')
+        if line:
+            yield line

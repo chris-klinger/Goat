@@ -60,7 +60,7 @@ class RecordDB:
         """Removes a Record"""
         try:
             del self.root[record_identity]
-            self.commit()
+            #self.commit()
         except:
             pass
 
@@ -70,12 +70,12 @@ class RecordDB:
         for attr,value in kwargs.items():
             setattr(record_obj, attr, value)
 
-    def add_record_file(self, record_identity, filename, filepath, **kwargs):
+    def add_record_file(self, record_identity, filename, filepath, filetype, **kwargs):
         """Delegates to Record object"""
         try:
             record_obj = self.root[record_identity]
-            record_obj.add_file(filename, filepath, **kwargs)
-            self.commit()
+            record_obj.add_file(filename, filepath, filetype, **kwargs)
+            #self.commit()
         except:
             pass
 
@@ -84,7 +84,7 @@ class RecordDB:
         try:
             record_obj = self.root[record_identity]
             record_obj.remove_file(filename)
-            self.commit()
+            #self.commit()
         except:
             pass
 
@@ -93,6 +93,6 @@ class RecordDB:
         try:
             record_obj = self.root[record_identity]
             record_obj.update_file(filename, **kwargs)
-            self.commit()
+            #self.commit()
         except:
             pass
