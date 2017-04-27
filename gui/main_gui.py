@@ -45,7 +45,10 @@ def settings_popup():
 
 def database_popup():
     window = Toplevel()
-    database_gui.DatabaseFrame(database_config.get_record_db(),window)
+    db = database_config.get_record_db()
+    #database_gui.DatabaseFrame(database_config.get_record_db(),window)
+    database_gui.DatabaseFrame(db,window)
+    db.close()
 
 
 def run():
