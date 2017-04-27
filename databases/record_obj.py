@@ -24,7 +24,8 @@ class Record(Persistent):
         self.files = {} # initialize an empty list
 
     def add_file(self, name, filepath, filetype, **kwargs):
-        new_file = record_file.File(name, filepath, filetype, **kwargs)
+        new_file = record_file.FastaFile(name, filepath, filetype, **kwargs)
+        new_file.update_file()
         self.files[name] = new_file
         self._p_changed = 1 # else does not update
 
@@ -38,4 +39,5 @@ class Record(Persistent):
             file_obj = self.files[name]
             for attr,value in kwargs:
                 setattr(file_obj, attr, value)
+            file_obj.update_file()
             self._p_changed = 1

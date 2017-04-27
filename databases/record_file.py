@@ -24,7 +24,7 @@ class File(Persistent):
         self.num_entries = num_entries
         self.num_lines = num_lines
         self.num_bases = num_bases
-        self.update_file()
+        #self.update_file()
 
     def update_file(self):
         """
@@ -43,6 +43,7 @@ class File(Persistent):
         try:
             self.size = os.stat(self.filepath).st_size
         except:
+            print("Could not set size")
             pass # sets nothing
 
     def calc_properties(self):
@@ -52,23 +53,24 @@ class File(Persistent):
         of entries, lines, and bases
         """
         from util.directories import dirfiles
-        try:
-            tmp_entries = 0
-            tmp_lines = 0
-            tmp_bases = 0
-            with open(self.filepath,'U') as i:
-                for line in dirfiles.nonblank_lines(i):
-                    tmp_lines += 1
-                    if line.startswith(self.separator):
-                        tmp_entries += 1
-                    else:
-                        for base in line:
-                            tmp_bases += 1
-            self.num_entries = tmp_entries
-            self.num_lines = tmp_lines
-            self.num_bases = tmp_bases
-        except:
-            pass # sets nothing
+        #try:
+        tmp_entries = 0
+        tmp_lines = 0
+        tmp_bases = 0
+        with open(self.filepath,'U') as i:
+            for line in dirfiles.nonblank_lines(i):
+                tmp_lines += 1
+                if line.startswith(self.separator):
+                    tmp_entries += 1
+                else:
+                    for base in line:
+                        tmp_bases += 1
+        self.num_entries = tmp_entries
+        self.num_lines = tmp_lines
+        self.num_bases = tmp_bases
+        #except:
+            #print("Could not set properties")
+            #pass # sets nothing
 
 class FastaFile(File):
     """
@@ -76,4 +78,6 @@ class FastaFile(File):
     """
     def __init__(self, name='', filepath='', filetype=None, size=0, num_entries=0,
             num_lines=0, num_bases=0):
+        File.__init__(self, name, filepath, filetype, size, num_entries,
+                num_lines, num_bases)
         self.separator = '>'

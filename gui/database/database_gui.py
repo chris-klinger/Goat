@@ -226,7 +226,7 @@ class RemovalForm(input_form.Form):
 class RecordFrame(Frame):
     def __init__(self, entry_list, record_files, database, db_widget, parent=None, entrysize=40):
         Frame.__init__(self, parent)
-        self.database = database
+        self.db = database
         self.db_widget = db_widget
         self.parent = parent
         self.pack(expand=YES, fill=BOTH)
@@ -252,21 +252,21 @@ class RecordFrame(Frame):
         for k in attrs.keys():
             if not (k == 'record identity'):
                 remaining[k] = attrs[k].get()
-        if record_id in self.database.keys(): # record is already present
-            database.update_record(record_id, **remaining)
+        if record_id in self.db.keys(): # record is already present
+            self.db.update_record(record_id, **remaining)
         else:
-            database.add_record(record_id, **remaining)
+            self.db.add_record(record_id, **remaining)
         try:
             for n,p,t in self.record_gui.return_new_files():
-                database.add_record_file(record_id, n, p, t)
+                self.db.add_record_file(record_id, n, p, t)
         except(IndexError): # no added files
             pass
         try:
             for n in self.record_gui.return_removed_files():
-                database.remove_record_file(record_id, n)
+                self.db.remove_record_file(record_id, n)
         except(IndexError): # no removed files
             pass
-        self.database.commit()
+        self.db.commit()
         self.db_widget.update() # signal back to re-draw tree
         self.parent.destroy()
 
@@ -390,7 +390,10 @@ class FileFrame(Frame):
 
     def add_file(self, new_file, filepath, filetype):
         """Adds a file"""
-        self.file_dict[new_file] = record_file.File(new_file, filepath, filetype)
+        ff = record_file.FastaFile(new_file, filepath, filetype)
+        ff.update_file()
+        #self.file_dict[new_file] = record_file.FastaFile(new_file, filepath, filetype)
+        self.file_dict[new_file] = ff
         self._add(new_file) # add to temporary selection
         self.new_files.append([new_file, filepath, filetype]) # for permanent addition later
 
