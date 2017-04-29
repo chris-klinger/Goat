@@ -19,6 +19,7 @@ def get_record_db():
     """Gets the records database"""
     #return database_records.RecordsDB(os.path.join(goat_dir, 'DB','records'))
     return record_db.RecordDB(os.path.join(goat_dir, 'DB', 'goat_db.fs'))
+    #return os.path.join(goat_dir, 'DB', 'goat_db.fs')
 
 def main_goat():
     initialize_goat.initialize(goat_dir)

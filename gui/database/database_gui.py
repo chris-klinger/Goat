@@ -22,15 +22,29 @@ class DatabaseFrame(Frame):
         self.toolbar = Frame(self)
         self.toolbar.pack(side=BOTTOM, fill=X)
 
+        # override parent window destruction handler to ensure DB integrity
+        self.parent = parent
+        self.parent.protocol("WM_DELETE_WINDOW", self.onClose)
+
         self.buttons = [('Remove', self.onRemove, {'side':RIGHT}),
                         ('Modify', self.onModify, {'side':RIGHT}),
                         ('Add', self.onAdd, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
             Button(self.toolbar, text=label, command=action).pack(where)
 
+    def onClose(self):
+        """Signals to close database connection when window is closed, but not
+        before to prevent ValueError raises from main_gui code block"""
+        self.db.close() # close connection
+        self.parent.destroy() # destroy window
+
     def onRemove(self):
         """Removes an existing record object"""
-        pass
+        item = self.db_panel.current_item() # first (and only) item in list of tags
+        if item['tags'][0] == 'record':
+            self.db.remove_record(item['text'])
+        elif item['tags'][0] == 'file':
+            pass # do we want to be able to remove files directly?
 
     def onModify(self):
         """Allows user to modify a pre-existing record.
@@ -39,29 +53,26 @@ class DatabaseFrame(Frame):
         passing it to a NewRecordForm, which already contains all the
         methods to deal with adding/removing/changing attributes."""
         item = self.db_panel.current_item()
-        #print(item)
-        #if item_type == 'record':
         if item['tags'][0] == 'record': # first (and only) item in list of tags
             record_obj = self.db[item['text']] # text also holds the ID
+            # get default values
             record_list = [('record identity', record_obj.identity),
                 ('genus', record_obj.genus), ('species', record_obj.species),
                 ('strain', record_obj.strain), ('supergroup', record_obj.supergroup)]
             for k,v in record_obj.__dict__.items():
                 if not k in default_attrs:
                     record_list.append((k,v)) # add any other attributes that may be present
-            #print(record_list)
             window = Toplevel()
-            #NewRecordForm(record_list, self.db, self.db_panel, window)
             RecordFrame(record_list, record_obj.files, self.db, self.db_panel, window)
-        elif item_type == 'file':
+        elif item['tags'][0] == 'file':
             pass # do we want to be able to modify files?
 
     def onAdd(self):
         """Adds a new record object"""
         window = Toplevel()
+        # same as onModify but default values are empty strings
         record_list = [('record identity',''), ('genus',''), ('species',''),
                 ('strain',''), ('supergroup','')]
-        #NewRecordForm(record_list, {}, self.db, self.db_panel, window)
         RecordFrame(record_list, record_obj.files, self.db, self.db_panel, window)
 
 class DatabaseGui(ttk.Panedwindow):
@@ -69,16 +80,21 @@ class DatabaseGui(ttk.Panedwindow):
         ttk.Panedwindow.__init__(self, parent, orient=HORIZONTAL)
         # assign an instance variable, pass in self as the parent to child widgets
         self.info_frame = ttk.Labelframe(self,text='Database Information')
-        #self.info_frame.pack(expand=YES,fill=BOTH)
         self.info_panel = InfoPanel(self.info_frame)
-        self.db_viewer = DatabaseViewer(database,self.info_panel,self)#.db_frame)
+        self.db_viewer = DatabaseViewer(database,self.info_panel,self)
         self.add(self.db_viewer)
         self.add(self.info_frame)
         self.pack(expand=YES,fill=BOTH)
 
+        # Set up scrollbars
+        #ysb = ttk.Scrollbar(self.db_viewer, orient='vertical', command=self.db_viewer.yview)
+        #xsb = ttk.Scrollbar(self.db_viewer, orient='horizontal', command=self.db_viewer.xview)
+        #self.db_viewer.configure(yscroll=ysb.set, xscroll=xsb.set)
+        #ysb.pack(side=RIGHT, fill=Y)
+        #xsb.pack(side=BOTTOM, fill=X)
+
     def current_item(self):
         """Returns the current item of the db_viewer"""
-        #return self.db_viewer.focus()
         item_name = self.db_viewer.focus()
         item = self.db_viewer.item(item_name)
         return item
@@ -101,41 +117,36 @@ class DatabaseViewer(ttk.Treeview):
         self.make_tree()
 
     def make_tree(self):
+        """Builds a treeview display of records"""
         for record in self.db.list_records():
-            #print(record)
-            #record_obj = self.db.fetch_record(record)
             record_obj = self.db[record] # should be able to index
-            #for k,v in record_obj.items():
-                #print(k + ' ' + v)
-            #record_name = record_obj.genus + ' ' + record_obj.species
+            # use record identity as label in tree
             self.insert('','end',record,text=record_obj.identity,tags=('record'))
-            #for k,v in self.db.list_record_info(record):
+            # now add files (if present), as subheadings for the record
             for k in record_obj.files.keys():
-                #if k in valid_file_types:
                 self.insert(record,'end',(record + '_' + k),text=k,tags=('file'))
 
     def itemClicked(self, item_type):
+        """Triggered when either records or files are clicked. Builds a list of
+        information for display by associated info panel and delegates display
+        to that widget"""
         item = self.focus()
-        #print(item)
         if item_type == 'record':
             rlist = []
-            #record = self.db.fetch_record(item)
             record = self.db[item]
+            # genus and species make up header
             rlist.extend([record.genus,record.species])
             for k,v in record.__dict__.items():
-                #if k not in valid_file_types:
                 if k != 'files': # skip over files
-                    rlist.extend([k,v])
-            #print(rlist)
+                    rlist.extend([k,v]) # add other associated information
             self.info.update_info('record', *rlist) # delegates information to display to widget
         elif item_type == 'file':
             flist = []
             record,filename = item.rsplit('_',1)[0], item.rsplit('_',1)[1] # chop back off the name
-            #record = self.db.fetch_record(record_name)
             record_obj = self.db.record
+            # file ID makes up header
             file_obj = record_obj.files[filename]
-            #flist.extend((record.genus,record.species,file_type,
-                #getattr(record,file_type)))
+            # add additional information
             flist.extend((record_obj.genus, record_obj.species, record_file.name,
                 file_obj.filepath, file_obj.filetype, file_obj.num_entries,
                 file_obj.num_lines, file_obj.num_bases))
@@ -152,14 +163,16 @@ class InfoPanel(ttk.Label):
         self.displayInfo.set('') # initialize to an empty value
 
     def update_info(self,display_type,*values):
+        """Takes a list of values and displays it depending on whether the item
+        clicked is a record or file"""
         display_string = ''
         display_string += (values[0] + ' ' + values[1] + '\n\n\n\n')
         if display_type == 'record':
-            if len(values) > 2:
+            if len(values) > 2: # additional info present
                 for index,value in enumerate(values[2:]):
-                    if index % 2 == 0: # even value
+                    if index % 2 == 0: # even value, key in dictionary
                         display_string += (values[index+2] + ' ') # +2 compensates for first two list values
-                    else: # odd value
+                    else: # odd value, value in dictionary
                         display_string += (values[index+2] + '\n')
         else:
             display_string += ('Filename: ' + values[2] + '\n')
@@ -196,31 +209,47 @@ class NewFileForm(input_form.DefaultValueForm):
                 entry_row.entry.insert(0,filepath) # update choice in window
 
     def onSubmit(self):
-        #remaining = {}
-        #try:
-        for key in self.content.keys():
-            if self.content[key].get() == '': # no added value
-                print(self.content[key])
-                #raise AttributeError
-                messagebox.showwarning('Add File Warning', 'Cannot leave blank entries')
-            if key == 'filename':
-                new_file = self.content[key].get()
-            elif key == 'filepath':
-                filepath = self.content[key].get()
-            else:
-                #remaining[key] = self.content[key].get()
-                filetype = self.content[key].get()
-        self.other.add_file(new_file, filepath, filetype)
-            #self.other.update_attr('add',new_file,filepath)
-            #self.other.files.extend([new_file, filepath, remaining]) # keep track of all info!
-        self.parent.destroy()
-        #except(AttributeError):
-            #messagebox.showwarning('Add File Warning', 'Cannot leave blank entries')
+        try:
+            for key in self.content.keys():
+                if self.content[key].get() == '': # no added value
+                    raise AttributeError # do not allow submission without info
+                if key == 'filename':
+                    new_file = self.content[key].get()
+                elif key == 'filepath':
+                    filepath = self.content[key].get()
+                else:
+                    filetype = self.content[key].get()
+            self.other.add_file(new_file, filepath, filetype)
+            self.parent.destroy()
+        except(AttributeError):
+            # do not allow submission and warn user if values are blank
+            messagebox.showwarning('Add File Warning', 'Cannot leave blank entries')
 
-class RemovalForm(input_form.Form):
+class RemovalFrame(Frame):
+    def __init__(self, attrs, attr_widget, parent=None):
+        Frame.__init__(self, parent)
+        self.pack(expand=YES, fill=BOTH)
+        self.attr_widget = attr_widget
+        self.selected_attr = StringVar()
+        self.attr_box = ttk.Combobox(self, textvariable=self.selected_attr)
+        self.attr_box['values'] = attrs
+        self.attr_box.pack(side=TOP, expand=YES, fill=X)
+
+        self.toolbar = Frame(self)
+        self.toolbar.pack(expand=YES, side=BOTTOM, fill=X)
+
+        self.buttons = [('Cancel', self.onCancel, {'side':RIGHT}),
+                        ('Submit', self.onSubmit, {'side':RIGHT})]
+        for (label, action, where) in self.buttons:
+            Button(self.toolbar, text=label, command=action).pack(where)
+
+    def onCancel(self):
+        self.parent.destroy()
+
     def onSubmit(self):
-        item_to_remove = self.content['item to remove'].get()
-        self.other.update_attr('remove', item_to_remove)
+        """Signal back to remove attribute"""
+        attr = self.selected_attr.get()
+        self.attr_widget.update_attr('remove',attr)
         self.parent.destroy()
 
 class RecordFrame(Frame):
@@ -230,8 +259,6 @@ class RecordFrame(Frame):
         self.db_widget = db_widget
         self.parent = parent
         self.pack(expand=YES, fill=BOTH)
-        #self.attr_form = AttributeForm(entry_list, self) # panel to take care of record details
-        #self.file_form = FileFrame(record_files, self) # panel to take care of file details
         self.record_gui = RecordGui(entry_list, record_files, self)
         self.toolbar = Frame(self)
         self.toolbar.pack(expand=YES, side=BOTTOM, fill=X)
@@ -295,7 +322,6 @@ class RecordGui(ttk.Panedwindow):
         return self.file_form.removed_files
 
 class AttributeForm(input_form.DefaultValueForm):
-    #def __init__(self, entry_list, database, db_widget, parent=None, entrysize=40):
     def __init__(self, entry_list, parent=None, entrysize=40):
         buttons = [('Remove Attribute', self.onReAttr, {'side':RIGHT}),
                    ('Add Attribute', self.onAttr, {'side':RIGHT})]
@@ -320,7 +346,7 @@ class AttributeForm(input_form.DefaultValueForm):
     def onReAttr(self):
         """Removes a record attribute"""
         window = Toplevel()
-        RemovalForm('attribute to remove', window, self)
+        RemovalFrame([row.label_text for row in self.row_list],self,window)
 
 class FileFrame(Frame):
     def __init__(self, file_dict, parent=None):
@@ -347,6 +373,7 @@ class FileFrame(Frame):
             Button(self.toolbar, text=label, command=action).pack(where)
 
     def onSelect(self):
+        """Signal to file panel to display associated file information"""
         file_obj = self.file_dict[self.selected_file.get()]
         self.file_panel.update_info(*[file_obj.name, file_obj.filepath,
             file_obj.filetype, str(file_obj.num_entries),
@@ -403,7 +430,7 @@ class FilePanel(ttk.Label):
         self.pack(expand=YES,fill=BOTH)
         self.displayInfo = StringVar() # variable watches for updates
         self.config(textvariable=self.displayInfo, # associate label text with variable
-                #width=-50, # set a sane minimum width)
+                width=-80, # set a sane minimum width)
                 anchor='center',justify='center') # centre and justify label text
         self.displayInfo.set('File Info') # initialize to an empty value
 

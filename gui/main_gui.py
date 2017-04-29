@@ -48,7 +48,6 @@ def database_popup():
     db = database_config.get_record_db()
     #database_gui.DatabaseFrame(database_config.get_record_db(),window)
     database_gui.DatabaseFrame(db,window)
-    db.close()
 
 
 def run():
