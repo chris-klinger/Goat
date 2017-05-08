@@ -10,6 +10,7 @@ from settings import settings_config
 from databases import database_config
 from gui.settings import settings_form
 from gui.database import database_gui
+from gui.searches import search_gui
 
 help_msg="""
 Goat: an integrated platform for bioinformatic sequence analysis
@@ -27,21 +28,37 @@ def make_menu(window):
     window.config(menu=top) # set the menu option
 
     file_menu = Menu(top)
-    file_menu.add_command(label='settings...', command=settings_popup, underline=0)
-    file_menu.add_command(label='quit...', command=window.quit, underline=0)
+    file_menu.add_command(label='settings', command=settings_popup, underline=0)
+    file_menu.add_command(label='quit', command=window.quit, underline=0)
     top.add_cascade(label='File', menu=file_menu, underline=0)
 
     search_menu = Menu(top, tearoff=False)
-    search_menu.add_command(label='new search...', command=not_available, underline=0)
+    search_menu.add_command(label='search', command=search_popup, underline=0)
+    search_menu.add_command(label='results', command=results_popup, underline=0)
+    search_menu.add_command(label='summarize', command=summarize_popup, underline=0)
+    search_menu.add_command(label='run analysis', command=analysis_popup, underline=0)
     top.add_cascade(label='Search', menu=search_menu, underline=0)
 
     db_menu = Menu(top, tearoff=False)
-    db_menu.add_command(label='add database...', command=database_popup, underline=0)
+    db_menu.add_command(label='add database', command=database_popup, underline=0)
     top.add_cascade(label='Databases', menu=db_menu, underline=0)
 
 def settings_popup():
    window = Toplevel()
    settings_form.SettingsForm(settings_config.list_settings(),window)
+
+def search_popup():
+    window = Toplevel()
+    search_gui.SearchFrame(window)
+
+def results_popup():
+    window = Toplevel()
+
+def summarize_popup():
+    window = Toplevel()
+
+def analysis_popup():
+    window = Toplevel()
 
 def database_popup():
     window = Toplevel()
