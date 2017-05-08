@@ -43,7 +43,7 @@ class DefaultValueForm(Frame):
         self.rows = Frame(self, bd=2, relief=GROOVE)
         self.rows.pack(side=TOP, expand=YES, fill=X)
         self.row_list = [] # stores all instances
-        if not buttons: # default values
+        if buttons == 'default': # default values
             self.buttons = [('Cancel', self.onCancel, {'side':RIGHT}),
                         ('Submit', self.onSubmit, {'side':RIGHT})]
         else:

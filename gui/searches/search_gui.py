@@ -12,6 +12,7 @@ from gui.util import input_form
 class SearchFrame(Frame):
     def __init__(self, parent=None):
         Frame.__init__(self, parent)
+        self.parent = parent
         self.pack(expand=YES, fill=BOTH)
         self.search = SearchGui(self)
         self.toolbar = Frame(self)
@@ -33,8 +34,8 @@ class SearchGui(ttk.Panedwindow):
         ttk.Panedwindow.__init__(self, parent, orient=HORIZONTAL)
         self.parent = parent
         self.param_frame = ParamFrame(self)
-        self.query_frame = QueryFrame(self)
-        self.db_frame = DatabaseFrame(self)
+        self.query_frame = QuerySummaryFrame(self)
+        self.db_frame = DatabaseSummaryFrame(self)
         self.add(self.param_frame)
         self.add(self.query_frame)
         self.add(self.db_frame)
@@ -48,8 +49,11 @@ class ParamFrame(Frame):
         self.curdir = os.getcwd()
         self.entries = input_form.DefaultValueForm([('Name',''), ('Location',self.curdir)],
                 self, [('Choose Directory', self.onChoose, {'side':RIGHT})])
-        self.algorithm = AlgorithmFrame(self, [('Blast','blast'),('HMMer','hmmer')])
-        self.keep_output = KeepOutputFrame(self)
+        self.algorithm = RadioBoxFrame(self, [('Blast','blast'), ('HMMer','hmmer')],
+                labeltext='Algorithm')
+        self.db_type = RadioBoxFrame(self, [('Protein','protein'), ('Genomic','genomic')],
+                labeltext='Target data type')
+        self.keep_output = CheckBoxFrame(self, 'Keep output files?')
 
     def onChoose(self):
         """Pops up directory choice"""
@@ -58,40 +62,41 @@ class ParamFrame(Frame):
             if entry_row.label_text == 'Location':
                 entry_row.entry.insert(0,dirpath)
 
-class AlgorithmFrame(Frame):
-    def __init__(self, parent=None, choices=None):
+class RadioBoxFrame(Frame):
+    def __init__(self, parent=None, choices=None, labeltext=None):
         Frame.__init__(self, parent)
         self.choices = choices
-        #self.pack(expand=YES, fill=BOTH)
         self.pack()
-        Label(self, text='Algorithm').pack()
-        self.algorithm = StringVar()
+        if labeltext:
+            Label(self, text=labeltext).pack()
+        self.selected = StringVar()
         for text,var in self.choices:
-            ttk.Radiobutton(self, text=text, variable=self.algorithm,
+            ttk.Radiobutton(self, text=text, variable=self.selected,
                             value=var).pack(side=LEFT)
-        self.algorithm.set(var) # set to last value
+        self.selected.set(var) # set to last value
 
-class KeepOutputFrame(Frame):
-    def __init__(self, parent=None):
+class CheckBoxFrame(Frame):
+    def __init__(self, parent=None, labeltext=None):
         Frame.__init__(self, parent)
-        #self.pack(expand=YES, fill=BOTH)
         self.pack()
-        Label(self, text='Keep output files?').pack()
+        if labeltext:
+            Label(self, text=labeltext).pack()
         self.checked = IntVar()
         self.checkbutton = ttk.Checkbutton(self, text='Yes',
                         variable=self.checked).pack()
 
 class ScrollBoxFrame(Frame):
-    def __init__(self, parent=None, text=None, items=None):
+    def __init__(self, parent=None, text=None, items=None,
+            other_widget=None, mode='extended'):
         Frame.__init__(self, parent)
         self.pack(expand=YES, fill=BOTH)
+        self.other = other_widget
         if text:
             Label(self, text=text).pack(side=TOP)
         self.item_list = [] # internal list mapping to listbox list
         self.item_dict = {} # hashtable for listbox items
-        self.listbox = Listbox(self, height=20,
-                            selectmode='extended' # choose multiple items at once
-                            )
+        self.listbox = Listbox(self, height=20, selectmode=mode)
+        self.listbox.bind('<<ListboxSelect>>', self.onSelect)
         self.listbox.pack(side=LEFT)
         vs = ttk.Scrollbar(self, orient=VERTICAL, command=self.listbox.yview)
         vs.pack(side=RIGHT)
@@ -102,7 +107,10 @@ class ScrollBoxFrame(Frame):
                 self.item_list.append(item)
                 self.item_dict[item] = value
 
-class QueryFrame(Frame):
+    def onSelect(self):
+        pass # implement in other subclasses?
+
+class QuerySummaryFrame(Frame):
     def __init__(self, parent=None, text='Queries', items=None):
         Frame.__init__(self, parent)
         self.querybox = ScrollBoxFrame(self, text, items)
@@ -153,9 +161,44 @@ class QueryInfoFrame(Frame):
         pass
 
 class QueryWindow(ttk.Panedwindow):
-    pass
+    def __init__(self, parent=None):
+        ttk.Panedwindow.__init__(self, parent, orient=HORIZONTAL)
+        self.parent = parent
+        self.query_frame = QueryFrame(self, text='Queries', mode='browse')
+        self.query_info = QueryInfoFrame(self)
+        self.add(self.query_frame)
+        self.add(self.query_info)
+        self.pack(expand=YES, fill=BOTH)
 
-class DatabaseFrame(Frame):
+class QueryFrame(ScrollBoxFrame):
+    """Inherit from Scrollbox but add handler for selection"""
+    def onSelect(self):
+        index = self.querybox.curselection() # guaranteed to be a single selection
+        item = self.item_list[index] # need actual item
+        self.other.update(item)
+
+class QueryInfoFrame(Frame):
+    def __init__(self, parent=None):
+        Frame.__init__(self, parent)
+        self.name = DefaultValueForm([('Name','')], self)
+        # Deal with selecting records
+        self.selected_record = StringVar()
+        self.record_box = ttk.Combobox(self, textvariable=self.selected_record)
+        self.record_box['values'] = [] # Need to change later to reflect records!
+        self.record_box.pack(expand=YES, fill=X)
+        # Deal with redundant accessions
+        self.selected_racc = StringVar()
+        self.racc_box = ttk.Combobox(self, textvariable=self.selected_racc)
+        self.record_box['values'] = [] # Need to change later to reflect raccs
+        self.record_box.pack(expand=YES, fill=X)
+        Button(self, text='Add', command=self.onAdd).pack(side=RIGHT)
+
+    def onAdd(self):
+        """Search against the database specified by chosen record and database
+        type (e.g. genomic/protein) and allow user to choose"""
+        pass
+
+class DatabaseSummaryFrame(Frame):
     def __init__(self, parent=None, text='Database', items=None):
         Frame.__init__(self, parent)
         self.dbbox = ScrollBoxFrame(self, text, items)
