@@ -60,7 +60,6 @@ class RecordDB:
         """Removes a Record"""
         try:
             del self.root[record_identity]
-            #self.commit()
         except:
             pass
 
@@ -75,7 +74,6 @@ class RecordDB:
         try:
             record_obj = self.root[record_identity]
             record_obj.add_file(filename, filepath, filetype, **kwargs)
-            #self.commit()
         except:
             pass
 
@@ -84,7 +82,6 @@ class RecordDB:
         try:
             record_obj = self.root[record_identity]
             record_obj.remove_file(filename)
-            #self.commit()
         except:
             pass
 
@@ -93,6 +90,5 @@ class RecordDB:
         try:
             record_obj = self.root[record_identity]
             record_obj.update_file(filename, **kwargs)
-            #self.commit()
         except:
             pass
