@@ -14,8 +14,10 @@ blast_path = '/usr/local/ncbi/blast/bin'
 
 class Search:
     """Generic search object. Interaction is through a separate class."""
-    def __init__(self, search_type, queries, databases, db_type,
-                keep_output, output_location, results, *params):
+    def __init__(self, search_name=None, search_type=None, queries=[],
+            databases=[], db_type=None, keep_output=False, output_location=None,
+            results=None, *params):
+        self.search_name = search_name
         self.search_type = search_type
         self.queries = queries # pointer to the shelve object containing the instances
         self.databases = databases

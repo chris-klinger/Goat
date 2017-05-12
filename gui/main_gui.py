@@ -8,6 +8,7 @@ from tkinter.messagebox import *
 
 from settings import settings_config
 from databases import database_config
+from searches import search_setup
 from gui.settings import settings_form
 from gui.database import database_gui
 from gui.searches import search_gui
@@ -49,7 +50,9 @@ def settings_popup():
 
 def search_popup():
     window = Toplevel()
-    search_gui.SearchFrame(window)
+    db = database_config.get_record_db()
+    search_obj = search_setup.Search()
+    search_gui.SearchFrame(db,search_obj,window)
 
 def results_popup():
     window = Toplevel()
