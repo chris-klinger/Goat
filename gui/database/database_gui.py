@@ -73,7 +73,8 @@ class DatabaseFrame(Frame):
         # same as onModify but default values are empty strings
         record_list = [('record identity',''), ('genus',''), ('species',''),
                 ('strain',''), ('supergroup','')]
-        RecordFrame(record_list, record_obj.files, self.db, self.db_panel, window)
+        #RecordFrame(record_list, record_obj.files, self.db, self.db_panel, window)
+        RecordFrame(record_list, {}, self.db, self.db_panel, window)
 
 class DatabaseGui(ttk.Panedwindow):
     def __init__(self, database, parent=None):

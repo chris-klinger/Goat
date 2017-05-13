@@ -55,19 +55,24 @@ def search_popup():
     search_gui.SearchFrame(db,search_obj,window)
 
 def results_popup():
-    window = Toplevel()
+    #window = Toplevel()
+    pass
 
 def summarize_popup():
-    window = Toplevel()
+    #window = Toplevel()
+    pass
 
 def analysis_popup():
-    window = Toplevel()
+    #window = Toplevel()
+    pass
 
 def database_popup():
     window = Toplevel()
-    db = database_config.get_record_db()
+    #db = database_config.get_record_db()
     #database_gui.DatabaseFrame(database_config.get_record_db(),window)
-    database_gui.DatabaseFrame(db,window)
+    goat_db = database_config.get_goat_db()
+    record_db = database_config.get_record_db(goat_db)
+    database_gui.DatabaseFrame(record_db,window)
 
 
 def run():

@@ -14,10 +14,15 @@ from util.inputs import prompts
 #print(dir(goat))
 #record_db = goat.get_record_db()
 
-# deferred call to method in goat module due to import issues?!
-def get_record_db():
+def get_goat_db():
+    """Returns path to DB file"""
+    # deferred call to method in goat module due to import issues?!
+    return goat.get_goat_db()
+
+def get_record_db(db_obj):
     """Gets the records database"""
-    return goat.get_record_db()
+    # deferred call to method in goat module due to import issues?!
+    return goat.get_record_db(db_obj)
 
 def get_db_dir_path(goat_dir):
     """Returns full pathname to db directory"""
