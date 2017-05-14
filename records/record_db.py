@@ -28,6 +28,7 @@ class RecordDB:
     def list_records(self):
         """Convenience function"""
         for entry in self.db.list_entries(self.node):
+            #print(entry)
             if entry != '_Groups':
                 yield entry
 

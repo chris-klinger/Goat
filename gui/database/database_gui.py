@@ -2,6 +2,8 @@
 This module contains code for dealing with viewing and updating databases
 """
 
+import time
+
 from tkinter import *
 from tkinter import ttk, filedialog, messagebox
 
@@ -115,11 +117,14 @@ class DatabaseViewer(ttk.Treeview):
 
     def upate(self):
         """Updates the view upon addition/removal of records"""
+        print('DatabaseViewer update called')
         self.make_tree()
 
     def make_tree(self):
         """Builds a treeview display of records"""
+        print('Making tree')
         for record in self.db.list_records():
+            #print(record)
             record_obj = self.db[record] # should be able to index
             # use record identity as label in tree
             self.insert('','end',record,text=record_obj.identity,tags=('record'))
@@ -144,11 +149,11 @@ class DatabaseViewer(ttk.Treeview):
         elif item_type == 'file':
             flist = []
             record,filename = item.rsplit('_',1)[0], item.rsplit('_',1)[1] # chop back off the name
-            record_obj = self.db.record
+            record_obj = self.db[record]
             # file ID makes up header
             file_obj = record_obj.files[filename]
             # add additional information
-            flist.extend((record_obj.genus, record_obj.species, record_file.name,
+            flist.extend((record_obj.genus, record_obj.species, file_obj.name,
                 file_obj.filepath, file_obj.filetype, file_obj.num_entries,
                 file_obj.num_lines, file_obj.num_bases))
             self.info.update_info('file', *flist)
@@ -280,7 +285,8 @@ class RecordFrame(Frame):
         for k in attrs.keys():
             if not (k == 'record identity'):
                 remaining[k] = attrs[k].get()
-        if record_id in self.db.keys(): # record is already present
+        #if record_id in self.db.keys(): # record is already present
+        if record_id in self.db.list_records():
             self.db.update_record(record_id, **remaining)
         else:
             self.db.add_record(record_id, **remaining)
@@ -295,7 +301,9 @@ class RecordFrame(Frame):
         except(IndexError): # no removed files
             pass
         self.db.commit()
-        self.db_widget.update() # signal back to re-draw tree
+        print(self.db_widget.db_viewer.make_tree)
+        self.db_widget.db_viewer.make_tree() # signal back to re-draw tree
+        time.sleep(1)
         self.parent.destroy()
 
 class RecordGui(ttk.Panedwindow):
