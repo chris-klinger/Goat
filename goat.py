@@ -7,7 +7,7 @@ from settings import settings_interface
 #from databases import database_interface,database_records,record_db
 from databases import goat_db
 from records import record_db
-from searches import search_interface
+from searches import search_interface,query_db
 from gui import main_gui
 
 goat_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
@@ -28,6 +28,9 @@ def get_record_db(db_obj):
     #return record_db.RecordDB(os.path.join(goat_dir, 'DB', 'goat_db.fs'))
     return record_db.RecordDB(db_obj)
     #return os.path.join(goat_dir, 'DB', 'goat_db.fs')
+
+def get_query_db(db_obj):
+    return query_db.QueryDB(db_obj)
 
 def main_goat():
     initialize_goat.initialize(goat_dir)
