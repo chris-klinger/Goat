@@ -117,9 +117,8 @@ class QueryScrollBox(Listbox):
         self.pack(expand=YES, fill=BOTH)
 
 class QueryInfoFrame(Frame):
-    def __init__(self, query_db, record_db, parent=None):
+    def __init__(self, record_db, parent=None):
         Frame.__init__(self, parent)
-        self.qdb = query_db
         self.rdb = record_db
         self.pack(expand=YES, fill=BOTH)
         Label(self, text='Query Information').pack(expand=YES, fill=X, side=TOP)
