@@ -12,6 +12,7 @@ from searches import search_setup
 from gui.settings import settings_form
 from gui.database import database_gui
 from gui.searches import search_gui
+from gui.queries import query_gui
 
 help_msg="""
 Goat: an integrated platform for bioinformatic sequence analysis
@@ -40,6 +41,10 @@ def make_menu(window):
     search_menu.add_command(label='run analysis', command=analysis_popup, underline=0)
     top.add_cascade(label='Search', menu=search_menu, underline=0)
 
+    query_menu = Menu(top, tearoff=False)
+    query_menu.add_command(label='modify queries', command=query_popup, underline=0)
+    top.add_cascade(label='Queries', menu=query_menu, underline=0)
+
     db_menu = Menu(top, tearoff=False)
     db_menu.add_command(label='add database', command=database_popup, underline=0)
     top.add_cascade(label='Databases', menu=db_menu, underline=0)
@@ -67,6 +72,13 @@ def summarize_popup():
 def analysis_popup():
     #window = Toplevel()
     pass
+
+def query_popup():
+    window = Toplevel()
+    goat_db = database_config.get_goat_db()
+    query_db = database_config.get_query_db(goat_db)
+    record_db = database_config.get_record_db(goat_db)
+    query_gui.QueryFrame(query_db, record_db, window)
 
 def database_popup():
     window = Toplevel()

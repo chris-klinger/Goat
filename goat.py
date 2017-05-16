@@ -7,7 +7,8 @@ from settings import settings_interface
 #from databases import database_interface,database_records,record_db
 from databases import goat_db
 from records import record_db
-from searches import search_interface,query_db
+from queries import query_db
+from searches import search_interface
 from gui import main_gui
 
 goat_dir = os.path.dirname(os.path.realpath(sys.argv[0]))

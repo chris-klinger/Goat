@@ -64,6 +64,8 @@ class ParamFrame(Frame):
             if entry_row.label_text == 'Location':
                 entry_row.entry.insert(0,dirpath)
 
+##########################
+# Migrate to use versions in gui_util?
 class RadioBoxFrame(Frame):
     def __init__(self, parent=None, choices=None, labeltext=None):
         Frame.__init__(self, parent)
@@ -111,6 +113,7 @@ class ScrollBoxFrame(Frame):
 
     def onSelect(self):
         pass # implement in other subclasses?
+###############################
 
 class QuerySummaryFrame(Frame):
     def __init__(self, db, search_obj, parent=None, text='Queries', items=None):
