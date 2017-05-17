@@ -79,6 +79,20 @@ class EntryRow(Frame):
         self.entry.insert(0,entry_value)
         other_widget.content[label_text] = self.entry
 
+class FileValueForm(DefaultValueForm):
+    """Single-entry form frame for choosing filepaths"""
+    def __init__(self, parent=None, entrysize=40):
+        entry_list = [('Filename','')]
+        DefaultValueForm.__init__(self, entry_list, parent)
+        Button(self, text='Choose File', command=self.onChoose).pack(side=RIGHT)
+
+    def onChoose(self):
+        """Pops up file choice dialogue"""
+        filepath = filedialog.askopenfilename()
+        for entry_row in self.row_list:
+            if entry_row.label_text == 'filepath':
+                entry_row.entry.insert(0,filepath) # update choice in window
+
 class DynamicForm(Form):
     def __init__(self, labels=None):
         labels = input('Enter field names: ').split()

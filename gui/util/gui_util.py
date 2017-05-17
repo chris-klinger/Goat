@@ -56,11 +56,22 @@ class ScrollBoxFrame(Frame):
         vs.pack(side=RIGHT)
         self.listbox['yscrollcommand'] = vs.set
         if items:
-            for item,value in items:
-                self.listbox.insert('end', item)
-                self.item_list.append(item)
-                self.item_dict[item] = value
+            self.add_items(items)
+
+    def add_items(self, *items):
+        """General case addition of items"""
+        for item,value in items:
+            self.listbox.insert('end', item)
+            self.item_list.append(item)
+            self.item_dict[item] = value
+
+    def remove_items(self, *indices):
+        """General case removal of items"""
+        for index in indices:
+            item = self.listbox.get(index)
+            self.listbox.delete(index)
+            self.item_list.remove(item)
+            del self.item_dict[item]
 
     def onSelect(self):
         pass # implement in other subclasses?
-

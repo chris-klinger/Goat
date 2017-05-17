@@ -5,6 +5,7 @@ This module contains code for dealing with viewing and updating queries
 from tkinter import *
 from tkinter import ttk
 
+from gui.queries import add_query_gui
 from gui.util import input_form
 from gui.util import gui_util
 
@@ -39,7 +40,8 @@ class QueryFrame(Frame):
 
     def onAddQueries(self):
         """Pops up a new window to add queries either individually or by file"""
-        pass
+        window = Toplevel()
+        add_query_gui.AddQueryFrame(self.rdb, window)
 
     def onSave(self):
         """Signals to associated dbs to commit but not close"""
@@ -57,7 +59,7 @@ class QueryGui(ttk.Panedwindow):
     def __init__(self, query_db, record_db, parent=None):
         ttk.Panedwindow.__init__(self, parent, orient=HORIZONTAL)
         self.query_frame = QueryListFrame(query_db, self)
-        self.info_frame = QueryInfoFrame(query_db, record_db, self)
+        self.info_frame = QueryInfoFrame(record_db, self)
         self.add(self.query_frame)
         self.add(self.info_frame)
         self.pack(expand=YES, fill=BOTH)
