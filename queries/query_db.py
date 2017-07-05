@@ -40,7 +40,7 @@ class QueryDB:
         """Creates and populates a new Record"""
         new_query = search_query.Query(query_identity)
         self.db.put_entry(self.node, query_identity, new_query)
-        self.update_record(query_identity, **kwargs)
+        self.update_query(query_identity, **kwargs)
 
     def remove_query(self, query_identity):
         """Removes a Record"""

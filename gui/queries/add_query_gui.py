@@ -5,6 +5,7 @@ This module contains code for adding queries in Goat.
 from tkinter import *
 from tkinter import ttk
 
+from queries import query_file
 from gui.util import gui_util, input_form
 
 class AddQueryFrame(Frame):
@@ -60,6 +61,8 @@ class QueryListFrame(Frame):
         self.lbox_frame = gui_util.ScrollBoxFrame(self, text)
         self.lbox_frame.listbox.bind('<Return>', self.onAdd)
 
+        self.queries = {} # internal dict for associating id with query objects
+
         self.toolbar = Frame(self)
         self.toolbar.pack(expand=YES, fill=X, side=BOTTOM)
         self.buttons = [('Add', self.onAdd, {'side':RIGHT})]
@@ -81,6 +84,8 @@ class AddedListFrame(Frame):
         Frame.__init__(self, parent)
         self.lbox_frame = gui_util.ScrollBoxFrame(self, text)
         self.lbox_frame.listbox.bind('<Return>', self.onRemove)
+
+        self.queries = {} # internal query id/obj dict
 
         self.toolbar = Frame(self)
         self.toolbar.pack(expand=YES, fill=X, side=BOTTOM)
@@ -108,8 +113,8 @@ class AddFileFrame(Frame):
         self.cfile = input_form.FileValueForm(self)
         self.qtype = gui_util.RadioBoxFrame(self, [('Seq','seq'), ('HMM','hmm')],
                 labeltext='Query type')
-        self.alphabet = gui_util.RadioBoxFrame(self, [('Protein','protein'), ('Genomic','genomic')],
-                labeltext='Sequence alphabet')
+        self.alphabet = gui_util.RadioBoxFrame(self, [('Protein','protein'),
+            ('Genomic','genomic')], labeltext='Sequence alphabet')
         self.record = gui_util.ComboBoxFrame(self, self.rdb.list_records(), # record db keys
                 labeltext='Associated record')
         self.add_raccs = gui_util.RadioBoxFrame(self, [('No','no'), ('Auto','auto'),
@@ -124,7 +129,19 @@ class AddFileFrame(Frame):
 
     def onSubmit(self):
         """Signals back to other widget to update queries"""
-        pass
+        try:
+            if self.add_raccs != 'no': # we want to add raccs
+                if not self.record: # but there is not associated record!
+                    raise AttributeError
+            for k,v in query_file.FastaFile(self.cfile.content['Filename'].get(),
+                self.qtype.selected.get(), self.alphabet.selected.get(),
+                self.record.selected.get(), self.add_raccs.selected.get()).get_queries():
+                self.parent.query_list.lbox_frame.add_items(k) # add to display
+                self.parent.query_list.queries[k] = v # add to internal structure
+        except(AttributeError):
+            # do not allow raccs if no record specified
+            messagebox.showwarning('Incompatible options',
+                'Cannot choose to add redundant accessions without associated record')
 
     def onCancel(self):
         """Closes the window without actually adding queries"""
@@ -146,7 +163,24 @@ class AddManualFrame(Frame):
 
     def onSubmit(self):
         """Signals back to other widget to update queries"""
-        pass
+        try:
+            info_frame = self.layout.seq_info
+            if info_frame.add_raccs != 'no': # we want to add raccs
+                if not info_frame.record: # but there is not associated record!
+                    raise AttributeError
+            #self.parent.
+            info = self.layout.seq_info
+            qid = info.names.content['Identity'].get()
+            qobj = query_obj.Query(qid, info.names.content['Name'].get(),
+                info.names.content['Description'].get(), '', info.qtype.get(),
+                info.alphabet.get(), self.seq_entry.entry.get(),
+                record=info.record.get(), self_blast=info.add_raccs.get())
+            self.parent.query_list.lbox_frame.add_items(qid)
+            self.parent.query_list.queries[qid] = qobj
+        except(AttributeError):
+            # do not allow raccs if no record specified
+            messagebox.showwarning('Incompatible options',
+                'Cannot choose to add redundant accessions without associated record')
 
     def onCancel(self):
         """Closes the window without actually adding queries"""
@@ -176,7 +210,8 @@ class SeqInfoFrame(Frame):
         self.rdb = record_db
         self.pack(expand=YES, fill=BOTH)
         Label(self, text='Sequence Information').pack(expand=YES, fill=X, side=TOP)
-        self.name = input_form.DefaultValueForm([('Name','')],self)
+        self.names = input_form.DefaultValueForm([('Identity',''),('Name',''),
+            ('Description','')],self)
         self.qtype = gui_util.RadioBoxFrame(self, [('Seq','seq'), ('HMM','hmm')],
                 labeltext='Query type')
         self.alphabet = gui_util.RadioBoxFrame(self, [('Protein','protein'), ('Genomic','genomic')],

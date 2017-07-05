@@ -205,7 +205,7 @@ class QueryInfoFrame(Frame):
         Label(self, text='Associated database record').pack(expand=YES, fill=X)
         self.selected_record = StringVar()
         self.record_box = ttk.Combobox(self, textvariable=self.selected_record)
-        self.record_box['values'] = [self.db[x].identity for x in self.db.list_records()]
+        self.record_box['values'] = [self.db[x].identity for x in self.db.list_queries()]
         self.record_box.pack(expand=YES, fill=X)
         # Deal with selecting data type
         self.db_type = RadioBoxFrame(self, [('Protein','protein'), ('Genomic','genomic')],

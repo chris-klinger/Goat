@@ -3,6 +3,7 @@ This module implements a reusable input form class
 """
 
 from tkinter import *
+from tkinter import filedialog
 
 class Form:
     def __init__(self, labels, parent=None, other_widget=None, entrysize=40):
@@ -90,7 +91,7 @@ class FileValueForm(DefaultValueForm):
         """Pops up file choice dialogue"""
         filepath = filedialog.askopenfilename()
         for entry_row in self.row_list:
-            if entry_row.label_text == 'filepath':
+            if entry_row.label_text == 'Filename':
                 entry_row.entry.insert(0,filepath) # update choice in window
 
 class DynamicForm(Form):
