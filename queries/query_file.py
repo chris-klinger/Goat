@@ -15,7 +15,7 @@ class QueryFile():
     NB: previously had an attribute for 'filetype', in order to provide info
     regarding subclass usage, but likely better to do something in a separate
     class eventually that instantiates a subclass based on the type"""
-    def __init__(self, filepath, db, search_type, db_type,
+    def __init__(self, filepath, search_type, db_type,
             record=None, self_blast=None):
         self.filepath = filepath
         self.search_type = search_type
@@ -40,11 +40,11 @@ class FastaFile(QueryFile):
         return SeqIO.parse(self.filepath, "fasta")
 
     def get_queries(self):
-        """Adds parsed queries to query DB"""
+        """Adds parsed queries to returned data structure"""
         query_dict = {}
         for seq_record in self.parse():
             qobj = query_obj.Query(seq_record.id, seq_record.name, seq_record.description,
                 self.filepath, self.search_type, self.db_type, seq_record.seq,
-                record=self.record, self_blast=self.self_blast)
+                record=self.record, racc_mode=self.self_blast)
             query_dict[seq_record.id] = qobj
         return query_dict

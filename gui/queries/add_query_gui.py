@@ -4,9 +4,11 @@ This module contains code for adding queries in Goat.
 
 from tkinter import *
 from tkinter import ttk
+import _thread
 
 from queries import query_file
 from gui.util import gui_util, input_form
+from gui.searches import threaded_search
 
 class AddQueryFrame(Frame):
     def __init__(self, record_db, parent=None):
@@ -28,7 +30,7 @@ class AddQueryFrame(Frame):
     def onAddFile(self):
         """Prompts user to add a file and associated data"""
         window = Toplevel()
-        AddFileFrame(self.rdb, window)
+        AddFileFrame(self.rdb, self.layout, window)
 
     def onAddMan(self):
         """Prompts user to add a single query and associated data"""
@@ -36,7 +38,8 @@ class AddQueryFrame(Frame):
         AddManualFrame(self.rdb, window)
 
     def onSubmit(self):
-        """Submits and signals back to the other widget to do something"""
+        """Submits the request; all added queries are added to the DB and
+        committed, and the window is closed"""
         pass
 
     def onCancel(self):
@@ -103,10 +106,17 @@ class AddedListFrame(Frame):
         self.other.lbox_frame.add_items([self.listbox.get(index) for index in selected])
         self.lbox_frame.remove_items(*selected)
 
+def update_listbox(listbox, item_dict):
+    """Actually updates the listbox"""
+    listbox.lbox_frame.add_items(item_dict) # add to display
+    for k,v in item_dict.items():
+        listbox.queries[k] = v # add to internal structure
+
 class AddFileFrame(Frame):
-    def __init__(self, record_db, parent=None):
+    def __init__(self, record_db, layout, parent=None):
         Frame.__init__(self, parent)
         self.rdb = record_db
+        self._owidget = layout
         self.parent = parent
         self.pack(expand=YES, fill=BOTH)
         Label(self, text='File Information').pack(expand=YES, fill=X, side=TOP)
@@ -115,7 +125,8 @@ class AddFileFrame(Frame):
                 labeltext='Query type')
         self.alphabet = gui_util.RadioBoxFrame(self, [('Protein','protein'),
             ('Genomic','genomic')], labeltext='Sequence alphabet')
-        self.record = gui_util.ComboBoxFrame(self, self.rdb.list_records(), # record db keys
+        self.record = gui_util.ComboBoxFrame(self,
+                list(self.rdb.list_records()), # record db keys; use list function or returns a generator
                 labeltext='Associated record')
         self.add_raccs = gui_util.RadioBoxFrame(self, [('No','no'), ('Auto','auto'),
             ('Manual','man')], labeltext='Add Redundant Accessions?')
@@ -129,19 +140,31 @@ class AddFileFrame(Frame):
 
     def onSubmit(self):
         """Signals back to other widget to update queries"""
-        try:
-            if self.add_raccs != 'no': # we want to add raccs
-                if not self.record: # but there is not associated record!
-                    raise AttributeError
-            for k,v in query_file.FastaFile(self.cfile.content['Filename'].get(),
-                self.qtype.selected.get(), self.alphabet.selected.get(),
-                self.record.selected.get(), self.add_raccs.selected.get()).get_queries():
-                self.parent.query_list.lbox_frame.add_items(k) # add to display
-                self.parent.query_list.queries[k] = v # add to internal structure
-        except(AttributeError):
+        #try:
+            #print(self.cfile.content['Filename'].get())
+            #print(self.qtype.selected.get())
+            #print(self.alphabet.selected.get())
+            #print(self.record.selected.get())
+            #print(self.add_raccs.selected.get())
+        queries = query_file.FastaFile(self.cfile.content['Filename'].get(),
+            self.qtype.selected.get(), self.alphabet.selected.get(),
+            self.record.selected.get(), self.add_raccs.selected.get()).get_queries()
+        if self.add_raccs.selected.get() != 'no': # we want to add raccs
+            print(self.record.selected.get())
+            if self.record.selected.get() == '': # but there is not associated record!
+                raise AttributeError
+                # if everything is ok, spawn another thread to deal with searches
+            pframe = threaded_search.ProgressFrame(queries, self.rdb, update_listbox,
+                    (self._owidget.query_list, queries), self)
+            _thread.start_new_thread(pframe.run,())
+        else: # no need to run searches
+            update_listbox(self.parent.query_list, queries)
+            #self.parent.query_list.lbox_frame.add_items(k) # add to display
+            #self.parent.query_list.queries[k] = v # add to internal structure
+        #except(AttributeError):
             # do not allow raccs if no record specified
-            messagebox.showwarning('Incompatible options',
-                'Cannot choose to add redundant accessions without associated record')
+            #messagebox.showwarning('Incompatible options',
+                #'Cannot choose to add redundant accessions without associated record')
 
     def onCancel(self):
         """Closes the window without actually adding queries"""
