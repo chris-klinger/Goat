@@ -79,8 +79,13 @@ class QueryListFrame(Frame):
     def onAdd(self):
         """Adds selected entry(ies) to added widget"""
         selected = self.lbox_frame.listbox.curselection()
-        self.other.lbox_frame.add_items([self.listbox.get(index) for index in selected])
-        self.lbox_frame.remove_items(*selected)
+        items = [self.lbox_frame.listbox.get(index) for index in selected] # get associated items
+        to_add = {}
+        for item in items: # step through items
+            value = self.lbox_frame.item_dict[item] # fetch associated value
+            to_add[item] = value # build dictionary
+        self.other.lbox_frame.add_items(to_add) # add as dictionary
+        self.lbox_frame.remove_items(*selected) # also removes from internal list and dict
 
 class AddedListFrame(Frame):
     def __init__(self, parent, text):
@@ -101,9 +106,15 @@ class AddedListFrame(Frame):
         self.other = widget
 
     def onRemove(self):
-        """Removes selected entry(ies) from own display"""
+        """Removes selected entry(ies) from own display
+        Same as QueryListFrame onAdd function but in reverse"""
         selected = self.lbox_frame.listbox.curselection()
-        self.other.lbox_frame.add_items([self.listbox.get(index) for index in selected])
+        items = [self.lbox_frame.listbox.get(index) for index in selected]
+        to_remove = {}
+        for item in items:
+            value = self.lbox_frame.item_dict[item]
+            to_remove[item] = value
+        self.other.lbox_frame.add_items(to_remove)
         self.lbox_frame.remove_items(*selected)
 
 def update_listbox(listbox, item_dict):
@@ -154,17 +165,21 @@ class AddFileFrame(Frame):
             if self.record.selected.get() == '': # but there is not associated record!
                 raise AttributeError
                 # if everything is ok, spawn another thread to deal with searches
-            pframe = threaded_search.ProgressFrame(queries, self.rdb, update_listbox,
-                    (self._owidget.query_list, queries), self)
-            _thread.start_new_thread(pframe.run,())
+            #pframe = threaded_search.ProgressFrame(queries, self.rdb, update_listbox,
+                    #(self._owidget.query_list, queries), self)
+            #_thread.start_new_thread(pframe.run,())
+            for v in queries.values():
+                v.run_self_blast(self.rdb)
+            update_listbox(self._owidget.query_list, queries)
         else: # no need to run searches
-            update_listbox(self.parent.query_list, queries)
+            update_listbox(self._owidget.query_list, queries)
             #self.parent.query_list.lbox_frame.add_items(k) # add to display
             #self.parent.query_list.queries[k] = v # add to internal structure
         #except(AttributeError):
             # do not allow raccs if no record specified
             #messagebox.showwarning('Incompatible options',
                 #'Cannot choose to add redundant accessions without associated record')
+        self.parent.destroy()
 
     def onCancel(self):
         """Closes the window without actually adding queries"""

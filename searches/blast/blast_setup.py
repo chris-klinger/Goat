@@ -75,6 +75,7 @@ class BLAST():
             blast_query = '>' + str(self.query.description) + '\n' + str(self.query.sequence)
             blast.stdin.write(blast_query.encode('utf-8')) # note the encoding
             blast.communicate() # actually runs the search
+            print('BLASTing from stdin')
         except(Exception):
             print("Could not run BLAST for {} in {}".format(
                 self.query.identity, self.db))

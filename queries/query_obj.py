@@ -46,33 +46,33 @@ class Query(Persistent):
     def run_self_blast(self, record_db):
         """Runs a BLAST search against own record_db"""
         try:
-            if self.search_ran is not None: # search has been run already, overwrite?
+            if self.search_ran: # search has been run already, overwrite?
                 if messagebox.askyesno(
                     message = "Self-BLAST has already been run for {}, rerun?".format(self.identity),
                     icon='question', title='Override Search Results'):
                     pass # keep going
                 else:
                     raise(Exception) # update to more specific case later
-            else:
-                #print(self.record)
-                #record_obj = record_db[self.record]
-                record_obj = record_db.__get__item('Hsapiens')
-                target_db = None
-                for fobj in record_obj.files.values():
-                    if fobj.filetype == self.db_type: # must match, e.g. prot to prot
-                        target_db = fobj.filepath
-                if target_db is None:
-                    raise(Exception) # update to more specific case later
-                outpath = os.path.join(tmp_dir, self.identity, '_BLAST.txt')
-                if self.db_type == 'protein':
-                    blast_search = blast_setup.BLASTp(
-                        blast_path, self, target_db, outpath)
-                elif self.db_type == 'genomic':
-                    pass # need to do for all?
-                blast_search.run_from_stdin()
-                self.add_self_blast(outpath)
-                if self.racc_mode == 'auto':
-                    pass # call another function
+            #print(self.record)
+            record_obj = record_db[self.record]
+            #record_obj = record_db.__get__item('Hsapiens')
+            target_db = None
+            for fobj in record_obj.files.values():
+                if fobj.filetype == self.db_type: # must match, e.g. prot to prot
+                    target_db = fobj.filepath
+            if target_db is None:
+                raise(Exception) # update to more specific case later
+            outpath = os.path.join(tmp_dir, (str(self.identity) + '_BLAST.txt'))
+            if self.db_type == 'protein':
+                blast_search = blast_setup.BLASTp(
+                    blast_path, self, target_db, outpath)
+            elif self.db_type == 'genomic':
+                pass # need to do for all?
+            blast_search.run_from_stdin()
+            self.add_self_blast(outpath)
+            self.search_ran = True
+            if self.racc_mode == 'auto':
+                pass # call another function
         except: # Need to make more specific in future
             pass # do something
 
