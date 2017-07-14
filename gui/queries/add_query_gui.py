@@ -8,12 +8,14 @@ import _thread
 
 from queries import query_file
 from gui.util import gui_util, input_form
-from gui.searches import threaded_search
+#from gui.searches import threaded_search # return to this later
 
 class AddQueryFrame(Frame):
-    def __init__(self, record_db, parent=None):
+    def __init__(self, query_db, record_db, query_widget, parent=None):
         Frame.__init__(self, parent)
+        self.qdb = query_db
         self.rdb = record_db
+        self.qwidget = query_widget
         self.parent = parent
         self.layout = AddQueryGui(self)
         self.pack(expand=YES, fill=BOTH)
@@ -40,11 +42,17 @@ class AddQueryFrame(Frame):
     def onSubmit(self):
         """Submits the request; all added queries are added to the DB and
         committed, and the window is closed"""
-        pass
+        to_add = self.layout.added_list.lbox_frame.item_dict # dictionary
+        #print(to_add)
+        qwidget_lbox = self.qwidget.query.query_frame.query_notebook.qlist # super gross...
+        for k,v in to_add.items():
+            self.qdb.add_query(k, v) # add to database - by object now
+        qwidget_lbox.add_items(to_add) # add to display
+        self.parent.destroy()
 
     def onCancel(self):
         """Closes the window without actually adding queries"""
-        pass
+        self.parent.destroy()
 
 class AddQueryGui(ttk.Panedwindow):
     def __init__(self, parent=None):
@@ -63,9 +71,6 @@ class QueryListFrame(Frame):
         Frame.__init__(self, parent)
         self.lbox_frame = gui_util.ScrollBoxFrame(self, text)
         self.lbox_frame.listbox.bind('<Return>', self.onAdd)
-
-        self.queries = {} # internal dict for associating id with query objects
-
         self.toolbar = Frame(self)
         self.toolbar.pack(expand=YES, fill=X, side=BOTTOM)
         self.buttons = [('Add', self.onAdd, {'side':RIGHT})]
@@ -92,9 +97,6 @@ class AddedListFrame(Frame):
         Frame.__init__(self, parent)
         self.lbox_frame = gui_util.ScrollBoxFrame(self, text)
         self.lbox_frame.listbox.bind('<Return>', self.onRemove)
-
-        self.queries = {} # internal query id/obj dict
-
         self.toolbar = Frame(self)
         self.toolbar.pack(expand=YES, fill=X, side=BOTTOM)
         self.buttons = [('Remove', self.onRemove, {'side':RIGHT})]

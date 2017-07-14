@@ -23,6 +23,7 @@ class QueryFrame(Frame):
         self.parent.protocol("WM_DELETE_WINDOW", self.onClose)
 
         self.buttons = [('Add Queries', self.onAddQueries, {'side':LEFT}),
+                        ('Modify Query', self.onModify, {'side':LEFT}),
                         ('Save', self.onSave, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT}),
                         ('Done', self.onSubmit, {'side':RIGHT})]
@@ -41,7 +42,12 @@ class QueryFrame(Frame):
     def onAddQueries(self):
         """Pops up a new window to add queries either individually or by file"""
         window = Toplevel()
-        add_query_gui.AddQueryFrame(self.rdb, window)
+        add_query_gui.AddQueryFrame(self.qdb, self.rdb, self, window)
+
+    def onModify(self):
+        """Checks whether a single query is selected in either window. Assuming
+        yes, pops up a new window to modify the selection"""
+        pass
 
     def onSave(self):
         """Signals to associated dbs to commit but not close"""
@@ -49,7 +55,7 @@ class QueryFrame(Frame):
 
     def onCancel(self):
         """Closes database connections but does not commit unsaved changes"""
-        pass
+        self.onClose()
 
     def onSubmit(self):
         """Commits and closes associated databases"""
@@ -58,17 +64,18 @@ class QueryFrame(Frame):
 class QueryGui(ttk.Panedwindow):
     def __init__(self, query_db, record_db, parent=None):
         ttk.Panedwindow.__init__(self, parent, orient=HORIZONTAL)
-        self.query_frame = QueryListFrame(query_db, self)
-        self.info_frame = QueryInfoFrame(record_db, self)
+        #self.info_frame = QueryInfoFrame(record_db, self)
+        self.info_frame = QueryInfo(self)
+        self.query_frame = QueryListFrame(query_db, self.info_frame, self)
         self.add(self.query_frame)
         self.add(self.info_frame)
         self.pack(expand=YES, fill=BOTH)
 
 class QueryListFrame(Frame):
-    def __init__(self, query_db, parent=None):
+    def __init__(self, query_db, info_widget, parent=None):
         Frame.__init__(self, parent)
         Label(self, text='Available Queries').pack(expand=YES, fill=X, side=TOP)
-        self.query_notebook = QueryNotebook(query_db, self)
+        self.query_notebook = QueryNotebook(query_db, info_widget, self)
         self.toolbar1 = Frame(self)
         self.toolbar1.pack(side=BOTTOM, expand=YES, fill=X)
         #self.toolbar2 = Frame(self)
@@ -100,10 +107,10 @@ class QueryListFrame(Frame):
         pass
 
 class QueryNotebook(ttk.Notebook):
-    def __init__(self, query_db, parent=None):
+    def __init__(self, query_db, info_widget, parent=None):
         ttk.Notebook.__init__(self, parent)
         self.qset = QuerySetViewer(query_db, self)
-        self.qlist = QueryScrollBox(query_db, self)
+        self.qlist = QueryScrollBox(query_db, info_widget, self)
         self.add(self.qset, text='Query Sets')
         self.add(self.qlist, text='All Queries')
         self.pack(expand=YES, fill=BOTH)
@@ -113,11 +120,69 @@ class QuerySetViewer(ttk.Treeview):
         ttk.Treeview.__init__(self, parent)
         self.pack(expand=YES, fill=BOTH)
 
-class QueryScrollBox(Listbox):
-    def __init__(self, query_db, parent=None):
-        Listbox.__init__(self, parent)
-        self.pack(expand=YES, fill=BOTH)
+class QueryScrollBox(gui_util.ScrollBoxFrame):#Listbox):
+    def __init__(self, query_db, other_widget, parent=None):
+        to_display = {}
+        for key in query_db.list_queries():
+            #print("fetching queries")
+            #print(key)
+            value = query_db[key]
+            to_display[key] = value
+        gui_util.ScrollBoxFrame.__init__(self, parent, items=to_display, # display any known queries to start
+                other_widget=other_widget) # owidg is info frame
+        self.qdb = query_db
 
+    def onSelect(self, *args):
+        """If only one item is selected, need to display info for query object
+        in info panel; if more than one item is selected, do nothing"""
+        selected = self.listbox.curselection()
+        if len(selected) > 1: # cannot display information for more than one
+            pass # do nothing
+        else:
+            to_display = []
+            item = self.listbox.get(selected) # selected is the index
+            qobj = self.qdb[item]
+            to_display.extend([qobj.identity, qobj.name, qobj.search_type,
+                qobj.db_type, qobj.record])
+            if len(qobj.redundant_accs) != 0: # i.e., there are some to display
+                for racc in qobj.redundant_accs:
+                    to_display.append(racc)
+        print(to_display)
+        self.other.update_info('query', *to_display)
+
+class QueryInfo(ttk.Label):
+    def __init__(self, parent=None):
+        ttk.Label.__init__(self, parent)
+        self.pack(expand=YES, fill=BOTH)
+        self.displayInfo = StringVar() # re-displays on update
+        self.config(textvariable = self.displayInfo,
+                width=-75, # set wide to accommodate raccs?
+                anchor='center',justify='center')
+        self.displayInfo.set('') # initialize to empty value
+
+    def update_info(self, display_type, *values):
+        """Takes a list of values and displays it depending on whether the item
+        clicked represents a single record or a single set. Calling function has
+        responsibility to disregard multiple selections for display"""
+        display_string = ''
+        if display_type == 'set':
+            display_string += ('Query Set Information: \n\n\n')
+            display_string += ('Number of queries: ' + values[0] + '\n')
+            # more information to display for sets here?
+        elif display_type == 'query':
+            display_string += ('Query Information: \n\n\n')
+            display_string += ('Query Identity: ' + values[0] + '\n')
+            display_string += ('Query Name: ' + values[1] + '\n')
+            display_string += ('Query Type: ' + values[2] + '\n') # e.g. Seq or HMM
+            display_string += ('Query Alphabet: ' + values[3] + '\n') # e.g. protein
+            display_string += ('Query Record: ' + values[4] + '\n')
+            if len(display_string) > 5: # redundant accessions present
+                display_string += ('Redundant Accessions: ' + '\n')
+                for value in values[5:]: # remaining args
+                    display_string += ('  ' + value + '\n')
+        self.displayInfo.set(display_string)
+
+# Redundant; will be removed once other aspects of display confirmed
 class QueryInfoFrame(Frame):
     def __init__(self, record_db, parent=None):
         Frame.__init__(self, parent)
