@@ -5,13 +5,14 @@ This module contains code for choosing redundant accessions to associated with a
 from tkinter import *
 from tkinter import ttk
 
-from gui.util import gui_util
+from gui.util import gui_util, input_form
 
 class AddRaccFrame(Frame):
-    def __init__(self, parent=None):
+    def __init__(self, query, record_db, parent=None):
         Frame.__init__(self, parent)
+        self.qobj = query
         self.parent = parent
-        self.layout = AddRaccGui(self)
+        self.layout = AddRaccGui(query, record_db, self)
         self.pack(expand=YES, fill=BOTH)
 
         self.toolbar = Frame(self)
@@ -27,19 +28,61 @@ class AddRaccFrame(Frame):
 
     def onCancel(self):
         """Closes the window without actually modifying raccs"""
-        pass
+        self.parent.destroy()
 
 class AddRaccGui(ttk.Panedwindow):
-    def __init__(self, parent=None):
+    def __init__(self, query, record_db, parent=None):
         ttk.Panedwindow.__init__(self, parent, orient=HORIZONTAL)
+        self.qobj = query
         self.pack(expand=YES, fill=BOTH)
+        self.query_info = QueryInfoFrame(record_db, self)
         self.blast_list = BlastListFrame(self, 'BLAST Hits')
         self.added_list = AddedListFrame(self, 'To be Added')
+        self.add(self.query_info)
         self.add(self.blast_list)
         self.add(self.added_list)
         # to avoid AttributeError, link widgets after each is assigned
         self.blast_list.link_widget(self.added_list)
-        self.added_list.link_widget(self.query_list)
+        self.added_list.link_widget(self.blast_list)
+        # set windows to current state of selected query
+        self.populate_windows()
+
+    def populate_windows(self):
+        """Retrieves information from the passed in query and changes the child
+        display windows to display this information"""
+        for row in self.query_info.name.row_list:
+            if row.label_text == 'Name':
+                row.entry.insert(0,self.qobj.name) # insert name
+        self.query_info.qtype.selected.set(self.qobj.search_type) # select search type
+        self.query_info.alphabet.selected.set(self.qobj.db_type) # select db type
+        self.query_info.record.selected.set(self.qobj.record) # select record
+        # Now populate both racc windows
+        all_accs = {}
+        raccs = {}
+        print(self.qobj.all_accs)
+        for title,evalue in self.qobj.all_accs: # list of lists
+            all_accs[str(title) + '    ' + str(evalue)] = (title,evalue)
+        if not len(self.qobj.redundant_accs) == 0: # there are hits
+            for title,evalue in self.qobj.raccs: # already a list of
+                raccs[str(title) + '    ' + str(evalue)] = (title,evalue)
+        self.blast_list.lbox_frame.add_items(all_accs)
+        self.added_list.lbox_frame.add_items(raccs)
+
+class QueryInfoFrame(Frame):
+    def __init__(self, record_db, parent=None):
+        Frame.__init__(self, parent)
+        self.rdb = record_db
+        self.pack(expand=YES, fill=BOTH)
+        Label(self, text='Query Information').pack(expand=YES, fill=X, side=TOP)
+        self.name = input_form.DefaultValueForm([('Name','')],self)
+        self.qtype = gui_util.RadioBoxFrame(self, [('Seq','seq'), ('HMM','hmm')],
+                labeltext='Query type')
+        self.alphabet = gui_util.RadioBoxFrame(self, [('Protein','protein'), ('Genomic','genomic')],
+                labeltext='Sequence alphabet')
+        self.record = gui_util.ComboBoxFrame(self, self.rdb.list_records(), # record db keys
+                labeltext='Associated record')
+        self.toolbar = Frame(self)
+        self.toolbar.pack(side=BOTTOM, expand=YES, fill=X)
 
 class BlastListFrame(Frame):
     def __init__(self, parent, text):
@@ -60,7 +103,12 @@ class BlastListFrame(Frame):
     def onAdd(self):
         """Adds selected entry(ies) to added widget"""
         selected = self.lbox_frame.listbox.curselection()
-        self.other.lbox_frame.add_items([self.listbox.get(index) for index in selected])
+        items = [self.lbox_frame.listbox.get(index) for index in selected]
+        to_add = {}
+        for item in items:
+            value = self.lbox_frame.item_dict[item]
+            to_add[item] = value
+        self.other.lbox_frame.add_items(to_add)
         self.lbox_frame.remove_items(*selected)
 
 class AddedListFrame(Frame):
@@ -82,7 +130,12 @@ class AddedListFrame(Frame):
     def onRemove(self):
         """Removes selected entry(ies) from own display"""
         selected = self.lbox_frame.listbox.curselection()
-        self.other.lbox_frame.add_items([self.listbox.get(index) for index in selected])
+        items = [self.lbox_frame.listbox.get(index) for index in selected]
+        to_remove = {}
+        for item in items:
+            value = self.lbox_frame.item_dict[item]
+            to_remove[item] = value
+        self.other.lbox_frame.add_items(to_remove)
         self.lbox_frame.remove_items(*selected)
 
 

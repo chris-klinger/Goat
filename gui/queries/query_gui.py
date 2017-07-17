@@ -3,10 +3,10 @@ This module contains code for dealing with viewing and updating queries
 """
 
 from tkinter import *
-from tkinter import ttk
+from tkinter import ttk, messagebox
 
-from gui.queries import add_query_gui
-from gui.util import input_form
+from gui.queries import add_query_gui, racc_gui
+#from gui.util import input_form
 from gui.util import gui_util
 
 class QueryFrame(Frame):
@@ -24,6 +24,7 @@ class QueryFrame(Frame):
 
         self.buttons = [('Add Queries', self.onAddQueries, {'side':LEFT}),
                         ('Modify Query', self.onModify, {'side':LEFT}),
+                        ('Remove', self.onRemove, {'side':LEFT}),
                         ('Save', self.onSave, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT}),
                         ('Done', self.onSubmit, {'side':RIGHT})]
@@ -47,7 +48,37 @@ class QueryFrame(Frame):
     def onModify(self):
         """Checks whether a single query is selected in either window. Assuming
         yes, pops up a new window to modify the selection"""
-        pass
+        notebook = self.query.query_frame.query_notebook
+        if notebook.select() == str(notebook.qset): # select() returns string, must convert
+            pass # tree is selected, do something
+        elif notebook.select() == str(notebook.qlist):
+            selected = notebook.qlist.listbox.curselection()
+            slen = len(selected)
+            if slen == 1: # exactly one item selected
+                item = notebook.qlist.listbox.get(selected) # query id
+                qobj = notebook.qlist.item_dict[item] # get actual object
+                window = Toplevel()
+                racc_gui.AddRaccFrame(qobj, self.rdb, window) # now modify
+
+    def onRemove(self):
+        """Checks whether one or more queries is selected in either window (i.e.
+        without any sets selected as well; Asks for confirmation about removal
+        and then removes those queries from the DB"""
+        notebook = self.query.query_frame.query_notebook
+        if notebook.select() == str(notebook.qset): # select() returns string, must convert
+            pass # tree is selected, do something
+        elif notebook.select() == str(notebook.qlist):
+            selected = notebook.qlist.listbox.curselection()
+            slen = len(selected)
+            if slen > 0:
+                items = [notebook.qlist.listbox.get(index) for index in selected]
+                if messagebox.askyesno(
+                    message = "Delete {} queries?".format(slen),
+                    icon='question', title='Remove query(ies)'):
+                    for query_id in items: # items holds a reference
+                        self.qdb.remove_query(query_id)
+                    notebook.qlist.remove_items(*selected) # remove from listbox
+                    # also need to remove from tree eventually!!!
 
     def onSave(self):
         """Signals to associated dbs to commit but not close"""
@@ -147,8 +178,8 @@ class QueryScrollBox(gui_util.ScrollBoxFrame):#Listbox):
             if len(qobj.redundant_accs) != 0: # i.e., there are some to display
                 for racc in qobj.redundant_accs:
                     to_display.append(racc)
-        print(to_display)
-        self.other.update_info('query', *to_display)
+            #print(to_display)
+            self.other.update_info('query', *to_display)
 
 class QueryInfo(ttk.Label):
     def __init__(self, parent=None):
@@ -182,33 +213,4 @@ class QueryInfo(ttk.Label):
                     display_string += ('  ' + value + '\n')
         self.displayInfo.set(display_string)
 
-# Redundant; will be removed once other aspects of display confirmed
-class QueryInfoFrame(Frame):
-    def __init__(self, record_db, parent=None):
-        Frame.__init__(self, parent)
-        self.rdb = record_db
-        self.pack(expand=YES, fill=BOTH)
-        Label(self, text='Query Information').pack(expand=YES, fill=X, side=TOP)
-        self.name = input_form.DefaultValueForm([('Name','')],self)
-        self.qtype = gui_util.RadioBoxFrame(self, [('Seq','seq'), ('HMM','hmm')],
-                labeltext='Query type')
-        self.alphabet = gui_util.RadioBoxFrame(self, [('Protein','protein'), ('Genomic','genomic')],
-                labeltext='Sequence alphabet')
-        self.record = gui_util.ComboBoxFrame(self, self.rdb.list_records(), # record db keys
-                labeltext='Associated record')
-        self.raccs = gui_util.ScrollBoxFrame(self, 'Redundant accessions', [])
-        self.toolbar = Frame(self)
-        self.toolbar.pack(side=BOTTOM, expand=YES, fill=X)
 
-        self.buttons = [('Remove', self.onRemove, {'side':RIGHT}),
-                        ('Modify Raccs', self.onModify, {'side':RIGHT})]
-        for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
-
-    def onRemove(self):
-        """Removes the query"""
-        pass
-
-    def onModify(self):
-        """Allows user to change redundant accessions"""
-        pass

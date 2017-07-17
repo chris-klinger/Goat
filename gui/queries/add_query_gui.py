@@ -122,8 +122,6 @@ class AddedListFrame(Frame):
 def update_listbox(listbox, item_dict):
     """Actually updates the listbox"""
     listbox.lbox_frame.add_items(item_dict) # add to display
-    for k,v in item_dict.items():
-        listbox.queries[k] = v # add to internal structure
 
 class AddFileFrame(Frame):
     def __init__(self, record_db, layout, parent=None):

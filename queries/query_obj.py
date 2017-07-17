@@ -9,6 +9,7 @@ from persistent import Persistent
 from Bio.Blast import NCBIXML
 
 #from databases import database_config
+from searches import search_util
 from searches.blast import blast_setup
 #from records import record_db
 #from databases import goat_db
@@ -78,7 +79,17 @@ class Query(Persistent):
 
     def add_self_blast(self, filepath):
         """Parses and adds the object to self attribute"""
-        self.all_accs = NCBIXML.read(open(filepath))
+        lines = []
+        seen = set()
+        blast_result = NCBIXML.read(open(filepath))
+        for hit in blast_result.descriptions:
+            #print(hit)
+            new_title = search_util.remove_blast_header(hit.title)
+            if not new_title in seen:
+                lines.append([new_title, hit.e])
+                seen.add(new_title)
+        #print(lines)
+        self.all_accs = lines
 
     def modify_raccs(self, *accs):
         """Sets attribute to new list"""
