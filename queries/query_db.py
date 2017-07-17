@@ -49,10 +49,8 @@ class QueryDB:
         """Removes a Record"""
         self.db.remove_entry(self.node, query_identity)
 
-    def update_query(self, query_identity, **kwargs):
-        """Updates a pre-existing Record with key,value pairs"""
-        query_obj = self.db.fetch_entry(self.node, query_identity)
-        for attr,value in kwargs.items():
-            setattr(query_obj, attr, value)
-
-
+    #def update_query(self, query_identity, **kwargs):
+        #"""Updates a pre-existing Record with key,value pairs"""
+        #query_obj = self.db.fetch_entry(self.node, query_identity)
+        #for attr,value in kwargs.items():
+            #setattr(query_obj, attr, value)

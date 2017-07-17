@@ -58,7 +58,7 @@ class QueryFrame(Frame):
                 item = notebook.qlist.listbox.get(selected) # query id
                 qobj = notebook.qlist.item_dict[item] # get actual object
                 window = Toplevel()
-                racc_gui.AddRaccFrame(qobj, self.rdb, window) # now modify
+                racc_gui.AddRaccFrame(qobj, self.qdb, self.rdb, window) # now modify
 
     def onRemove(self):
         """Checks whether one or more queries is selected in either window (i.e.

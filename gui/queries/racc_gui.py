@@ -8,9 +8,10 @@ from tkinter import ttk
 from gui.util import gui_util, input_form
 
 class AddRaccFrame(Frame):
-    def __init__(self, query, record_db, parent=None):
+    def __init__(self, query, query_db, record_db, parent=None):
         Frame.__init__(self, parent)
         self.qobj = query
+        self.qdb = query_db
         self.parent = parent
         self.layout = AddRaccGui(query, record_db, self)
         self.pack(expand=YES, fill=BOTH)
@@ -24,7 +25,19 @@ class AddRaccFrame(Frame):
 
     def onSubmit(self):
         """Submits and signals back to the other widget to do something"""
-        pass
+        new_attrs = {}
+        info = self.layout.query_info
+        for row in info.name.row_list: # can we get without for-loop?
+            if row.label_text == 'Name':
+                new_attrs['name'] = row.entry.get()
+        new_attrs['search_type'] = info.qtype.selected.get()
+        new_attrs['db_type'] = info.alphabet.selected.get()
+        new_attrs['record'] = info.record.selected.get()
+        for attr,value in new_attrs.items():
+            setattr(self.qobj,attr,value) # change values, or reset unchanged ones
+        self.qobj.modify_raccs(*self.layout.added_list.lbox_frame.item_list)
+        self.qdb.add_query(self.qobj.identity,self.qobj) # adding back same as modifying
+        self.parent.destroy()
 
     def onCancel(self):
         """Closes the window without actually modifying raccs"""
