@@ -57,14 +57,15 @@ class AddRaccGui(ttk.Panedwindow):
         self.query_info.alphabet.selected.set(self.qobj.db_type) # select db type
         self.query_info.record.selected.set(self.qobj.record) # select record
         # Now populate both racc windows
-        all_accs = {}
-        raccs = {}
-        print(self.qobj.all_accs)
+        all_accs = []
+        raccs = []
         for title,evalue in self.qobj.all_accs: # list of lists
-            all_accs[str(title) + '    ' + str(evalue)] = (title,evalue)
+            display_string = str(title) + '  ' + str(evalue)
+            all_accs.append([display_string,(title,evalue)])
         if not len(self.qobj.redundant_accs) == 0: # there are hits
             for title,evalue in self.qobj.raccs: # already a list of
-                raccs[str(title) + '    ' + str(evalue)] = (title,evalue)
+                display_string = str(title) + '  ' + str(evalue)
+                raccs.append([display_string,(title,evalue)])
         self.blast_list.lbox_frame.add_items(all_accs)
         self.added_list.lbox_frame.add_items(raccs)
 
@@ -104,11 +105,11 @@ class BlastListFrame(Frame):
         """Adds selected entry(ies) to added widget"""
         selected = self.lbox_frame.listbox.curselection()
         items = [self.lbox_frame.listbox.get(index) for index in selected]
-        to_add = {}
-        for item in items:
+        to_add = []
+        for item,index in zip(items,selected):
             value = self.lbox_frame.item_dict[item]
-            to_add[item] = value
-        self.other.lbox_frame.add_items(to_add)
+            to_add.append([item, value, index])
+        self.other.lbox_frame.add_items(to_add, 'index')
         self.lbox_frame.remove_items(*selected)
 
 class AddedListFrame(Frame):
@@ -131,11 +132,11 @@ class AddedListFrame(Frame):
         """Removes selected entry(ies) from own display"""
         selected = self.lbox_frame.listbox.curselection()
         items = [self.lbox_frame.listbox.get(index) for index in selected]
-        to_remove = {}
-        for item in items:
+        to_remove = []
+        for item,index in zip(items,selected):
             value = self.lbox_frame.item_dict[item]
-            to_remove[item] = value
-        self.other.lbox_frame.add_items(to_remove)
+            to_remove.append([item, value, index])
+        self.other.lbox_frame.add_items(to_remove, 'index')
         self.lbox_frame.remove_items(*selected)
 
 

@@ -153,12 +153,12 @@ class QuerySetViewer(ttk.Treeview):
 
 class QueryScrollBox(gui_util.ScrollBoxFrame):#Listbox):
     def __init__(self, query_db, other_widget, parent=None):
-        to_display = {}
+        to_display = []
         for key in query_db.list_queries():
             #print("fetching queries")
             #print(key)
             value = query_db[key]
-            to_display[key] = value
+            to_display.append([key,value])
         gui_util.ScrollBoxFrame.__init__(self, parent, items=to_display, # display any known queries to start
                 other_widget=other_widget) # owidg is info frame
         self.qdb = query_db

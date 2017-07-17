@@ -41,10 +41,10 @@ class FastaFile(QueryFile):
 
     def get_queries(self):
         """Adds parsed queries to returned data structure"""
-        query_dict = {}
+        queries = []
         for seq_record in self.parse():
             qobj = query_obj.Query(seq_record.id, seq_record.name, seq_record.description,
                 self.filepath, self.search_type, self.db_type, seq_record.seq,
                 record=self.record, racc_mode=self.self_blast)
-            query_dict[seq_record.id] = qobj
-        return query_dict
+            queries.append([seq_record.id, qobj])
+        return queries

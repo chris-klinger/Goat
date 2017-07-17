@@ -85,10 +85,10 @@ class QueryListFrame(Frame):
         """Adds selected entry(ies) to added widget"""
         selected = self.lbox_frame.listbox.curselection()
         items = [self.lbox_frame.listbox.get(index) for index in selected] # get associated items
-        to_add = {}
+        to_add = []
         for item in items: # step through items
             value = self.lbox_frame.item_dict[item] # fetch associated value
-            to_add[item] = value # build dictionary
+            to_add.append([item, value]) # build dictionary
         self.other.lbox_frame.add_items(to_add) # add as dictionary
         self.lbox_frame.remove_items(*selected) # also removes from internal list and dict
 
@@ -112,10 +112,10 @@ class AddedListFrame(Frame):
         Same as QueryListFrame onAdd function but in reverse"""
         selected = self.lbox_frame.listbox.curselection()
         items = [self.lbox_frame.listbox.get(index) for index in selected]
-        to_remove = {}
+        to_remove = []
         for item in items:
             value = self.lbox_frame.item_dict[item]
-            to_remove[item] = value
+            to_remove.append([item, value])
         self.other.lbox_frame.add_items(to_remove)
         self.lbox_frame.remove_items(*selected)
 

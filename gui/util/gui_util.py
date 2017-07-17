@@ -58,27 +58,31 @@ class ScrollBoxFrame(Frame):
         if items:
             self.add_items(items)
 
-    def add_items(self, item_dict):
+    def add_items(self, items, mode='end'):#item_dict):
         """General case addition of items"""
-        for item,value in item_dict.items():
-            self.listbox.insert('end', item)
-            self.item_list.append(item)
-            self.item_dict[item] = value
+        if mode == 'end': # add each item to end of list
+            for item,value in items: #item_dict.items():
+                self.listbox.insert('end', item)
+                self.item_list.append(item)
+                self.item_dict[item] = value
+        elif mode == 'index': # add back into old place in list
+            for item,value,index in items:
+                self.listbox.insert(index, item)
+                self.item_list.append(item)
+                self.item_dict[item] = value
 
     def remove_items(self, *indices):
         """General case removal of items - note that removal is by index so
         must account for different length of list upon each subsequent item
         removal otherwise remove incorrect item(s) and risk ValueError"""
-        first = True
+        num_removals = 0
         for index in indices:
-            if not first:
-                index -= 1 # account for removing previous items
-                # does this work in all cases?
+            index -= num_removals # account for removing previous items
             item = self.listbox.get(index)
             self.listbox.delete(index)
             self.item_list.remove(item)
             del self.item_dict[item]
-            first = False # after first time through loop
+            num_removals += 1
 
     def onSelect(self, *args):
         pass # implement in other subclasses?

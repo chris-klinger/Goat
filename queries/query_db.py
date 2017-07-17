@@ -36,11 +36,14 @@ class QueryDB:
             if entry != '_Sets':
                 yield entry
 
-    def add_query(self, query_identity, **kwargs):
-        """Creates and populates a new Record"""
-        new_query = search_query.Query(query_identity)
-        self.db.put_entry(self.node, query_identity, new_query)
-        self.update_query(query_identity, **kwargs)
+    #def add_query(self, query_identity, **kwargs):
+        #"""Creates and populates a new Record"""
+        #new_query = search_query.Query(query_identity)
+        #self.db.put_entry(self.node, query_identity, new_query)
+        #self.update_query(query_identity, **kwargs)
+    def add_query(self, qidentity, query_obj):
+        """Adds an object to the db"""
+        self.db.put_entry(self.node, qidentity, query_obj)
 
     def remove_query(self, query_identity):
         """Removes a Record"""
