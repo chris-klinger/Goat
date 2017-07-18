@@ -128,22 +128,26 @@ class QueryListFrame(Frame):
     def onAddQSet(self):
         """Calls the QuerySetFrame with no QuerySet in order to allow addition
         of a new set"""
+        notebook = self.query_notebook
         window = Toplevel()
-        set_gui.QuerySetFrame(self.qdb, window)
+        set_gui.QuerySetFrame(self.qdb, notebook.qset, window)
 
     def onMdQSet(self):
         """Checks to see whether a query set has been selected in the notebook
         window, and then, if so, calls QuerySetFrame with the QuerySet as an
         argument to prompt changing that set"""
+        notebook = self.query_notebook
         if notebook.select() == str(notebook.qlist):
             pass # qlist is selected, no query sets displayed anyway
         if notebook.select() == str(notebook.qset):
-            item = notebook.qset.focus() # currently selected item
-            if item_type == 'query':
+            item_name = notebook.qset.focus() # currently selected item
+            item = notebook.qset.item(item_name)
+            if item['tags'][0] == 'query': # first and only item in list of tags
                 pass # Should we pop up warning instead?
             else: # only two options
+                qset = item['text']
                 window = Toplevel()
-                set_gui.QuerySetFrame(self.qdb, window, item)
+                set_gui.QuerySetFrame(self.qdb, notebook.qset, window, qset)
 
     def onRmQSet(self):
         """Checks to see whether a query set has been selected in the notebook
@@ -176,33 +180,37 @@ class QuerySetViewer(ttk.Treeview):
 
     def update(self):
         """Update the view upon addition/removal of sets or queries"""
-        pass
+        #print("updating")
+        for item in self.get_children(): # list of items under root node?
+            self.delete(item)
+        self.make_tree() # repopulate with new values
 
     def make_tree(self):
         """Builds a treeview display of sets/queries"""
+        #print("building tree")
         for key in self.qdb.sets.list_query_sets(): # should list all keys
             self.insert('','end',key,text=key,tags=('set'))
             for qid in self.qdb.sets.qdict[key]: # iterate over list of qids
                 self.insert(key,'end',qid,text=qid,tags=('query'))
 
-    def itemClicked(self):
+    def itemClicked(self, item_type):
         """Builds a list of information for display by QueryInfo panel for
         either sets or queries; delegates formatting/display to panel"""
         item = self.focus()
         if item_type == 'set':
             slist = []
-            slist.extend([item, len(self.qdb.sets.qdict[item])]) # name, number of queries
+            slist.extend([item, str(len(self.qdb.sets.qdict[item]))]) # name, number of queries
             self.info.update_info('set', *slist)
         elif item_type == 'query': # basically same as QueryScrollBox 'onSelect'
             qlist = []
             qobj = self.qdb[item]
-            to_display.extend([qobj.identity, qobj.name, qobj.search_type,
+            qlist.extend([qobj.identity, qobj.name, qobj.search_type,
                 qobj.db_type, qobj.record])
             if len(qobj.redundant_accs) != 0: # i.e., there are some to display
                 for racc in qobj.redundant_accs:
-                    to_display.append(racc)
+                    qlist.append(racc)
             #print(to_display)
-            self.other.update_info('query', *qlist)
+            self.info.update_info('query', *qlist)
 
 class QueryScrollBox(gui_util.ScrollBoxFrame):#Listbox):
     def __init__(self, query_db, other_widget, parent=None):

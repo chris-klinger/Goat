@@ -5,20 +5,21 @@ the set name and the queries to include in the set
 """
 
 from tkinter import *
-from tkinter import ttk
+from tkinter import ttk, messagebox
 
 from gui.util import gui_util, input_form
 
 class QuerySetFrame(Frame):
-    def __init__(self, query_db, parent=None, qset=None):
+    def __init__(self, query_db, owidget, parent=None, qset=None):
         Frame.__init__(self, parent)
         self.qdb = query_db
+        self.other = owidget # Treeview widget for updates!
         self.qset = qset # This should be a dictionary key!!!
         self.parent = parent
         Label(self, text='Query Set Information').pack(expand=YES, fill=X, side=TOP)
         if self.qset: # not None
             self.name = input_form.DefaultValueForm(
-                    [('Set Name',str(self.name))],self) # insert set name already
+                    [('Set Name',str(self.qset))],self) # insert set name already
         else:
             self.name = input_form.DefaultValueForm(
                     [('Set Name','')],self) # blank value to fill in
@@ -35,11 +36,33 @@ class QuerySetFrame(Frame):
     def onSubmit(self):
         """Adds or modifies a query set; signals back to tree widget to
         redraw itself"""
-        pass
+        for row in self.name.row_list:
+            if row.label_text == 'Set Name':
+                name = row.entry.get() # get name for query set
+                if name == '_ALL':
+                    pass # prevent anything else and throw an error message
+        to_add = self.set_gui.added_list.lbox_frame.item_list # queries in set list
+        try:
+            if name in self.qdb.sets.list_query_sets():
+                if name == self.qset: # replacing old set, so fine
+                    pass
+                else:
+                    messagebox.showwarning('Add Set Warning',
+                        'A different set labelled {} exists, please choose another name'.format(name))
+                    raise(KeyError) # skip to except clause
+            if self.qset: # modifying an old set
+                self.qdb.sets.remove_query_set(self.qset) # delete old set
+            # now should be safe to add, regardless of key
+            self.qdb.sets.add_query_set(name, *to_add)
+            # finally, signal back to tree to re-draw itself
+            self.other.update()
+            self.parent.destroy()
+        except(KeyError):
+            pass # do not add
 
     def onCancel(self):
         """Closes without adding/modifying any sets"""
-        pass
+        self.parent.destroy()
 
 class SetGui(ttk.Panedwindow):
     def __init__(self, query_db, qset, parent=None):
@@ -64,9 +87,11 @@ class SetGui(ttk.Panedwindow):
             self.set_list.lbox_frame.add_items(
                     [(item,'') for item in self.qdb.list_queries()]) # add all queries
         else:
+            print(self.qset)
             self.set_list.lbox_frame.add_items([(item,'') for item in self.qdb.list_queries()
                 if not item in self.qdb.sets.qdict[self.qset]]) # add if not already present
-            self.added_list.lbox_frame.add_items([self.qdb.sets.qdict[self.qset]])
+            self.added_list.lbox_frame.add_items(
+                    [(item,'') for item in self.qdb.sets.qdict[self.qset]])
 
 class SetListFrame(Frame):
     def __init__(self, parent, text):
