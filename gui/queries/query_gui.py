@@ -5,7 +5,7 @@ This module contains code for dealing with viewing and updating queries
 from tkinter import *
 from tkinter import ttk, messagebox
 
-from gui.queries import add_query_gui, racc_gui
+from gui.queries import add_query_gui, racc_gui, set_gui
 #from gui.util import input_form
 from gui.util import gui_util
 
@@ -104,6 +104,7 @@ class QueryGui(ttk.Panedwindow):
 
 class QueryListFrame(Frame):
     def __init__(self, query_db, info_widget, parent=None):
+        self.qdb = query_db
         Frame.__init__(self, parent)
         Label(self, text='Available Queries').pack(expand=YES, fill=X, side=TOP)
         self.query_notebook = QueryNotebook(query_db, info_widget, self)
@@ -113,10 +114,9 @@ class QueryListFrame(Frame):
         #self.toolbar2.pack(side=BOTTOM, expand=YES, fill=X)
         self.pack(expand=YES, fill=BOTH)
 
-        self.buttons1 = [('Add to Set', self.onAddToSet, {'side':RIGHT}),
-                        ('Remove from Set', self.onRmFromSet, {'side':RIGHT}),
-                        ('Add Query Set', self.onAddQSet, {'side':RIGHT}),
-                        ('Remove Query Set', self.onRmQSet, {'side':RIGHT})]
+        self.buttons1 = [('Add Query Set', self.onAddQSet, {'side':LEFT}),
+                        ('Modify Query Set', self.onMdQSet, {'side':LEFT}),
+                        ('Remove Query Set', self.onRmQSet, {'side':LEFT})]
         for (label, action, where) in self.buttons1:
             Button(self.toolbar1, text=label, command=action).pack(where)
 
@@ -126,30 +126,83 @@ class QueryListFrame(Frame):
         #    Button(self.toolbar2, text=label, command=action).pack(where)
 
     def onAddQSet(self):
-        pass
+        """Calls the QuerySetFrame with no QuerySet in order to allow addition
+        of a new set"""
+        window = Toplevel()
+        set_gui.QuerySetFrame(self.qdb, window)
+
+    def onMdQSet(self):
+        """Checks to see whether a query set has been selected in the notebook
+        window, and then, if so, calls QuerySetFrame with the QuerySet as an
+        argument to prompt changing that set"""
+        if notebook.select() == str(notebook.qlist):
+            pass # qlist is selected, no query sets displayed anyway
+        if notebook.select() == str(notebook.qset):
+            item = notebook.qset.focus() # currently selected item
+            if item_type == 'query':
+                pass # Should we pop up warning instead?
+            else: # only two options
+                window = Toplevel()
+                set_gui.QuerySetFrame(self.qdb, window, item)
 
     def onRmQSet(self):
-        pass
-
-    def onAddToSet(self):
-        pass
-
-    def onRmFromSet(self):
+        """Checks to see whether a query set has been selected in the notebook
+        window, and then, if so, asks for confirmation to delete the selected
+        query. If so, the query set is removed and the tree view is updated"""
         pass
 
 class QueryNotebook(ttk.Notebook):
     def __init__(self, query_db, info_widget, parent=None):
         ttk.Notebook.__init__(self, parent)
-        self.qset = QuerySetViewer(query_db, self)
+        self.qset = QuerySetViewer(query_db, info_widget, self)
         self.qlist = QueryScrollBox(query_db, info_widget, self)
         self.add(self.qset, text='Query Sets')
         self.add(self.qlist, text='All Queries')
         self.pack(expand=YES, fill=BOTH)
 
 class QuerySetViewer(ttk.Treeview):
-    def __init__(self, query_db, parent=None):
+    def __init__(self, query_db, other_widget, parent=None):
         ttk.Treeview.__init__(self, parent)
         self.pack(expand=YES, fill=BOTH)
+        self.qdb = query_db
+        self.info = other_widget # for displaying clicked item information
+        self.config(selectmode = 'browse')
+        self.tag_bind('set', '<Double-1>', # single click does not register properly
+                callback=lambda x:self.itemClicked('set'))
+        self.tag_bind('query', '<Double-1>',
+                callback=lambda x:self.itemClicked('query'))
+        self.make_tree()
+        self.pack(side=LEFT,expand=YES,fill=BOTH)
+
+    def update(self):
+        """Update the view upon addition/removal of sets or queries"""
+        pass
+
+    def make_tree(self):
+        """Builds a treeview display of sets/queries"""
+        for key in self.qdb.sets.list_query_sets(): # should list all keys
+            self.insert('','end',key,text=key,tags=('set'))
+            for qid in self.qdb.sets.qdict[key]: # iterate over list of qids
+                self.insert(key,'end',qid,text=qid,tags=('query'))
+
+    def itemClicked(self):
+        """Builds a list of information for display by QueryInfo panel for
+        either sets or queries; delegates formatting/display to panel"""
+        item = self.focus()
+        if item_type == 'set':
+            slist = []
+            slist.extend([item, len(self.qdb.sets.qdict[item])]) # name, number of queries
+            self.info.update_info('set', *slist)
+        elif item_type == 'query': # basically same as QueryScrollBox 'onSelect'
+            qlist = []
+            qobj = self.qdb[item]
+            to_display.extend([qobj.identity, qobj.name, qobj.search_type,
+                qobj.db_type, qobj.record])
+            if len(qobj.redundant_accs) != 0: # i.e., there are some to display
+                for racc in qobj.redundant_accs:
+                    to_display.append(racc)
+            #print(to_display)
+            self.other.update_info('query', *qlist)
 
 class QueryScrollBox(gui_util.ScrollBoxFrame):#Listbox):
     def __init__(self, query_db, other_widget, parent=None):
@@ -198,7 +251,8 @@ class QueryInfo(ttk.Label):
         display_string = ''
         if display_type == 'set':
             display_string += ('Query Set Information: \n\n\n')
-            display_string += ('Number of queries: ' + values[0] + '\n')
+            display_string += ('Query Set Name: ' + values[0] + '\n')
+            display_string += ('Number of queries: ' + values[1] + '\n')
             # more information to display for sets here?
         elif display_type == 'query':
             display_string += ('Query Information: \n\n\n')

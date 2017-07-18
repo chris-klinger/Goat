@@ -21,6 +21,13 @@ class QuerySet(Persistent):
             self._all = self.qdict['_ALL']
 
 
+    def list_query_sets(self):
+        """Convenience function"""
+        for entry in self.qdict.keys():
+            if entry != '_ALL':
+                yield entry
+        #return list(self.qdict.keys())
+
     def add_query_set(self, set_name, *qids):
         """Adds a set along with any associated queries"""
         self.qdict[set_name] = [] # initialize to an empty list

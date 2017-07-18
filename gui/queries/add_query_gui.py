@@ -168,7 +168,7 @@ class AddFileFrame(Frame):
             #pframe = threaded_search.ProgressFrame(queries, self.rdb, update_listbox,
                     #(self._owidget.query_list, queries), self)
             #_thread.start_new_thread(pframe.run,())
-            for v in queries.values():
+            for v in queries:
                 v.run_self_blast(self.rdb)
             update_listbox(self._owidget.query_list, queries)
         else: # no need to run searches

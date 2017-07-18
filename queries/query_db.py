@@ -41,13 +41,17 @@ class QueryDB:
         #new_query = search_query.Query(query_identity)
         #self.db.put_entry(self.node, query_identity, new_query)
         #self.update_query(query_identity, **kwargs)
-    def add_query(self, qidentity, query_obj):
+    def add_query(self, query_identity, query_obj):
         """Adds an object to the db"""
-        self.db.put_entry(self.node, qidentity, query_obj)
+        self.db.put_entry(self.node, query_identity, query_obj)
+        self.sets.add_query('_ALL',query_identity) # add to set of all queries
 
     def remove_query(self, query_identity):
         """Removes a Record"""
         self.db.remove_entry(self.node, query_identity)
+        for qset in self.sets.list_query_sets(): # remove from all sets
+            if query_identity in qset:
+                self.sets.remove_query(qset, query_identity)
 
     #def update_query(self, query_identity, **kwargs):
         #"""Updates a pre-existing Record with key,value pairs"""
