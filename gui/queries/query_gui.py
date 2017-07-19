@@ -193,7 +193,6 @@ class QueryNotebook(ttk.Notebook):
 class QuerySetViewer(ttk.Treeview):
     def __init__(self, query_db, other_widget, parent=None):
         ttk.Treeview.__init__(self, parent)
-        self.pack(expand=YES, fill=BOTH)
         self.qdb = query_db
         self.info = other_widget # for displaying clicked item information
         self.config(selectmode = 'browse')
@@ -202,7 +201,7 @@ class QuerySetViewer(ttk.Treeview):
         self.tag_bind('query', '<Double-1>',
                 callback=lambda x:self.itemClicked('query'))
         self.make_tree()
-        self.pack(side=LEFT,expand=YES,fill=BOTH)
+        self.pack(expand=YES, fill=BOTH)
 
     def update(self):
         """Update the view upon addition/removal of sets or queries"""

@@ -58,8 +58,9 @@ def search_popup():
     #db = database_config.get_record_db()
     goat_db = database_config.get_goat_db()
     query_db = database_config.get_query_db(goat_db)
+    record_db = database_config.get_record_db(goat_db)
     search_obj = search_setup.Search()
-    search_gui.SearchFrame(query_db,search_obj,window)
+    search_gui.SearchFrame(query_db,record_db,search_obj,window)
 
 def results_popup():
     #window = Toplevel()
