@@ -126,7 +126,7 @@ class QueryWindow(Frame):
                 item = notebook.qset.item(item_name)
                 if item['tags'][0] == 'query': # simple case
                     if not item_name in seen:
-                        to_add.append([item_name,''])
+                        to_add.append([item_name,'']) # '' because need a value as well
                         seen.add(item_name)
                 else: # set
                     set_list = self.qdb.sets.qdict[item_name]
@@ -137,8 +137,8 @@ class QueryWindow(Frame):
         elif notebook.select() == str(notebook.qlist):
             selected = notebook.qlist.listbox.curselection()
             if len(selected) > 0:
-                # no chance for duplicate entries, so just add; each item is already a tuple
-                to_add.extend([notebook.qlist.listbox.get(index) for index in selected])
+                # no chance for duplicate entries, '' is the 'value'
+                to_add.extend([(notebook.qlist.listbox.get(index),'') for index in selected])
         # now try adding
         if len(to_add) > 0:
             self.owidget.querybox.add_items(to_add)
@@ -190,15 +190,48 @@ class DatabaseSummaryFrame(Frame):
         self.dbbox = gui_util.ScrollBoxFrame(self, text, items)
         self.toolbar = Frame(self)
         self.toolbar.pack(side=BOTTOM, fill=X)
-        self.buttons=[('Remove', self.onRemove, {'side':RIGHT}),
-                    ('Add', self.onAdd, {'side':RIGHT})]
+        self.buttons=[('Remove Database(s)', self.onRemove, {'side':RIGHT}),
+                    ('Add Database(s)', self.onAdd, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
             Button(self.toolbar, text=label, command=action).pack(where)
 
     def onRemove(self):
-        pass
+        """Removes select entry(ies)"""
+        selected = self.dbbox.listbox.curselection()
+        self.dbbox.remove_items(*selected)
 
     def onAdd(self):
-        pass
+        """Adds databases"""
+        window = Toplevel()
+        DatabaseWindow(self.rdb, self, window)
 
+class DatabaseWindow(Frame):
+    def __init__(self, record_db, other_widget, parent=None):
+        Frame.__init__(self, parent)
+        self.owidget = other_widget # ref to send back updates
+        self.parent = parent
+        Label(self, text='Available Databases').pack(expand=YES, fill=X, side=TOP)
+        self.rlist = gui_util.ScrollBoxFrame(self,
+                items=[(key,'') for key in record_db.list_records()])
+        self.toolbar = Frame(self)
+        self.toolbar.pack(side=BOTTOM, expand=YES, fill=X)
+        self.pack(expand=YES, fill=BOTH)
 
+        self.buttons = [('Submit', self.onSubmit, {'side':RIGHT}),
+                        ('Cancel', self.onCancel, {'side':RIGHT})]
+        for (label, action, where) in self.buttons:
+            Button(self.toolbar, text=label, command=action).pack(where)
+
+    def onSubmit(self):
+        """Adds selected records to the database list in parent widget"""
+        to_add = []
+        selected = self.rlist.listbox.curselection()
+        if len(selected) > 0:
+            # '' because requires a value as well
+            to_add.extend([(self.rlist.listbox.get(index),'') for index in selected])
+            self.owidget.dbbox.add_items(to_add)
+        self.parent.destroy()
+
+    def onCancel(self):
+        """Quits without adding any records"""
+        self.parent.destroy()
