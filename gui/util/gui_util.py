@@ -62,14 +62,16 @@ class ScrollBoxFrame(Frame):
         """General case addition of items"""
         if mode == 'end': # add each item to end of list
             for item,value in items: #item_dict.items():
-                self.listbox.insert('end', item)
-                self.item_list.append(item)
-                self.item_dict[item] = value
+                if not item in self.item_list: # do not add duplicate items
+                    self.listbox.insert('end', item)
+                    self.item_list.append(item)
+                    self.item_dict[item] = value
         elif mode == 'index': # add back into old place in list
             for item,value,index in items:
-                self.listbox.insert(index, item)
-                self.item_list.insert(index,item) # keep inherent index in list
-                self.item_dict[item] = value
+                if not item in self.item_list:
+                    self.listbox.insert(index, item)
+                    self.item_list.insert(index,item) # keep inherent index in list
+                    self.item_dict[item] = value
 
     def remove_items(self, *indices):
         """General case removal of items - note that removal is by index so
