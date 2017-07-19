@@ -68,7 +68,7 @@ class ScrollBoxFrame(Frame):
         elif mode == 'index': # add back into old place in list
             for item,value,index in items:
                 self.listbox.insert(index, item)
-                self.item_list.append(item)
+                self.item_list.insert(index,item) # keep inherent index in list
                 self.item_dict[item] = value
 
     def remove_items(self, *indices):

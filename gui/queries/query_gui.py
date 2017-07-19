@@ -22,9 +22,9 @@ class QueryFrame(Frame):
         self.parent = parent
         self.parent.protocol("WM_DELETE_WINDOW", self.onClose)
 
-        self.buttons = [('Add Queries', self.onAddQueries, {'side':LEFT}),
+        self.buttons = [('Add Query(ies)', self.onAddQueries, {'side':LEFT}),
                         ('Modify Query', self.onModify, {'side':LEFT}),
-                        ('Remove', self.onRemove, {'side':LEFT}),
+                        ('Remove Query(ies)', self.onRemove, {'side':LEFT}),
                         ('Save', self.onSave, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT}),
                         ('Done', self.onSubmit, {'side':RIGHT})]
@@ -50,7 +50,15 @@ class QueryFrame(Frame):
         yes, pops up a new window to modify the selection"""
         notebook = self.query.query_frame.query_notebook
         if notebook.select() == str(notebook.qset): # select() returns string, must convert
-            pass # tree is selected, do something
+            item_name = notebook.qset.focus() # these two lines could be wrapped up in a fxn eventually?
+            item = notebook.qset.item(item_name)
+            if item['tags'][0] == 'set':
+                pass # warn user?
+            else: # only two options
+                qid = item['text']
+                qobj = self.qdb[qid]
+                window = Toplevel()
+                racc_gui.AddRaccFrame(qobj, self.qdb, self.rdb, window)
         elif notebook.select() == str(notebook.qlist):
             selected = notebook.qlist.listbox.curselection()
             slen = len(selected)
@@ -65,24 +73,38 @@ class QueryFrame(Frame):
         without any sets selected as well; Asks for confirmation about removal
         and then removes those queries from the DB"""
         notebook = self.query.query_frame.query_notebook
+        to_remove = []
         if notebook.select() == str(notebook.qset): # select() returns string, must convert
-            pass # tree is selected, do something
+            item_name = notebook.qset.focus()
+            if not item_name == '{}': # something is selected
+                item = notebook.qset.item(item_name)
+                if item['tags'][0] == 'set':
+                    pass # do something?
+                else:
+                    qid = item['text']
+                    to_remove.append(qid)
         elif notebook.select() == str(notebook.qlist):
             selected = notebook.qlist.listbox.curselection()
-            slen = len(selected)
-            if slen > 0:
-                items = [notebook.qlist.listbox.get(index) for index in selected]
-                if messagebox.askyesno(
-                    message = "Delete {} queries?".format(slen),
-                    icon='question', title='Remove query(ies)'):
-                    for query_id in items: # items holds a reference
-                        self.qdb.remove_query(query_id)
-                    notebook.qlist.remove_items(*selected) # remove from listbox
-                    # also need to remove from tree eventually!!!
+            if len(selected) > 0:
+                to_remove.extend([notebook.qlist.listbox.get(index) for index in selected])
+        rlen = len(to_remove)
+        if rlen > 0: # there are queries to delete
+            if messagebox.askyesno(
+                message = "Delete {} query(ies)?".format(rlen),
+                icon='question', title='Remove query(ies)'):
+                for query_id in to_remove: # items holds a reference
+                    self.qdb.remove_query(query_id)
+                    self.qdb.sets.remove_query_from_all(query_id) # remove from set db
+                    # for listbox, unfortunately removal is always by index!!!
+                    # if query is selected from treeview widget, no index is known...
+                    index = notebook.qlist.item_list.index(query_id) # get index from internal list
+                    notebook.qlist.remove_items(index) # remove from listbox and internal data structures
+                notebook.qset.update() # re-draw tree
 
     def onSave(self):
         """Signals to associated dbs to commit but not close"""
-        pass
+        self.qdb.commit()
+        self.rdb.commit()
 
     def onCancel(self):
         """Closes database connections but does not commit unsaved changes"""
@@ -90,7 +112,8 @@ class QueryFrame(Frame):
 
     def onSubmit(self):
         """Commits and closes associated databases"""
-        pass
+        self.onSave()
+        self.onClose()
 
 class QueryGui(ttk.Panedwindow):
     def __init__(self, query_db, record_db, parent=None):
@@ -110,8 +133,6 @@ class QueryListFrame(Frame):
         self.query_notebook = QueryNotebook(query_db, info_widget, self)
         self.toolbar1 = Frame(self)
         self.toolbar1.pack(side=BOTTOM, expand=YES, fill=X)
-        #self.toolbar2 = Frame(self)
-        #self.toolbar2.pack(side=BOTTOM, expand=YES, fill=X)
         self.pack(expand=YES, fill=BOTH)
 
         self.buttons1 = [('Add Query Set', self.onAddQSet, {'side':LEFT}),
@@ -119,11 +140,6 @@ class QueryListFrame(Frame):
                         ('Remove Query Set', self.onRmQSet, {'side':LEFT})]
         for (label, action, where) in self.buttons1:
             Button(self.toolbar1, text=label, command=action).pack(where)
-
-        #self.buttons2 = [('Add Query Set', self.onAddQSet, {'side':RIGHT}),
-        #                ('Remove Query Set', self.onRmQSet, {'side':RIGHT})]
-        #for (label, action, where) in self.buttons2:
-        #    Button(self.toolbar2, text=label, command=action).pack(where)
 
     def onAddQSet(self):
         """Calls the QuerySetFrame with no QuerySet in order to allow addition
@@ -137,8 +153,6 @@ class QueryListFrame(Frame):
         window, and then, if so, calls QuerySetFrame with the QuerySet as an
         argument to prompt changing that set"""
         notebook = self.query_notebook
-        if notebook.select() == str(notebook.qlist):
-            pass # qlist is selected, no query sets displayed anyway
         if notebook.select() == str(notebook.qset):
             item_name = notebook.qset.focus() # currently selected item
             item = notebook.qset.item(item_name)
@@ -153,7 +167,19 @@ class QueryListFrame(Frame):
         """Checks to see whether a query set has been selected in the notebook
         window, and then, if so, asks for confirmation to delete the selected
         query. If so, the query set is removed and the tree view is updated"""
-        pass
+        notebook = self.query_notebook
+        if notebook.select() == str(notebook.qset):
+            item_name = notebook.qset.focus()
+            item = notebook.qset.item(item_name)
+            if item['tags'][0] == 'query': # first and only item in list of tags
+                pass # Should we pop up warning instead?
+            else: # only two options
+                qset = item['text']
+                if messagebox.askyesno(
+                    message = "Delete query set {}?".format(qset),
+                    icon='question', title='Remove set(s)'):
+                    self.qdb.sets.remove_query_set(qset)
+                    notebook.qset.update() # re-draw tree
 
 class QueryNotebook(ttk.Notebook):
     def __init__(self, query_db, info_widget, parent=None):
@@ -274,5 +300,4 @@ class QueryInfo(ttk.Label):
                 for value in values[5:]: # remaining args
                     display_string += ('  ' + value + '\n')
         self.displayInfo.set(display_string)
-
 

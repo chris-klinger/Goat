@@ -52,3 +52,9 @@ class QuerySet(Persistent):
         slist = self.qdict[set_name]
         slist.remove(qid)
         self._p_changed = 1
+
+    def remove_query_from_all(self, qid):
+        """Removes a query from all sets"""
+        for set_name in self.qdict.keys():
+            if qid in self.qdict[set_name]:
+                self.remove_query(set_name,qid)
