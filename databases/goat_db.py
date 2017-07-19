@@ -39,13 +39,15 @@ class GoatDB:
         transaction.commit()
 
     def _close(self):
-        self._commit() # one final commit to be sure
+        #self._commit() # one final commit to be sure
         self.storage.close()
 
     def list_entries(self, node):
         return self.root[node].keys() # note: iterator!
 
     def fetch_entry(self, node, key):
+        #print(node)
+        #print(key)
         return self.root[node][key]
 
     def put_entry(self, node, key, entry):
