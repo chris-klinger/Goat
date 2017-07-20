@@ -19,6 +19,7 @@ class RecordDB:
 
     def __getitem__(self, key):
         """Delegates to connection"""
+        print(key)
         return self.db.fetch_entry(self.node, key)
 
     def __setitem__(self, key, value):

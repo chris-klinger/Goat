@@ -2,7 +2,7 @@
 Module description
 """
 
-from searches import search_query
+#from searches import search_query
 from queries import query_set
 
 class QueryDB:

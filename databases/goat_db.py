@@ -31,6 +31,7 @@ class GoatDB:
             # create data structures
             self.root['records'] = OOBTree()
             self.root['queries'] = OOBTree()
+            self.root['searches'] = OOBTree()
             self.root['results'] = OOBTree()
             self.root['summaries'] = OOBTree()
 

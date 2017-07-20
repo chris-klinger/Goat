@@ -1,17 +1,12 @@
 """
-This module contains code for storing search entries.
-
-Eventually, all databases will be combined as subclasses of a generic DB
-superclass, and differences will be worked out using inheritance
+Module description
 """
 
-#from searches import search_setup
-
-class SearchDB:
+class ResultsDB:
     def __init__(self, db_obj):
         """Connects to database file on instantiation"""
         self.db = db_obj
-        self.node = 'searches'
+        self.node = 'results'
 
     def commit(self):
         self.db._commit()
