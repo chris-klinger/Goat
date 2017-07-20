@@ -31,8 +31,8 @@ class Query(Persistent):
         self.name = name
         self.description = description
         self.location = location
-        self.search_type = search_type
-        self.db_type = db_type
+        self.search_type = search_type # e.g. seq, hmm, etc.
+        self.db_type = db_type # e.g. protein, genomic
         self.sequence = sequence
         self.record = record
         # Next entries for dealing with redundant accessions
@@ -42,7 +42,7 @@ class Query(Persistent):
         self.redundant_accs = [] # list of chosen raccs; initially empty
         # Next entries for reverse searches
         self.target_db = target_db # used for reverse searches
-        self.original_query = original_query
+        self.original_query = original_query # usually None, if present = qid
 
     def run_self_blast(self, record_db):
         """Runs a BLAST search against own record_db"""

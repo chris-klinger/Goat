@@ -6,16 +6,19 @@ import os
 from tkinter import *
 from tkinter import ttk, filedialog, messagebox
 
+from searches import search_obj, search_runner
 from gui.util import input_form, gui_util
 #from gui.database import database_gui
 
 class SearchFrame(Frame):
-    def __init__(self, query_db, record_db, search_obj, parent=None):
+    def __init__(self, query_db, record_db, search_db, result_db, parent=None):
         Frame.__init__(self, parent)
         self.qdb = query_db
         self.rdb = record_db
-        # search_obj is a literal pickle file?
-        self.search_obj = search_obj # keep a reference and pass it down
+        self.sdb = search_db
+        self.udb = result_db
+        self._dbs = [self.qdb, self.rdb, self.sdb, self.udb]
+
         self.pack(expand=YES, fill=BOTH)
         self.search = SearchGui(query_db, record_db, self)
         self.toolbar = Frame(self)
@@ -31,14 +34,39 @@ class SearchFrame(Frame):
 
     def onClose(self):
         """Close without actually running the search"""
-        self.qdb.close()
-        self.rdb.close()
-        # Should we also have a way to get rid of the search_obj/pickle file?
+        for db in self._dbs:
+            db.close()
         self.parent.destroy()
 
     def onRun(self):
         """Runs the search and populates the necessary files/databases"""
-        pass
+        params = self.search.param_frame
+        queries = self.search.query_frame.query_box
+        dbs = self.search.db_frame.db_box
+        for row in params.entries.row_list:
+            if row.label_text == 'Name':
+                sname = row.entry.get()
+            elif row.label_text == 'Location':
+                location = row.entry.get()
+        if params.keep_output.checked == 0:
+            ko = False
+        else:
+            ko = True
+        sobj = search_obj.Search( # be explicit for clarity here
+            name = sname,
+            algorithm = params.algorithm.get(),
+            q_type = params.q_type.selected.get(),
+            db_type = params.db_type.selected.get(),
+            queries = queries.item_list, # equivalent to all queries
+            databases = dbs.item_list, # equivalent to all dbs
+            keep_output = ko,
+            output_location = location)
+        # store search object in database
+        self.sdb[name] = sobj # should eventually make a check that we did actually select something!
+        # now run the search and parse the output
+        runner = search_runner.Runner(sobj, self.qdb, self.rdb, self.udb)
+        runner.run()
+        runner.parse()
 
 class SearchGui(ttk.Panedwindow):
     def __init__(self, query_db, record_db, parent=None):
@@ -62,6 +90,8 @@ class ParamFrame(Frame):
                 self, [('Choose Directory', self.onChoose, {'side':RIGHT})])
         self.algorithm = gui_util.RadioBoxFrame(self, [('Blast','blast'), ('HMMer','hmmer')],
                 labeltext='Algorithm')
+        self.q_type = gui_util.RadioBoxFrame(self, [('Protein','protein'), ('Genomic','genomic')],
+                labeltext='Query data type')
         self.db_type = gui_util.RadioBoxFrame(self, [('Protein','protein'), ('Genomic','genomic')],
                 labeltext='Target data type')
         self.keep_output = gui_util.CheckBoxFrame(self, 'Keep output files?')
@@ -187,7 +217,7 @@ class DatabaseSummaryFrame(Frame):
     def __init__(self, record_db, parent=None, text='Database', items=None):
         Frame.__init__(self, parent)
         self.rdb = record_db
-        self.dbbox = gui_util.ScrollBoxFrame(self, text, items)
+        self.db_box = gui_util.ScrollBoxFrame(self, text, items)
         self.toolbar = Frame(self)
         self.toolbar.pack(side=BOTTOM, fill=X)
         self.buttons=[('Remove Database(s)', self.onRemove, {'side':RIGHT}),
@@ -197,8 +227,8 @@ class DatabaseSummaryFrame(Frame):
 
     def onRemove(self):
         """Removes select entry(ies)"""
-        selected = self.dbbox.listbox.curselection()
-        self.dbbox.remove_items(*selected)
+        selected = self.db_box.listbox.curselection()
+        self.db_box.remove_items(*selected)
 
     def onAdd(self):
         """Adds databases"""
@@ -229,9 +259,87 @@ class DatabaseWindow(Frame):
         if len(selected) > 0:
             # '' because requires a value as well
             to_add.extend([(self.rlist.listbox.get(index),'') for index in selected])
-            self.owidget.dbbox.add_items(to_add)
+            self.owidget.db_box.add_items(to_add)
         self.parent.destroy()
 
     def onCancel(self):
         """Quits without adding any records"""
         self.parent.destroy()
+
+##########################################
+# Interface for running reverse searches #
+##########################################
+
+class ReverseSearchFrame(Frame):
+    def __init__(self, query_db, record_db, search_db, result_db, parent=None):
+        self.qdb = query_db
+        self.rdb = record_db
+        self.sdb = search_db
+        self.udb = result_db
+        self._dbs = [self.qdb, self.rdb, self.sdb, self.udb]
+
+        self.search_name = gui_util.ComboBoxFrame(self,
+            choices = list(self.sdb.list_entries()),
+            labeltext = 'Forward search to use')
+        self.params = ReverseParamFrame(self)
+        self.pack(expand=YES,fill=BOTH)
+
+        self.parent = parent
+        self.parent.protocol("WM_DELETE_WINDOW", self.onClose)
+
+        self.buttons = [('Cancel', self.onClose, {'side':RIGHT}),
+                        ('Run', self.onRun, {'side':RIGHT})]
+        for (label, action, where) in self.buttons:
+            Button(self.toolbar, text=label, command=action).pack(where)
+
+    def onClose(self):
+        """Close without actually running the search"""
+        for db in self._dbs:
+            db.close()
+        self.parent.destroy()
+
+    def onRun(self):
+        """Runs the search and populates the necessary files/databases"""
+        fwd_search = self.search_name.selected.get()
+        fwd_sobj = self.sdb[fwd_search]
+        params = self.params
+        queries = self.search.query_frame.query_box
+        dbs = self.search.db_frame.db_box
+        for row in params.entries.row_list:
+            if row.label_text == 'Name':
+                sname = row.entry.get()
+            elif row.label_text == 'Location':
+                location = row.entry.get()
+        if params.keep_output.checked == 0:
+            ko = False
+        else:
+            ko = True
+        sobj = search_obj.Search( # be explicit for clarity here
+            name = sname,
+            algorithm = params.algorithm.get(),
+            q_type = params.q_type.selected.get(),
+            db_type = params.db_type.selected.get(),
+            queries = queries.item_list, # equivalent to all queries
+            databases = dbs.item_list, # equivalent to all dbs
+            keep_output = ko,
+            output_location = location)
+        # store search object in database
+        self.sdb[name] = sobj # should eventually make a check that we did actually select something!
+        # now run the search and parse the output
+        runner = search_runner.Runner(sobj, self.qdb, self.rdb, self.udb)
+        runner.run()
+        runner.parse()
+
+class ReverseParamFrame(Frame):
+    """Like ParamFrame, but without query and db type options"""
+    def __init__(self, parent=None):
+        Frame.__init__(self, parent)
+        self.pack()
+        self.curdir = os.getcwd()
+        self.entries = input_form.DefaultValueForm([('Name',''), ('Location',self.curdir)],
+                self, [('Choose Directory', self.onChoose, {'side':RIGHT})])
+        self.algorithm = gui_util.RadioBoxFrame(self, [('Blast','blast'), ('HMMer','hmmer')],
+                labeltext='Algorithm')
+        self.keep_output = gui_util.CheckBoxFrame(self, 'Keep output files?')
+
+

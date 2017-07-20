@@ -8,7 +8,7 @@ from tkinter.messagebox import *
 
 from settings import settings_config
 from databases import database_config
-from searches import search_setup
+from searches import search_obj
 from gui.settings import settings_form
 from gui.database import database_gui
 from gui.searches import search_gui
@@ -54,13 +54,20 @@ def settings_popup():
    settings_form.SettingsForm(settings_config.list_settings(),window)
 
 def search_popup():
-    window = Toplevel()
-    #db = database_config.get_record_db()
-    goat_db = database_config.get_goat_db()
-    query_db = database_config.get_query_db(goat_db)
-    record_db = database_config.get_record_db(goat_db)
-    search_obj = search_setup.Search()
-    search_gui.SearchFrame(query_db,record_db,search_obj,window)
+    if askyesno(
+        message='Run a reverse search?',
+        icon='question', title='Reverse Search'):
+        pass
+    else: # set up a new search
+        window = Toplevel()
+        #db = database_config.get_record_db()
+        goat_db = database_config.get_goat_db()
+        query_db = database_config.get_query_db(goat_db)
+        record_db = database_config.get_record_db(goat_db)
+        search_db = database_config.get_search_db(goat_db)
+        result_db = database_config.get_result_db(goat_db)
+        #sobj = search_obj.Search()
+        search_gui.SearchFrame(query_db,record_db,search_db,result_db,window)
 
 def results_popup():
     #window = Toplevel()

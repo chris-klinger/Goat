@@ -19,3 +19,9 @@ class Result(Persistent):
         self.original_query = original_query # for reverse searches
         self.parsed_result = None # parsed output file object
         self.parsed = False # not parsed to begin with
+        self.int_queries = [] # possibly empty; populated on first subsequent search
+
+    def add_query(self, qobj):
+        """Adds qobj to internal list; ensures object is marked for update"""
+        self.int_queries.append(qobj)
+        self._p_changed = 1

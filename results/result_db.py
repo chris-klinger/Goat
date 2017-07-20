@@ -2,7 +2,7 @@
 Module description
 """
 
-class ResultsDB:
+class ResultDB:
     def __init__(self, db_obj):
         """Connects to database file on instantiation"""
         self.db = db_obj

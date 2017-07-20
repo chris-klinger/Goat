@@ -20,11 +20,12 @@ tmp_dir = '/Users/cklinger/git/Goat/tmp'
 
 class SearchRunner:
     """Actually runs searches"""
-    def __init__(self, search_obj, query_db, record_db, result_db):
+    def __init__(self, search_obj, query_db, record_db, result_db, mode):
         self.sobj = search_obj
         self.qdb = query_db
         self.rdb = record_db
         self.udb = result_db
+        self.mode = mode
 
     def get_unique_outpath(self, query, db, sep='-'):
         """Returns an outpath for a given query and database"""
@@ -60,7 +61,7 @@ class SearchRunner:
 
     def run_one(self, qid, db, qobj, dbf, outpath, result_db, result_id):
         """Runs each individual search"""
-        if self.sobj.algorithm == 'BLAST':
+        if self.sobj.algorithm == 'blast':
             if self.sobj.q_type == 'protein' and self.sobj.db_type == 'protein':
                 blast_search = blast_setup.BLASTp(blast_path, qobj,
                         dbf, outpath)
@@ -70,16 +71,16 @@ class SearchRunner:
             robj = result_obj.Result(result_id, self.sobj.algorithm,
                 self.sobj.q_type, self.sobj.db_type, qid, db, self.sobj.name,
                 outpath)
-            self.sobj.results.append(robj) # add to search object
+            self.sobj.add_result(result_id) # function ensures persistent object updated
             self.udb[result_id] = robj # add to result db
-        elif self.sobj.algorithm == 'HMMer':
+        elif self.sobj.algorithm == 'hmmer':
             pass # include more algorithms later
 
     def parse(self):
         """Parses output files from search"""
         for result in self.sobj.results:
             robj = self.udb[result]
-            if robj.algorithm == 'BLAST':
+            if robj.algorithm == 'blast':
                 blast_result = NCBIXML.read(open(robj.outpath))
                 robj.parsed_result = blast_result
                 robj.parsed = True

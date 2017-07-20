@@ -17,5 +17,10 @@ class Search(Persistent):
         self.databases = databases # list of db files, or records?
         self.keep_output = keep_output
         self.output_location = output_location # None if no location is specified
-        self.results = [] # pointer to eventual results
         self.params = params # possibly empty dictionary of additional program params
+        self.results = [] # pointer to eventual results
+
+    def add_result(self, rid):
+        """Adds rid to internal list; ensures object is marked for update"""
+        self.results.append(rid)
+        self._p_changed = 1
