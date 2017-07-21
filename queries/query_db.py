@@ -2,6 +2,8 @@
 Module description
 """
 
+from BTrees.OOBTree import OOBTree
+
 #from searches import search_query
 from queries import query_set
 
@@ -15,6 +17,12 @@ class QueryDB:
             set_obj = query_set.QuerySet()
             self.db.put_entry(self.node, '_Sets', set_obj)
             self.sets = self.db.fetch_entry(self.node, '_Sets')
+        try:
+            self.searches = self.db.fetch_entry(self.node, '_Searches')
+        except:
+            search_tree = OOBTree()
+            self.db.put_entry(self.node, '_Searches', search_tree)
+            self.searches = self.db.fetch_entry(self.node, '_Searches')
 
     def commit(self):
         self.db._commit()
@@ -33,14 +41,9 @@ class QueryDB:
     def list_queries(self):
         """Convenience function"""
         for entry in self.db.list_entries(self.node):
-            if entry != '_Sets':
+            if entry != '_Sets' or '_Searches':
                 yield entry
 
-    #def add_query(self, query_identity, **kwargs):
-        #"""Creates and populates a new Record"""
-        #new_query = search_query.Query(query_identity)
-        #self.db.put_entry(self.node, query_identity, new_query)
-        #self.update_query(query_identity, **kwargs)
     def add_query(self, query_identity, query_obj):
         """Adds an object to the db"""
         self.db.put_entry(self.node, query_identity, query_obj)
@@ -53,8 +56,19 @@ class QueryDB:
             if query_identity in qset:
                 self.sets.remove_query(qset, query_identity)
 
-    #def update_query(self, query_identity, **kwargs):
-        #"""Updates a pre-existing Record with key,value pairs"""
-        #query_obj = self.db.fetch_entry(self.node, query_identity)
-        #for attr,value in kwargs.items():
-            #setattr(query_obj, attr, value)
+    # Do we want to implement methods for sets eventually as well?
+    # Currently, other code directly accesses 'self.sets'
+
+    def fetch_search(self, search_name):
+        """Gets an associated search object"""
+        for sname in self.searches.keys():
+            if sname == search_name:
+                return self.searches[sname]
+
+    def add_search(self, search_name, search_obj):
+        """Adds an object associated with a search"""
+        self.searches[search_name] = search_obj
+
+    def remove_search(self, search_name):
+        """Removes a search object"""
+        del self.searches[search_name]

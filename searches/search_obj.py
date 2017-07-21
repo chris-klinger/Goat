@@ -20,6 +20,10 @@ class Search(Persistent):
         self.params = params # possibly empty dictionary of additional program params
         self.results = [] # pointer to eventual results
 
+    def list_results(self):
+        """Convenience function"""
+        return list(self.results)
+
     def add_result(self, rid):
         """Adds rid to internal list; ensures object is marked for update"""
         self.results.append(rid)

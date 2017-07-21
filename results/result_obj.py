@@ -21,7 +21,7 @@ class Result(Persistent):
         self.parsed = False # not parsed to begin with
         self.int_queries = [] # possibly empty; populated on first subsequent search
 
-    def add_query(self, qobj):
-        """Adds qobj to internal list; ensures object is marked for update"""
-        self.int_queries.append(qobj)
+    def add_query(self, qid):
+        """Adds qid to internal list; ensures object is marked for update"""
+        self.int_queries.append(qid)
         self._p_changed = 1
