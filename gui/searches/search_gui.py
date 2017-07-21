@@ -4,9 +4,10 @@ This module contains code for a GUI frontend for searches
 
 import os
 from tkinter import *
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk, filedialog #, messagebox
 
 from searches import search_obj, search_runner
+from results import intermediate
 from gui.util import input_form, gui_util
 #from gui.database import database_gui
 
@@ -301,10 +302,17 @@ class ReverseSearchFrame(Frame):
     def onRun(self):
         """Runs the search and populates the necessary files/databases"""
         fwd_search = self.search_name.selected.get()
-        fwd_sobj = self.sdb[fwd_search]
+        sobj = self.sdb[fwd_search]
+        # Next function call adds search result queries to query database
+        intermediate.Search2Queries(
+            sobj, self.udb, self.qdb, self.rdb).populate_search_queries()
+        # Now get all needed queries
+        queries = []
+        for uid in sobj.list_results(): # result ids
+            uobj = self.udb[uid]
+            for qid in uobj.list_queries():
+                queries.append(qid)
         params = self.params
-        queries = self.search.query_frame.query_box
-        dbs = self.search.db_frame.db_box
         for row in params.entries.row_list:
             if row.label_text == 'Name':
                 sname = row.entry.get()
@@ -317,16 +325,16 @@ class ReverseSearchFrame(Frame):
         sobj = search_obj.Search( # be explicit for clarity here
             name = sname,
             algorithm = params.algorithm.get(),
-            q_type = params.q_type.selected.get(),
-            db_type = params.db_type.selected.get(),
+            q_type = sobj.db_type, # queries here are the same as the forward db type
+            db_type = sobj.q_type, # conversely, db is the original query type
             queries = queries.item_list, # equivalent to all queries
-            databases = dbs.item_list, # equivalent to all dbs
+            databases = None, # reverse search, so target_db is on each query!
             keep_output = ko,
             output_location = location)
         # store search object in database
         self.sdb[name] = sobj # should eventually make a check that we did actually select something!
         # now run the search and parse the output
-        runner = search_runner.Runner(sobj, self.qdb, self.rdb, self.udb)
+        runner = search_runner.Runner(sobj, self.qdb, self.rdb, self.udb, mode='old')
         runner.run()
         runner.parse()
 
@@ -341,5 +349,3 @@ class ReverseParamFrame(Frame):
         self.algorithm = gui_util.RadioBoxFrame(self, [('Blast','blast'), ('HMMer','hmmer')],
                 labeltext='Algorithm')
         self.keep_output = gui_util.CheckBoxFrame(self, 'Keep output files?')
-
-

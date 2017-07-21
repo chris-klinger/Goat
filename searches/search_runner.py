@@ -20,7 +20,7 @@ tmp_dir = '/Users/cklinger/git/Goat/tmp'
 
 class SearchRunner:
     """Actually runs searches"""
-    def __init__(self, search_obj, query_db, record_db, result_db, mode):
+    def __init__(self, search_obj, query_db, record_db, result_db, mode='new'):
         self.sobj = search_obj
         self.qdb = query_db
         self.rdb = record_db
@@ -42,7 +42,15 @@ class SearchRunner:
     def run(self):
         """Runs the search using information in the search object and databases"""
         for qid in self.sobj.queries: # list of qids
-            qobj = self.qdb[qid] # fetch associated object from db
+            if self.mode == 'new': # new search from user input
+                qobj = self.qdb[qid] # fetch associated object from db
+            elif self.mode == 'old': # search from previous search
+                # This loop is kind of gross... maybe don't nest objects within search results?
+                qsobj = self.qdb.fetch_search(self.sobj.name)
+                for uobj in qsobj.list_entries():
+                    for query in uobj.list_entries():
+                        if query == qid:
+                            qobj = uobj[query]
             if qobj.target_db: # i.e. is not None
                 self.call_run(qid, qobj, qobj.target_db)
             else: # run for all dbs

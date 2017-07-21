@@ -21,6 +21,10 @@ class Result(Persistent):
         self.parsed = False # not parsed to begin with
         self.int_queries = [] # possibly empty; populated on first subsequent search
 
+    def list_queries(self):
+        """Convenience function"""
+        return list(self.int_queries)
+
     def add_query(self, qid):
         """Adds qid to internal list; ensures object is marked for update"""
         self.int_queries.append(qid)
