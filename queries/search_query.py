@@ -10,6 +10,12 @@ class SearchResult:
     def __init__(self):
         self.entries = OOBTree()
 
+    def fetch_entry(self, oid):
+        """Convenience function"""
+        for entry in self.list_entries():
+            if entry == oid:
+                return self.entries[entry]
+
     def list_entries(self):
         """Convenience function"""
         for entry in self.entries.keys():

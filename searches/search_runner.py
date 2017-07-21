@@ -20,12 +20,14 @@ tmp_dir = '/Users/cklinger/git/Goat/tmp'
 
 class SearchRunner:
     """Actually runs searches"""
-    def __init__(self, search_obj, query_db, record_db, result_db, mode='new'):
+    def __init__(self, search_obj, query_db, record_db, result_db,
+            mode='new', fwd_search=None):
         self.sobj = search_obj
         self.qdb = query_db
         self.rdb = record_db
         self.udb = result_db
         self.mode = mode
+        self.fobj = fwd_search
 
     def get_unique_outpath(self, query, db, sep='-'):
         """Returns an outpath for a given query and database"""
@@ -46,11 +48,14 @@ class SearchRunner:
                 qobj = self.qdb[qid] # fetch associated object from db
             elif self.mode == 'old': # search from previous search
                 # This loop is kind of gross... maybe don't nest objects within search results?
-                qsobj = self.qdb.fetch_search(self.sobj.name)
-                for uobj in qsobj.list_entries():
+                qsobj = self.qdb.fetch_search(self.fobj.name)
+                for uid in qsobj.list_entries():
+                    print(uid)
+                    uobj = qsobj.fetch_entry(uid)
                     for query in uobj.list_entries():
+                        print(query)
                         if query == qid:
-                            qobj = uobj[query]
+                            qobj = uobj.fetch_entry(query)
             if qobj.target_db: # i.e. is not None
                 self.call_run(qid, qobj, qobj.target_db)
             else: # run for all dbs
@@ -79,7 +84,9 @@ class SearchRunner:
             robj = result_obj.Result(result_id, self.sobj.algorithm,
                 self.sobj.q_type, self.sobj.db_type, qid, db, self.sobj.name,
                 outpath)
+            print("Adding {} result to {} search object".format(result_id,self.sobj))
             self.sobj.add_result(result_id) # function ensures persistent object updated
+            print("Adding {} rid and {} robj to result db".format(result_id,robj))
             self.udb[result_id] = robj # add to result db
         elif self.sobj.algorithm == 'hmmer':
             pass # include more algorithms later

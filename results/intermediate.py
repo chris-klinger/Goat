@@ -25,7 +25,7 @@ class Search2Queries:
     def populate_search_queries(self):
         """Populates queries for each result"""
         search_result = search_query.SearchResult()
-        for robj in self.get_result_objs:
+        for robj in self.get_result_objs():
             r2q = Result2Queries(robj, self.qdb, self.rdb, self.mode)
             rqobj = r2q.get_queries() # returns a sub-object populated with queries for each result
             search_result.add_entry(robj.name, rqobj)
@@ -33,7 +33,7 @@ class Search2Queries:
 
 class Result2Queries:
     def __init__(self, result_obj, query_db, record_db, mode='reverse'):
-        self.robj = result_obj
+        self.uobj = result_obj
         self.qdb = query_db
         self.rdb = record_db
         self.smode = mode
@@ -69,6 +69,6 @@ class Result2Queries:
             qobj = query_obj.Query(record.id, record.name,
                 record.description, sequence=record.seq, record=self.uobj.database,
                 target_db=tdb, original_query=self.uobj.query)
-            self.robj.add_query(record.id)
+            self.uobj.add_query(record.id)
             result.add_entry(record.id, qobj)
         return result

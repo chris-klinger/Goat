@@ -39,10 +39,16 @@ class SearchFrame(Frame):
             db.close()
         self.parent.destroy()
 
+    def onSaveQuit(self):
+        """Commits changes to dbs after a search"""
+        for db in self._dbs:
+            db.commit()
+        self.onClose()
+
     def onRun(self):
         """Runs the search and populates the necessary files/databases"""
         params = self.search.param_frame
-        queries = self.search.query_frame.query_box
+        queries = self.search.query_frame.querybox
         dbs = self.search.db_frame.db_box
         for row in params.entries.row_list:
             if row.label_text == 'Name':
@@ -55,7 +61,7 @@ class SearchFrame(Frame):
             ko = True
         sobj = search_obj.Search( # be explicit for clarity here
             name = sname,
-            algorithm = params.algorithm.get(),
+            algorithm = params.algorithm.selected.get(),
             q_type = params.q_type.selected.get(),
             db_type = params.db_type.selected.get(),
             queries = queries.item_list, # equivalent to all queries
@@ -63,11 +69,15 @@ class SearchFrame(Frame):
             keep_output = ko,
             output_location = location)
         # store search object in database
-        self.sdb[name] = sobj # should eventually make a check that we did actually select something!
+        self.sdb[sname] = sobj # should eventually make a check that we did actually select something!
         # now run the search and parse the output
-        runner = search_runner.Runner(sobj, self.qdb, self.rdb, self.udb)
+        runner = search_runner.SearchRunner(sobj, self.qdb, self.rdb, self.udb)
+        print("calling runner.run() from forward search")
         runner.run()
+        print("calling runner.parse() from forward search")
         runner.parse()
+        print("calling self.onSaveQuit() from forward search")
+        self.onSaveQuit()
 
 class SearchGui(ttk.Panedwindow):
     def __init__(self, query_db, record_db, parent=None):
@@ -102,6 +112,7 @@ class ParamFrame(Frame):
         dirpath = filedialog.askdirectory()
         for entry_row in self.entries.row_list:
             if entry_row.label_text == 'Location':
+                entry_row.entry.delete(0,'end') # delete previous entry first
                 entry_row.entry.insert(0,dirpath)
 
 class QuerySummaryFrame(Frame):
@@ -273,6 +284,7 @@ class DatabaseWindow(Frame):
 
 class ReverseSearchFrame(Frame):
     def __init__(self, query_db, record_db, search_db, result_db, parent=None):
+        Frame.__init__(self, parent)
         self.qdb = query_db
         self.rdb = record_db
         self.sdb = search_db
@@ -284,6 +296,8 @@ class ReverseSearchFrame(Frame):
             labeltext = 'Forward search to use')
         self.params = ReverseParamFrame(self)
         self.pack(expand=YES,fill=BOTH)
+        self.toolbar = Frame(self)
+        self.toolbar.pack(side=BOTTOM, expand=YES, fill=X)
 
         self.parent = parent
         self.parent.protocol("WM_DELETE_WINDOW", self.onClose)
@@ -299,18 +313,26 @@ class ReverseSearchFrame(Frame):
             db.close()
         self.parent.destroy()
 
+    def onSaveQuit(self):
+        """Commits changes to dbs after a search"""
+        for db in self._dbs:
+            db.commit()
+        self.onClose()
+
     def onRun(self):
         """Runs the search and populates the necessary files/databases"""
         fwd_search = self.search_name.selected.get()
-        sobj = self.sdb[fwd_search]
+        fwd_sobj = self.sdb[fwd_search]
         # Next function call adds search result queries to query database
         intermediate.Search2Queries(
-            sobj, self.udb, self.qdb, self.rdb).populate_search_queries()
+            fwd_sobj, self.udb, self.qdb, self.rdb).populate_search_queries()
         # Now get all needed queries
         queries = []
-        for uid in sobj.list_results(): # result ids
+        for uid in fwd_sobj.list_results(): # result ids
+            print(uid)
             uobj = self.udb[uid]
             for qid in uobj.list_queries():
+                print('\t' + str(qid))
                 queries.append(qid)
         params = self.params
         for row in params.entries.row_list:
@@ -322,21 +344,26 @@ class ReverseSearchFrame(Frame):
             ko = False
         else:
             ko = True
-        sobj = search_obj.Search( # be explicit for clarity here
+        rev_sobj = search_obj.Search( # be explicit for clarity here
             name = sname,
-            algorithm = params.algorithm.get(),
-            q_type = sobj.db_type, # queries here are the same as the forward db type
-            db_type = sobj.q_type, # conversely, db is the original query type
-            queries = queries.item_list, # equivalent to all queries
+            algorithm = params.algorithm.selected.get(),
+            q_type = fwd_sobj.db_type, # queries here are the same as the forward db type
+            db_type = fwd_sobj.q_type, # conversely, db is the original query type
+            queries = queries, # equivalent to all queries
             databases = None, # reverse search, so target_db is on each query!
             keep_output = ko,
             output_location = location)
         # store search object in database
-        self.sdb[name] = sobj # should eventually make a check that we did actually select something!
+        self.sdb[sname] = rev_sobj # should eventually make a check that we did actually select something!
         # now run the search and parse the output
-        runner = search_runner.Runner(sobj, self.qdb, self.rdb, self.udb, mode='old')
+        runner = search_runner.SearchRunner(rev_sobj, self.qdb, self.rdb, self.udb,
+                mode='old', fwd_search=fwd_sobj)
+        print("calling runner.run() from reverse search")
         runner.run()
+        print("calling runner.parse() from reverse search")
         runner.parse()
+        print("calling self.onSaveQuit() from reverse search")
+        self.onSaveQuit()
 
 class ReverseParamFrame(Frame):
     """Like ParamFrame, but without query and db type options"""
@@ -349,3 +376,12 @@ class ReverseParamFrame(Frame):
         self.algorithm = gui_util.RadioBoxFrame(self, [('Blast','blast'), ('HMMer','hmmer')],
                 labeltext='Algorithm')
         self.keep_output = gui_util.CheckBoxFrame(self, 'Keep output files?')
+
+    def onChoose(self):
+        """Pops up directory choice"""
+        dirpath = filedialog.askdirectory()
+        for entry_row in self.entries.row_list:
+            if entry_row.label_text == 'Location':
+                entry_row.entry.delete(0,'end') # delete previous entry first
+                entry_row.entry.insert(0,dirpath)
+

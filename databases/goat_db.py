@@ -23,6 +23,8 @@ class GoatDB:
             db = DB(self.storage)
             connection = db.open()
             self.root = connection.root()
+            if not 'searches' in self.root.keys():
+                self.root['searches'] = OOBTree()
         else: # first time accessing
             self.storage = FileStorage.FileStorage(filepath)
             db = DB(self.storage)

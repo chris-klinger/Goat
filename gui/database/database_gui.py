@@ -117,12 +117,12 @@ class DatabaseViewer(ttk.Treeview):
 
     def upate(self):
         """Updates the view upon addition/removal of records"""
-        print('DatabaseViewer update called')
+        #print('DatabaseViewer update called')
         self.make_tree()
 
     def make_tree(self):
         """Builds a treeview display of records"""
-        print('Making tree')
+        #print('Making tree')
         for record in self.db.list_records():
             #print(record)
             record_obj = self.db[record] # should be able to index

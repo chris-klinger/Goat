@@ -41,7 +41,7 @@ class QueryDB:
     def list_queries(self):
         """Convenience function"""
         for entry in self.db.list_entries(self.node):
-            if entry != '_Sets' or '_Searches':
+            if not ((entry == '_Sets') or (entry == '_Searches')):
                 yield entry
 
     def add_query(self, query_identity, query_obj):
@@ -61,9 +61,12 @@ class QueryDB:
 
     def fetch_search(self, search_name):
         """Gets an associated search object"""
-        for sname in self.searches.keys():
+        for sname,sobj in self.searches.items():
+            #print(sname)
+            #print(sobj)
             if sname == search_name:
-                return self.searches[sname]
+                #print(sobj)
+                return sobj
 
     def add_search(self, search_name, search_obj):
         """Adds an object associated with a search"""
