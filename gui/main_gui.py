@@ -35,18 +35,32 @@ def make_menu(window):
     top.add_cascade(label='File', menu=file_menu, underline=0)
 
     search_menu = Menu(top, tearoff=False)
-    search_menu.add_command(label='search', command=search_popup, underline=0)
-    search_menu.add_command(label='results', command=results_popup, underline=0)
-    search_menu.add_command(label='summarize', command=summarize_popup, underline=0)
+    search_menu.add_command(label='new search', command=search_popup, underline=0)
+    search_menu.add_command(label='reverse search', command=reverse_search, underline=0)
+    search_menu.add_command(label='search from result', command=result_search, underline=0)
     search_menu.add_command(label='run analysis', command=analysis_popup, underline=0)
     top.add_cascade(label='Search', menu=search_menu, underline=0)
+
+    results_menu = Menu(top, tearoff=False)
+    results_menu.add_command(label='view results', command=result_viewer, underline=0)
+    results_menu.add_command(label='sequences from result', command=result_sequences, underline=0)
+    top.add_cascade(label='Results', menu=results_menu, underline=0)
+
+    summary_menu = Menu(top, tearoff=False)
+    summary_menu.add_command(label='summarize result(s)', command=summarize_results, underline=0)
+    summary_menu.add_command(label='view summaries', command=summary_viewer, underline=0)
+    summary_menu.add_command(label='sequences from summary', command=summary_sequences, underline=0)
+    summary_menu.add_command(label='summary graphic', command=summary_graphic, underline=0)
+    summary_menu.add_command(label='summary table', command=summary_table, underline=0)
+    top.add_cascade(label='Summaries', menu=summary_menu, underline=0)
 
     query_menu = Menu(top, tearoff=False)
     query_menu.add_command(label='modify queries', command=query_popup, underline=0)
     top.add_cascade(label='Queries', menu=query_menu, underline=0)
 
     db_menu = Menu(top, tearoff=False)
-    db_menu.add_command(label='add database', command=database_popup, underline=0)
+    db_menu.add_command(label='modify databases', command=database_popup, underline=0)
+    db_menu.add_command(label='database table', command=database_table, underline=0)
     top.add_cascade(label='Databases', menu=db_menu, underline=0)
 
 def settings_popup():
@@ -68,16 +82,44 @@ def search_popup():
         window = Toplevel()
         search_gui.SearchFrame(query_db,record_db,search_db,result_db,window)
 
-def results_popup():
-    #window = Toplevel()
+def reverse_search():
+    """Run a reverse search from an existing forward search"""
     pass
 
-def summarize_popup():
-    #window = Toplevel()
+def result_search():
+    """Run a forward search using queries from a previous search"""
     pass
 
 def analysis_popup():
-    #window = Toplevel()
+    """Run a full analysis, typically forward-reverse"""
+    pass
+
+def result_viewer():
+    """View information for results from previous searches"""
+    pass
+
+def result_sequences():
+    """Obtain sequence file(s) from a search result"""
+    pass
+
+def summarize_results():
+    """Obtain a summary for one or more results"""
+    pass
+
+def summary_viewer():
+    """View information for summaries"""
+    pass
+
+def summary_sequences():
+    """Obtain sequence file(s) from a summary"""
+    pass
+
+def summary_graphic():
+    """Obtain a graphical view of a summary"""
+    pass
+
+def summary_table():
+    """Obtain a csv file containing summary information"""
     pass
 
 def query_popup():
@@ -95,6 +137,9 @@ def database_popup():
     record_db = database_config.get_record_db(goat_db)
     database_gui.DatabaseFrame(record_db,window)
 
+def database_table():
+    """Obtain csv-style file with information for one or more databases"""
+    pass
 
 def run():
     root = Tk()
