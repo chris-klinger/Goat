@@ -82,7 +82,26 @@ class ResultTree(ttk.Treeview):
                 self.insert(search,'end',result_id,text=result_id,tags=('result'))
 
     def itemClicked(self, item_type):
-        pass
+        """Builds a list of information for display by ResultInfo panel for
+        either searches or results; delegates formatting/display to panel"""
+        item = self.focus()
+        if item_type == 'search':
+            slist = []
+            sobj = self.sdb[item]
+            slist.extend([sobj.name, sobj.algorithm, sobj.q_type, sobj.db_type,
+                len(sobj.results)])
+            # Following try/except to deal with issue in previous search_runner;
+            # can remove after testing or when new searches are done
+            try:
+                slist.append(len(sobj.databases))
+            except(TypeError): # databases is None type
+                slist.append(0)
+            self.info.update_info('search', *slist)
+        elif item_type == 'result':
+            ulist = []
+            uobj = self.udb[item]
+            ulist.extend([uobj.name, uobj.query, uobj.database]) # add num hits?
+            self.info.update_info('result', *ulist)
 
 class ResultInfo(ttk.Label):
     def __init__(self, parent=None):
@@ -95,4 +114,19 @@ class ResultInfo(ttk.Label):
         self.displayInfo.set('')
 
     def update_info(self, display_type, *values):
-        pass
+        """Displays information on either searches or results"""
+        display_string = ''
+        if display_type == 'search':
+            display_string += ('Search Information: \n\n\n')
+            display_string += ('Search Name: ' + values[0] + '\n')
+            display_string += ('Algorithm used: ' + values[1] + '\n')
+            display_string += ('Query alphabet: ' + values[2] + '\n')
+            display_string += ('Database alphabet: ' + values[3] + '\n')
+            display_string += ('Number of results: ' + str(values[4]) + '\n')
+            display_string += ('Number of databases: ' + str(values[5]) + '\n')
+        elif display_type == 'result':
+            display_string += ('Result Information: \n\n\n')
+            display_string += ('Result name: ' + values[0] + '\n')
+            display_string += ('Query: ' + values[1] + '\n')
+            display_string += ('Database: ' + values[2] + '\n')
+        self.displayInfo.set(display_string)
