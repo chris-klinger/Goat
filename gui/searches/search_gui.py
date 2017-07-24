@@ -350,7 +350,7 @@ class ReverseSearchFrame(Frame):
             q_type = fwd_sobj.db_type, # queries here are the same as the forward db type
             db_type = fwd_sobj.q_type, # conversely, db is the original query type
             queries = queries, # equivalent to all queries
-            databases = None, # reverse search, so target_db is on each query!
+            databases = [], # reverse search, so target_db is on each query!
             keep_output = ko,
             output_location = location)
         # store search object in database

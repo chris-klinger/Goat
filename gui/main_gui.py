@@ -12,6 +12,7 @@ from searches import search_obj
 from gui.settings import settings_form
 from gui.database import database_gui
 from gui.searches import search_gui
+from gui.results import result_gui
 from gui.queries import query_gui
 
 help_msg="""
@@ -42,7 +43,7 @@ def make_menu(window):
     top.add_cascade(label='Search', menu=search_menu, underline=0)
 
     results_menu = Menu(top, tearoff=False)
-    results_menu.add_command(label='view results', command=result_viewer, underline=0)
+    results_menu.add_command(label='view result(s)', command=result_viewer, underline=0)
     results_menu.add_command(label='sequences from result', command=result_sequences, underline=0)
     top.add_cascade(label='Results', menu=results_menu, underline=0)
 
@@ -96,7 +97,13 @@ def analysis_popup():
 
 def result_viewer():
     """View information for results from previous searches"""
-    pass
+    window = Toplevel()
+    goat_db = database_config.get_goat_db()
+    #query_db = database_config.get_query_db(goat_db)
+    #record_db = database_config.get_record_db(goat_db)
+    result_db = database_config.get_result_db(goat_db)
+    search_db = database_config.get_search_db(goat_db)
+    result_gui.ResultFrame(result_db, search_db, window)
 
 def result_sequences():
     """Obtain sequence file(s) from a search result"""
