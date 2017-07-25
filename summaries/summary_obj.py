@@ -21,18 +21,25 @@ class Summary(Persistent):
     in a OOBTree container; paired datastructure allows for maintaining order
     and fast lookup by id in an unstructured container.
     """
-    def __init__(self, fwd_search, fwd_search_type, fwd_evalue_cutoff=None,
-            max_hits=None, rev_search=None, rev_search_type=None,
-            rev_evalue_cutoff=None, next_hit_evalue_cutoff=None):
+    def __init__(self, fwd_search, fwd_qtype, fwd_dbtype, fwd_algorithm,
+            fwd_evalue_cutoff=None, fwd_max_hits=None,
+            rev_search=None, rev_qtype=None, rev_dbtype=None, rev_algorithm=None,
+            rev_evalue_cutoff=None, rev_max_hits=None,
+            next_hit_evalue_cutoff=None):
         self.query_list = [] # list maintains order
         self.queries = OOBTree()
         self.fwd = fwd_search
-        self.fwd_type = fwd_search_type
+        self.fwd_qtype = fwd_qtype
+        self.fwd_dbtype = fwd_dbtype
+        self.fwd_algorithm = fwd_algorithm
         self.fwd_evalue = fwd_evalue_cutoff
-        self.max_hits = max_hits
+        self.fwd_max_hits = fwd_max_hits
         self.rev = rev_search
-        self.rev_type = rev_search_type
+        self.rev_qtype = rev_qtype
+        self.rev_dbtype = rev_dbtype
+        self.rev_algorithm = rev_algorithm
         self.rev_evalue = rev_evalue_cutoff
+        self.rev_max_hits = rev_max_hits
         self.next_evalue = next_hit_evalue_cutoff
 
     def check_query_summary(self, qid):
@@ -48,8 +55,9 @@ class Summary(Persistent):
 
     def add_query_summary(self, qid, qsummary):
         """Adds a nested object; qid is appended to list"""
-        self.query_list.append(qid)
-        self._p_changed = 1 # signals list was updated
+        if not qid in self.query_list:
+            self.query_list.append(qid)
+            self._p_changed = 1 # signals list was updated
         self.queries[qid] = qsummary # add to internal structure
 
 class QuerySummary(Persistent):
@@ -62,6 +70,10 @@ class QuerySummary(Persistent):
         self.db_list = []
         self.dbs = OOBTree()
         self.qid = qid
+
+    def fetch_db_summary(self, uid):
+        """Returns the object for the given qid"""
+        return self.dbs[uid]
 
     def add_db_summary(self, db, db_summary):
         """Adds a nested object"""

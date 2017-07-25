@@ -14,6 +14,7 @@ from gui.database import database_gui
 from gui.searches import search_gui
 from gui.results import result_gui
 from gui.queries import query_gui
+from gui.summaries import summary_gui
 
 help_msg="""
 Goat: an integrated platform for bioinformatic sequence analysis
@@ -111,7 +112,14 @@ def result_sequences():
 
 def summarize_results():
     """Obtain a summary for one or more results"""
-    pass
+    goat_db = database_config.get_goat_db()
+    query_db = database_config.get_query_db(goat_db)
+    search_db = database_config.get_search_db(goat_db)
+    result_db = database_config.get_result_db(goat_db)
+    summary_db = database_config.get_summary_db(goat_db)
+    # Call a window first to determine one or two searches
+    window = Toplevel()
+    summary_gui.SearchSummaryFrame(summary_db, query_db, search_db, result_db, window)
 
 def summary_viewer():
     """View information for summaries"""

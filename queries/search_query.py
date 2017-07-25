@@ -16,6 +16,14 @@ class SearchResult:
             if entry == oid:
                 return self.entries[entry]
 
+    def fetch_query_obj(self, qid):
+        """Convenieince function"""
+        for entry in self.list_entries():
+            entry_obj = self.entries[entry]
+            for query in entry_obj.list_entries():
+                if query == qid:
+                    return entry_obj.entries[query]
+
     def list_entries(self):
         """Convenience function"""
         for entry in self.entries.keys():

@@ -10,6 +10,7 @@ from records import record_db
 from queries import query_db
 from results import result_db
 from searches import search_db
+from summaries import summary_db
 from gui import main_gui
 
 goat_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
@@ -39,6 +40,9 @@ def get_search_db(db_obj):
 
 def get_result_db(db_obj):
     return result_db.ResultDB(db_obj)
+
+def get_summary_db(db_obj):
+    return summary_db.SummaryDB(db_obj)
 
 def main_goat():
     initialize_goat.initialize(goat_dir)
