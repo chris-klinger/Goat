@@ -127,7 +127,7 @@ class TwoSearchFrame(Frame):
                 labeltext='Reverse search to summarize')
         self.params = input_form.DefaultValueForm((['Summary name','SummTest'],
             ['Minimum forward evalue',0.05],['Minimum reverse evalue',0.05],
-            ['Next hit evalue',0.05],['Max forward hits',10],
+            ['Next hit evalue',2],['Max forward hits',10],
             ['Max reverse hits',10]), self)
         self.toolbar = Frame(self)
         self.toolbar.pack(side=BOTTOM, expand=YES, fill=X)

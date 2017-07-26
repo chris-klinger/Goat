@@ -32,15 +32,15 @@ class Summary(Persistent):
         self.fwd_qtype = fwd_qtype
         self.fwd_dbtype = fwd_dbtype
         self.fwd_algorithm = fwd_algorithm
-        self.fwd_evalue = fwd_evalue_cutoff
+        self.fwd_evalue = fwd_evalue_cutoff # should be a float!
         self.fwd_max_hits = fwd_max_hits
         self.rev = rev_search
         self.rev_qtype = rev_qtype
         self.rev_dbtype = rev_dbtype
         self.rev_algorithm = rev_algorithm
-        self.rev_evalue = rev_evalue_cutoff
+        self.rev_evalue = rev_evalue_cutoff # should be a float!
         self.rev_max_hits = rev_max_hits
-        self.next_evalue = next_hit_evalue_cutoff
+        self.next_evalue = next_hit_evalue_cutoff # should be a whole value, e.g. 2, but convert to float
 
     def check_query_summary(self, qid):
         """Checks whether a QuerySummary object for a given qid already exists"""

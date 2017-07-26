@@ -6,6 +6,8 @@ in order to allow users to see how results for the same query/db pair can change
 depending on which search modes/cutoff criteria are used.
 """
 
+import math
+
 from summaries import summary_obj
 from searches import search_util
 
@@ -62,8 +64,9 @@ class SearchSummarizer:
                 hit_status = 'positive'
             else: # we do care about the next hit evalue
                 try:
-                    next_e = fwd_hit_list[(hit_index + 1)].e
-                    if (desc.e + self.next_evalue) < next_e:
+                    next_e = math.log(fwd_hit_list[(hit_index + 1)].e, 10)
+                    # magnitude difference is greater than specified
+                    if math.fabs(math.log(desc.e,10) - next_e) > self.next_evalue:
                         hit_status = 'positive'
                     else: # still negative!
                         break # stop at first negative hit
@@ -137,11 +140,12 @@ class SearchSummarizer:
             elif (self.fwd_evalue is None) or (fwd_hit.e < self.fwd_evalue):
                 if rev_uobj.query in fwd_hit.title: # matching hit/reverse search pair
                     #print("matching reverse object for " + rev_uobj.name)
+                    print(fwd_hit.title)
                     rev_hits = rev_uobj.parsed_result.descriptions
                     status,pos_hit,neg_hit = self.reverse_hit_status(fwd_qobj, rev_hits)
                     fwd_id = search_util.remove_blast_header(fwd_hit.title)
                     if status != 'negative': # there is a hit to add
-                        print('hit status ' + status)
+                        #print('hit status ' + status)
                         hit = summary_obj.Hit(fwd_id, fwd_hit.e,
                             search_util.remove_blast_header(pos_hit.title), pos_hit.e,
                             search_util.remove_blast_header(neg_hit.title), neg_hit.e,
@@ -152,8 +156,6 @@ class SearchSummarizer:
     def reverse_hit_status(self, fwd_qobj, rev_hit_list):
         """Determines the status of a forward hit based on reverse search"""
         status = 'negative'
-        first_hit_positive = False
-        last_hit_positive = False
         first_positive_hit = None
         first_negative_hit = None
         if not self.rev_max_hits:
@@ -164,55 +166,55 @@ class SearchSummarizer:
         for rev_hit in rev_hit_list:
             print(rev_hit.title + ' ' + str(rev_hit.e))
             if (rev_hit_index == rev_max_hits) or (rev_hit.e > self.rev_evalue):
-                #print('stopping reverse scan')
+                print('stopping reverse scan')
                 break # both of these conditions means we don't need to look more
             if rev_hit.e == 0:
                 #print("zero value evalue")
-                rev_hit.e == 1e-300
+                rev_hit.e = 1e-300
             if (self.rev_evalue is None) or (rev_hit.e < self.rev_evalue):
                 new_title = search_util.remove_blast_header(rev_hit.title).split(' ',1)[0]
                 if (new_title == fwd_qobj.identity) or (self.check_raccs(new_title,fwd_qobj.redundant_accs)):
                     print("match")
+                    if first_negative_hit: # this is the first positive hit
+                        print('checking an unlikely hit')
+                        print(first_negative_hit.e)
+                        print(rev_hit.e)
+                        print(math.fabs(math.log(first_negative_hit.e,10) - math.log(rev_hit.e,10)))
+                        # Here we want the difference to be less, i.e. the separation is not convincing
+                        if self.next_evalue is None or (math.fabs(math.log(first_negative_hit.e,10) -\
+                        math.log(rev_hit.e,10)) < self.next_evalue):
+                            print('hit is unlikely')
+                            status = 'unlikely'
+                        else:
+                            print('hit is negative')
+                            status = 'negative'
+                        print()
+                        break
                     if rev_hit_index == (len(rev_hit_list)-1):
                         status = 'positive'
                         break # we only found positive hits
                     if rev_hit_index == 0:
-                        #print('first hit is positive')
-                        first_hit_positive = True
-                    else:
-                        last_hit_positive = True
-                    if not first_positive_hit:
+                        print('first hit is positive')
                         first_positive_hit = rev_hit # store a ref to the first positive hit
                 else: # not a match
                     if not first_negative_hit:
-                        #print('found first negative hit')
+                        print('found first negative hit')
                         first_negative_hit = rev_hit # store a ref to the first negative hit
-                    if first_hit_positive: # this is the first non-match hit
-                        #print('checking a likely hit')
-                        #print(first_positive_hit.e)
-                        #print(rev_hit.e)
-                        #print(first_positive_hit.e - rev_hit.e)
-                        #print(self.next_evalue)
-                        if (self.next_evalue is None) or ((first_positive_hit.e -\
-                        rev_hit.e) < self.next_evalue):
+                    if first_positive_hit: # this is the first non-match hit
+                        print('checking a likely hit')
+                        print(first_positive_hit.e)
+                        print(rev_hit.e)
+                        print(math.fabs(math.log(first_positive_hit.e,10) - math.log(rev_hit.e,10)))
+                        # Here we want the difference to be greater, i.e. the separation is convincing
+                        if (self.next_evalue is None) or (math.fabs(math.log(first_positive_hit.e,10) -\
+                        math.log(rev_hit.e,10)) > self.next_evalue):
+                            print('hit is positive')
                             status = 'positive'
                         else:
+                            print('hit is tentative')
                             status = 'tentative'
+                        print()
                         break # status determined
-                    elif last_hit_positive: # first hit wasn't a match but we did find one
-                        #print('checking an unlikely hit')
-                        #print(first_negative_hit.e)
-                        #print(rev_hit.e)
-                        #print(first_negative_hit.e - rev_hit.e)
-                        #print(self.next_evalue)
-                        if self.next_evalue is None or ((first_negative_hit.e -\
-                        rev_hit.e) < self.next_evalue):
-                            status = 'unlikely'
-                        else:
-                            status = 'negative'
-                        break
-                    else:
-                        pass
             print()
             rev_hit_index += 1
         return (status, first_positive_hit, first_negative_hit)
