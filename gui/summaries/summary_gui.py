@@ -153,10 +153,10 @@ class TwoSearchFrame(Frame):
     def onSubmit(self):
         """Summarize and add summary to db, close after"""
         fwd_search = self.fwd_search.selected.get()
-        print(fwd_search)
+        #print(fwd_search)
         fwd_sobj = self.sdb[fwd_search]
         rev_search = self.rev_search.selected.get()
-        print(rev_search)
+        #print(rev_search)
         rev_sobj = self.sdb[rev_search]
         for row in self.params.row_list:
             value = row.entry.get()

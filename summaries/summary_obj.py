@@ -46,8 +46,7 @@ class Summary(Persistent):
         """Checks whether a QuerySummary object for a given qid already exists"""
         if qid in self.query_list:
             return True
-        else:
-            return False
+        return False
 
     def fetch_query_summary(self, qid):
         """Returns the object for the given qid"""
@@ -71,14 +70,21 @@ class QuerySummary(Persistent):
         self.dbs = OOBTree()
         self.qid = qid
 
+    def check_db_summary(self, db):
+        """Checks whether a ResultSummary for the given db already exists"""
+        if db in self.db_list:
+            return True
+        return False
+
     def fetch_db_summary(self, uid):
         """Returns the object for the given qid"""
         return self.dbs[uid]
 
     def add_db_summary(self, db, db_summary):
         """Adds a nested object"""
-        self.db_list.append(db)
-        self._p_changed = 1
+        if not db in self.db_list:
+            self.db_list.append(db)
+            self._p_changed = 1
         self.dbs[db] = db_summary
 
 class ResultSummary(Persistent):
@@ -88,7 +94,7 @@ class ResultSummary(Persistent):
     """
     def __init__(self, database):
         self.db = database
-        self.status = 'negative' # assume not positive to start
+        self.status = 'undetermined'
         self.positive_hit_list = []
         self.tentative_hit_list = []
         self.unlikely_hit_list = []

@@ -41,7 +41,10 @@ class SearchSummarizer:
 
     def add_forward_result_summary(self, fwd_uobj, db, query_sum):
         """Returns hits for forward search"""
-        result_sum = summary_obj.ResultSummary(fwd_uobj.database)
+        if query_sum.check_db_summary(db):
+            result_sum = query_sum.fetch_db_summary(db)
+        else:
+            result_sum = summary_obj.ResultSummary(fwd_uobj.database)
         if not self.check_parsed_output(fwd_uobj):
             pass # freak out
         hit_list = fwd_uobj.parsed_result.descriptions
@@ -76,6 +79,7 @@ class SearchSummarizer:
     def summarize_two_results(self):
         """Summarize a forward and reverse search together to determine hits
         based on multiple evalue criteria."""
+        #print('SEARCH: ' + self.fwd_search)
         fwd_sobj = self.sdb[self.fwd_search]
         qsobj = self.qdb.fetch_search(self.fwd_search) # Query search object for intermediate results
         rev_sobj = self.sdb[self.rev_search]
@@ -84,6 +88,8 @@ class SearchSummarizer:
             fwd_qid = fwd_uobj.query
             db = fwd_uobj.database
             fwd_qobj = self.qdb[fwd_qid]
+            #print(fwd_qobj.identity)
+            #print(fwd_qobj.redundant_accs)
             if self.summary.check_query_summary(fwd_qid): # is present already
                 query_sum = self.summary.fetch_query_summary(fwd_qid)
             else:
@@ -97,21 +103,28 @@ class SearchSummarizer:
 
     def add_reverse_result_summary(self, fwd_qobj, fwd_uobj, rev_uobj, db, query_sum):
         """Returns hits for reverse search"""
-        result_sum = summary_obj.ResultSummary(fwd_uobj.database)
+        if query_sum.check_db_summary(db):
+            result_sum = query_sum.fetch_db_summary(db)
+        else:
+            result_sum = summary_obj.ResultSummary(db)
         if not (self.check_parsed_output(fwd_uobj)) or (self.check_parsed_output(rev_uobj)):
             pass # freak out
         fwd_hits = fwd_uobj.parsed_result.descriptions
         self.add_reverse_hits(fwd_qobj, fwd_hits, rev_uobj, result_sum)
-        if len(result_sum.positive_hit_list) > 0:
-            result_sum.status = 'positive'
-        elif len(result_sum.tentative_hit_list) > 0:
-            result_sum.status = 'tentative'
-        elif len(result_sum.unlikely_hit_list) > 0:
-            result_sum.status = 'unlikely'
+        if result_sum.status == 'undetermined':
+            if len(result_sum.positive_hit_list) > 0:
+                result_sum.status = 'positive'
+            elif len(result_sum.tentative_hit_list) > 0:
+                result_sum.status = 'tentative'
+            elif len(result_sum.unlikely_hit_list) > 0:
+                result_sum.status = 'unlikely'
+            else:
+                result_sum.status = 'negative'
         query_sum.add_db_summary(db, result_sum)
 
     def add_reverse_hits(self, fwd_qobj, fwd_hit_list, rev_uobj, result_sum):
         """Returns hits for reverse search"""
+        #print(fwd_qobj.identity)
         if not self.fwd_max_hits:
             fwd_max_hits = len(fwd_hit_list)
         else:
@@ -119,18 +132,21 @@ class SearchSummarizer:
         fwd_hit_index = 0
         for fwd_hit in fwd_hit_list:
             if (fwd_hit_index == fwd_max_hits) or (fwd_hit.e > self.fwd_evalue):
+                #print("stopping at forward hit scans")
                 break # don't need to look further
             elif (self.fwd_evalue is None) or (fwd_hit.e < self.fwd_evalue):
                 if rev_uobj.query in fwd_hit.title: # matching hit/reverse search pair
+                    #print("matching reverse object for " + rev_uobj.name)
                     rev_hits = rev_uobj.parsed_result.descriptions
                     status,pos_hit,neg_hit = self.reverse_hit_status(fwd_qobj, rev_hits)
                     fwd_id = search_util.remove_blast_header(fwd_hit.title)
                     if status != 'negative': # there is a hit to add
+                        print('hit status ' + status)
                         hit = summary_obj.Hit(fwd_id, fwd_hit.e,
                             search_util.remove_blast_header(pos_hit.title), pos_hit.e,
                             search_util.remove_blast_header(neg_hit.title), neg_hit.e,
                             (pos_hit.e - neg_hit.e), status)
-                        result_sum.add_hit(fwd_id, hit)
+                        result_sum.add_hit(fwd_id, hit, status)
             fwd_hit_index += 1
 
     def reverse_hit_status(self, fwd_qobj, rev_hit_list):
@@ -146,16 +162,22 @@ class SearchSummarizer:
             rev_max_hits = self.rev_max_hits
         rev_hit_index = 0
         for rev_hit in rev_hit_list:
-            #print(rev_hit)
+            print(rev_hit.title + ' ' + str(rev_hit.e))
             if (rev_hit_index == rev_max_hits) or (rev_hit.e > self.rev_evalue):
+                #print('stopping reverse scan')
                 break # both of these conditions means we don't need to look more
-            elif (self.rev_evalue is None) or (rev_hit.e < self.rev_evalue):
-                new_title = search_util.remove_blast_header(rev_hit.title)
-                if (new_title == fwd_qobj.identity) or (new_title in fwd_qobj.redundant_accs):
+            if rev_hit.e == 0:
+                #print("zero value evalue")
+                rev_hit.e == 1e-300
+            if (self.rev_evalue is None) or (rev_hit.e < self.rev_evalue):
+                new_title = search_util.remove_blast_header(rev_hit.title).split(' ',1)[0]
+                if (new_title == fwd_qobj.identity) or (self.check_raccs(new_title,fwd_qobj.redundant_accs)):
+                    print("match")
                     if rev_hit_index == (len(rev_hit_list)-1):
                         status = 'positive'
                         break # we only found positive hits
                     if rev_hit_index == 0:
+                        #print('first hit is positive')
                         first_hit_positive = True
                     else:
                         last_hit_positive = True
@@ -163,8 +185,14 @@ class SearchSummarizer:
                         first_positive_hit = rev_hit # store a ref to the first positive hit
                 else: # not a match
                     if not first_negative_hit:
+                        #print('found first negative hit')
                         first_negative_hit = rev_hit # store a ref to the first negative hit
                     if first_hit_positive: # this is the first non-match hit
+                        #print('checking a likely hit')
+                        #print(first_positive_hit.e)
+                        #print(rev_hit.e)
+                        #print(first_positive_hit.e - rev_hit.e)
+                        #print(self.next_evalue)
                         if (self.next_evalue is None) or ((first_positive_hit.e -\
                         rev_hit.e) < self.next_evalue):
                             status = 'positive'
@@ -172,6 +200,11 @@ class SearchSummarizer:
                             status = 'tentative'
                         break # status determined
                     elif last_hit_positive: # first hit wasn't a match but we did find one
+                        #print('checking an unlikely hit')
+                        #print(first_negative_hit.e)
+                        #print(rev_hit.e)
+                        #print(first_negative_hit.e - rev_hit.e)
+                        #print(self.next_evalue)
                         if self.next_evalue is None or ((first_negative_hit.e -\
                         rev_hit.e) < self.next_evalue):
                             status = 'unlikely'
@@ -180,6 +213,7 @@ class SearchSummarizer:
                         break
                     else:
                         pass
+            print()
             rev_hit_index += 1
         return (status, first_positive_hit, first_negative_hit)
 
@@ -193,3 +227,10 @@ class SearchSummarizer:
             except:
                 pass # Again, need to throw error, etc.
         return False # If all else fails, warn user
+
+    def check_raccs(self, acc, racc_list):
+        """Returns true if accession in list of redundant accessions"""
+        for racc in racc_list:
+            if acc in racc:
+                return True
+        return False
