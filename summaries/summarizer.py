@@ -170,7 +170,7 @@ class SearchSummarizer:
                 break # both of these conditions means we don't need to look more
             if rev_hit.e == 0:
                 #print("zero value evalue")
-                rev_hit.e = 1e-300
+                rev_hit.e = 1e-179 # this is purportedly the threshold at which E-values default to 0
             if (self.rev_evalue is None) or (rev_hit.e < self.rev_evalue):
                 new_title = search_util.remove_blast_header(rev_hit.title).split(' ',1)[0]
                 if (new_title == fwd_qobj.identity) or (self.check_raccs(new_title,fwd_qobj.redundant_accs)):
