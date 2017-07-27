@@ -123,7 +123,11 @@ def summarize_results():
 
 def summary_viewer():
     """View information for summaries"""
-    pass
+    window = Toplevel()
+    goat_db = database_config.get_goat_db()
+    result_db = database_config.get_result_db(goat_db)
+    summary_db = database_config.get_summary_db(goat_db)
+    summary_gui.SummaryFrame(summary_db, result_db, window)
 
 def summary_sequences():
     """Obtain sequence file(s) from a summary"""

@@ -98,6 +98,7 @@ class ResultSummary(Persistent):
         self.positive_hit_list = []
         self.tentative_hit_list = []
         self.unlikely_hit_list = []
+        self.lists = ['positive_hit_list','tentative_hit_list','unlikely_hit_list']
         self.hits = OOBTree()
 
     def add_hit(self, hit_id, hit, status='positive'):

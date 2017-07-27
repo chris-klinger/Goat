@@ -86,13 +86,13 @@ class SearchSummarizer:
         fwd_sobj = self.sdb[self.fwd_search]
         qsobj = self.qdb.fetch_search(self.fwd_search) # Query search object for intermediate results
         rev_sobj = self.sdb[self.rev_search]
-        print(str(rev_sobj.databases))
+        #print(str(rev_sobj.databases))
         for fwd_uid in fwd_sobj.list_results():
-            print('forward result id: ' + fwd_uid)
+            #print('forward result id: ' + fwd_uid)
             fwd_uobj = self.udb[fwd_uid]
-            print('forward result queries are : ' + str(fwd_uobj.int_queries))
+            #print('forward result queries are : ' + str(fwd_uobj.int_queries))
             fwd_qid = fwd_uobj.query
-            print('forward query id: ' + fwd_qid)
+            #print('forward query id: ' + fwd_qid)
             db = fwd_uobj.database
             fwd_qobj = self.qdb[fwd_qid]
             #print(fwd_qobj.identity)
@@ -105,18 +105,18 @@ class SearchSummarizer:
             for acc in fwd_uobj.int_queries:
                 for db in rev_sobj.databases:
                     rev_uid = rev_sobj.name + '-' + acc + '-' + db
-                    print('reverse result id: ' + rev_uid)
+                    #print('reverse result id: ' + rev_uid)
                     rev_uobj = self.udb[rev_uid]
-                    print('reverse result name is: ' + rev_uobj.name)
+                    #print('reverse result name is: ' + rev_uobj.name)
                     #print(rev_uobj.int_queries)
                     rev_qobj = qsobj.fetch_query_obj(rev_uobj.query)
                     # confirms rev search object stems from original query
                     if (fwd_qobj.identity == rev_qobj.original_query) and \
                         (rev_uid.split('-')[1] in fwd_uobj.int_queries):
-                        print('reverse result originates from original query')
+                        #print('reverse result originates from original query')
                         self.add_reverse_result_summary(fwd_qobj, fwd_uobj, rev_uobj, db, query_sum)
-                        print()
-                print()
+                        #print()
+                #print()
             self.summary.add_query_summary(fwd_qid, query_sum)
 
     def add_reverse_result_summary(self, fwd_qobj, fwd_uobj, rev_uobj, db, query_sum):
@@ -159,14 +159,14 @@ class SearchSummarizer:
                     #print("matching reverse object for " + rev_uobj.name)
                     #print(fwd_hit.title)
                     rev_hits = rev_uobj.parsed_result.descriptions
-                    status,pos_hit,neg_hit = self.reverse_hit_status(fwd_qobj, rev_hits)
+                    status,pos_hit,neg_hit,e_diff = self.reverse_hit_status(fwd_qobj, rev_hits)
                     fwd_id = search_util.remove_blast_header(fwd_hit.title)
                     if status != 'negative': # there is a hit to add
                         #print('hit status ' + status)
                         hit = summary_obj.Hit(fwd_id, fwd_hit.e,
                             search_util.remove_blast_header(pos_hit.title), pos_hit.e,
                             search_util.remove_blast_header(neg_hit.title), neg_hit.e,
-                            (pos_hit.e - neg_hit.e), status)
+                            e_diff, status)
                         result_sum.add_hit(fwd_id, hit, status)
             fwd_hit_index += 1
 
@@ -175,6 +175,7 @@ class SearchSummarizer:
         status = 'negative'
         first_positive_hit = None
         first_negative_hit = None
+        e_diff = None
         if not self.rev_max_hits:
             rev_max_hits = len(rev_hit_list)
         else:
@@ -198,8 +199,8 @@ class SearchSummarizer:
                         #print(rev_hit.e)
                         #print(math.fabs(math.log(first_negative_hit.e,10) - math.log(rev_hit.e,10)))
                         # Here we want the difference to be less, i.e. the separation is not convincing
-                        if self.next_evalue is None or (math.fabs(math.log(first_negative_hit.e,10) -\
-                        math.log(rev_hit.e,10)) < self.next_evalue):
+                        e_diff = math.fabs(math.log(first_negative_hit.e,10) - math.log(rev_hit.e,10))
+                        if (self.next_evalue is None) or e_diff < self.next_evalue:
                             #print('hit is unlikely')
                             status = 'unlikely'
                         else:
@@ -223,8 +224,8 @@ class SearchSummarizer:
                         #print(rev_hit.e)
                         #print(math.fabs(math.log(first_positive_hit.e,10) - math.log(rev_hit.e,10)))
                         # Here we want the difference to be greater, i.e. the separation is convincing
-                        if (self.next_evalue is None) or (math.fabs(math.log(first_positive_hit.e,10) -\
-                        math.log(rev_hit.e,10)) > self.next_evalue):
+                        e_diff = math.fabs(math.log(first_positive_hit.e,10) - math.log(rev_hit.e,10))
+                        if (self.next_evalue is None) or e_diff > self.next_evalue:
                             #print('hit is positive')
                             status = 'positive'
                         else:
@@ -234,7 +235,7 @@ class SearchSummarizer:
                         break # status determined
             #print()
             rev_hit_index += 1
-        return (status, first_positive_hit, first_negative_hit)
+        return (status, first_positive_hit, first_negative_hit, e_diff)
 
     def check_parsed_output(self, uobj):
         """Returns True if parsed output exists"""
