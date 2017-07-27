@@ -254,7 +254,8 @@ class DatabaseWindow(Frame):
         self.parent = parent
         Label(self, text='Available Databases').pack(expand=YES, fill=X, side=TOP)
         self.rlist = gui_util.ScrollBoxFrame(self,
-                items=[(key,'') for key in record_db.list_records()])
+                items=[(key,'') for key in record_db.list_records()],
+                mode='multiple')
         self.toolbar = Frame(self)
         self.toolbar.pack(side=BOTTOM, expand=YES, fill=X)
         self.pack(expand=YES, fill=BOTH)

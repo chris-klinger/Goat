@@ -37,9 +37,9 @@ class SearchRunner:
         else:
             return os.path.join(tmp_dir, out_string)
 
-    def get_result_id(self, query, db, sep='-'):
+    def get_result_id(self, search_name, query, db, sep='-'):
         """Returns a unique name for each result object"""
-        return sep.join([query, db])
+        return sep.join([search_name, query, db])
 
     def run(self):
         """Runs the search using information in the search object and databases"""
@@ -48,6 +48,7 @@ class SearchRunner:
                 qobj = self.qdb[qid] # fetch associated object from db
             elif self.mode == 'old': # search from previous search
                 # This loop is kind of gross... maybe don't nest objects within search results?
+                # Alternatively, find a more direct way of getting query without so much looping?
                 qsobj = self.qdb.fetch_search(self.fobj.name)
                 for uid in qsobj.list_entries():
                     print(uid)
@@ -59,15 +60,15 @@ class SearchRunner:
             if qobj.target_db: # i.e. is not None
                 if not qobj.target_db in self.sobj.databases: # don't add duplicates
                     self.sobj.databases.append(qobj.target_db) # keep track of databases
-                self.call_run(qid, qobj, qobj.target_db)
+                self.call_run(self.sobj.name, qid, qobj, qobj.target_db)
             else: # run for all dbs
                 for db in self.sobj.databases:
-                    self.call_run(qid, qobj, db)
+                    self.call_run(self.sobj.name, qid, qobj, db)
 
-    def call_run(self, qid, qobj, db):
+    def call_run(self, sid, qid, qobj, db):
         """Calls the run_one for each query/db pair"""
         uniq_out = self.get_unique_outpath(qid, db)
-        result_id = self.get_result_id(qid, db)
+        result_id = self.get_result_id(sid, qid, db)
         db_obj = self.rdb[db]
         for v in db_obj.files.values():
             if v.filetype == self.sobj.db_type:
