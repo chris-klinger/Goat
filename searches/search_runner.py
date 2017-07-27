@@ -57,7 +57,7 @@ class SearchRunner:
                         if query == qid:
                             qobj = uobj.fetch_entry(query)
             if qobj.target_db: # i.e. is not None
-                if not qobj.target_db not in self.sobj.databases: # don't add duplicates
+                if not qobj.target_db in self.sobj.databases: # don't add duplicates
                     self.sobj.databases.append(qobj.target_db) # keep track of databases
                 self.call_run(qid, qobj, qobj.target_db)
             else: # run for all dbs

@@ -34,6 +34,16 @@ class ResultFrame(Frame):
         self.sdb.close()
         self.parent.destroy()
 
+    def onRemove(self):
+        """Removes a search object - eventually should remove associated uids as well?"""
+        item_name = self.results.result_tree.focus()
+        item = self.results.result_tree.item(item_name)
+        if item['tags'][0] == 'search':
+            self.sdb.remove_entry(item['text'])
+        elif item['tags'][0] == 'result':
+            pass
+        self.results.result_tree.update() # lastly, call for an update
+
     def onSubmit(self):
         """Commits any changes and destroys window"""
         self.udb.commit()

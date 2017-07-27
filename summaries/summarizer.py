@@ -86,9 +86,13 @@ class SearchSummarizer:
         fwd_sobj = self.sdb[self.fwd_search]
         qsobj = self.qdb.fetch_search(self.fwd_search) # Query search object for intermediate results
         rev_sobj = self.sdb[self.rev_search]
+        print(str(rev_sobj.databases))
         for fwd_uid in fwd_sobj.list_results():
+            print('forward result id: ' + fwd_uid)
             fwd_uobj = self.udb[fwd_uid]
+            print('forward result queries are : ' + str(fwd_uobj.int_queries))
             fwd_qid = fwd_uobj.query
+            print('forward query id: ' + fwd_qid)
             db = fwd_uobj.database
             fwd_qobj = self.qdb[fwd_qid]
             #print(fwd_qobj.identity)
@@ -97,11 +101,22 @@ class SearchSummarizer:
                 query_sum = self.summary.fetch_query_summary(fwd_qid)
             else:
                 query_sum = summary_obj.QuerySummary(fwd_qid)
-            for rev_uid in rev_sobj.list_results():
-                rev_uobj = self.udb[rev_uid]
-                rev_qobj = qsobj.fetch_query_obj(rev_uobj.query)
-                if fwd_qobj.identity == rev_qobj.original_query: # rev result originates from original query
-                    self.add_reverse_result_summary(fwd_qobj, fwd_uobj, rev_uobj, db, query_sum)
+            #for rev_uid in rev_sobj.list_results():
+            for acc in fwd_uobj.int_queries:
+                for db in rev_sobj.databases:
+                    rev_uid = acc + '-' + db
+                    print('reverse result id: ' + rev_uid)
+                    rev_uobj = self.udb[rev_uid]
+                    print('reverse result name is: ' + rev_uobj.name)
+                    #print(rev_uobj.int_queries)
+                    rev_qobj = qsobj.fetch_query_obj(rev_uobj.query)
+                    # confirms rev search object stems from original query
+                    if (fwd_qobj.identity == rev_qobj.original_query) and \
+                        (rev_uid.split('-',1)[0] in fwd_uobj.int_queries):
+                        print('reverse result originates from original query')
+                        self.add_reverse_result_summary(fwd_qobj, fwd_uobj, rev_uobj, db, query_sum)
+                        print()
+                print()
             self.summary.add_query_summary(fwd_qid, query_sum)
 
     def add_reverse_result_summary(self, fwd_qobj, fwd_uobj, rev_uobj, db, query_sum):
@@ -134,13 +149,15 @@ class SearchSummarizer:
             fwd_max_hits = self.fwd_max_hits
         fwd_hit_index = 0
         for fwd_hit in fwd_hit_list:
+            #new_title = search_util.remove_blast_header(fwd_hit.title)
+            #print('forward hit is ' + new_title + ' ' + str(fwd_hit.e))
             if (fwd_hit_index == fwd_max_hits) or (fwd_hit.e > self.fwd_evalue):
                 #print("stopping at forward hit scans")
                 break # don't need to look further
             elif (self.fwd_evalue is None) or (fwd_hit.e < self.fwd_evalue):
                 if rev_uobj.query in fwd_hit.title: # matching hit/reverse search pair
                     #print("matching reverse object for " + rev_uobj.name)
-                    print(fwd_hit.title)
+                    #print(fwd_hit.title)
                     rev_hits = rev_uobj.parsed_result.descriptions
                     status,pos_hit,neg_hit = self.reverse_hit_status(fwd_qobj, rev_hits)
                     fwd_id = search_util.remove_blast_header(fwd_hit.title)
@@ -164,9 +181,9 @@ class SearchSummarizer:
             rev_max_hits = self.rev_max_hits
         rev_hit_index = 0
         for rev_hit in rev_hit_list:
-            print(rev_hit.title + ' ' + str(rev_hit.e))
+            #print(rev_hit.title + ' ' + str(rev_hit.e))
             if (rev_hit_index == rev_max_hits) or (rev_hit.e > self.rev_evalue):
-                print('stopping reverse scan')
+                #print('stopping reverse scan')
                 break # both of these conditions means we don't need to look more
             if rev_hit.e == 0:
                 #print("zero value evalue")
@@ -174,48 +191,48 @@ class SearchSummarizer:
             if (self.rev_evalue is None) or (rev_hit.e < self.rev_evalue):
                 new_title = search_util.remove_blast_header(rev_hit.title).split(' ',1)[0]
                 if (new_title == fwd_qobj.identity) or (self.check_raccs(new_title,fwd_qobj.redundant_accs)):
-                    print("match")
+                    #print("match")
                     if first_negative_hit: # this is the first positive hit
-                        print('checking an unlikely hit')
-                        print(first_negative_hit.e)
-                        print(rev_hit.e)
-                        print(math.fabs(math.log(first_negative_hit.e,10) - math.log(rev_hit.e,10)))
+                        #print('checking an unlikely hit')
+                        #print(first_negative_hit.e)
+                        #print(rev_hit.e)
+                        #print(math.fabs(math.log(first_negative_hit.e,10) - math.log(rev_hit.e,10)))
                         # Here we want the difference to be less, i.e. the separation is not convincing
                         if self.next_evalue is None or (math.fabs(math.log(first_negative_hit.e,10) -\
                         math.log(rev_hit.e,10)) < self.next_evalue):
-                            print('hit is unlikely')
+                            #print('hit is unlikely')
                             status = 'unlikely'
                         else:
-                            print('hit is negative')
+                            #print('hit is negative')
                             status = 'negative'
-                        print()
+                        #print()
                         break
                     if rev_hit_index == (len(rev_hit_list)-1):
                         status = 'positive'
                         break # we only found positive hits
                     if rev_hit_index == 0:
-                        print('first hit is positive')
+                        #print('first hit is positive')
                         first_positive_hit = rev_hit # store a ref to the first positive hit
                 else: # not a match
                     if not first_negative_hit:
-                        print('found first negative hit')
+                        #print('found first negative hit')
                         first_negative_hit = rev_hit # store a ref to the first negative hit
                     if first_positive_hit: # this is the first non-match hit
-                        print('checking a likely hit')
-                        print(first_positive_hit.e)
-                        print(rev_hit.e)
-                        print(math.fabs(math.log(first_positive_hit.e,10) - math.log(rev_hit.e,10)))
+                        #print('checking a likely hit')
+                        #print(first_positive_hit.e)
+                        #print(rev_hit.e)
+                        #print(math.fabs(math.log(first_positive_hit.e,10) - math.log(rev_hit.e,10)))
                         # Here we want the difference to be greater, i.e. the separation is convincing
                         if (self.next_evalue is None) or (math.fabs(math.log(first_positive_hit.e,10) -\
                         math.log(rev_hit.e,10)) > self.next_evalue):
-                            print('hit is positive')
+                            #print('hit is positive')
                             status = 'positive'
                         else:
-                            print('hit is tentative')
+                            #print('hit is tentative')
                             status = 'tentative'
-                        print()
+                        #print()
                         break # status determined
-            print()
+            #print()
             rev_hit_index += 1
         return (status, first_positive_hit, first_negative_hit)
 
