@@ -129,15 +129,15 @@ class SearchSummarizer:
             pass # freak out
         fwd_hits = fwd_uobj.parsed_result.descriptions
         self.add_reverse_hits(fwd_qobj, fwd_hits, rev_uobj, result_sum)
-        if result_sum.status == 'undetermined':
+        if not result_sum.determined():
+            #print(result_sum.db)
+            #print(result_sum.positive_hit_list)
             if len(result_sum.positive_hit_list) > 0:
-                result_sum.status = 'positive'
+                result_sum.determined('positive')
             elif len(result_sum.tentative_hit_list) > 0:
-                result_sum.status = 'tentative'
+                result_sum.determined('tentative')
             elif len(result_sum.unlikely_hit_list) > 0:
-                result_sum.status = 'unlikely'
-            else:
-                result_sum.status = 'negative'
+                result_sum.determined('unlikely')
         query_sum.add_db_summary(db, result_sum)
 
     def add_reverse_hits(self, fwd_qobj, fwd_hit_list, rev_uobj, result_sum):

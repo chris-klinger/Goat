@@ -94,12 +94,22 @@ class ResultSummary(Persistent):
     """
     def __init__(self, database):
         self.db = database
-        self.status = 'undetermined'
+        self.status = 'negative'
         self.positive_hit_list = []
         self.tentative_hit_list = []
         self.unlikely_hit_list = []
         self.lists = ['positive_hit_list','tentative_hit_list','unlikely_hit_list']
         self.hits = OOBTree()
+        self._determined = False # whether or not the status has been determined
+
+    def determined(self, status=None):
+        """Called with no args to check the value of self._determined, called with
+        one arg to set that value"""
+        if not status:
+            return self._determined
+        else:
+            self.status = status
+            self._determined = True
 
     def add_hit(self, hit_id, hit, status='positive'):
         """Adds a hit (positive or tentative) to the appropriate internal list;
