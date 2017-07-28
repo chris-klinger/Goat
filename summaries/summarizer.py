@@ -171,7 +171,7 @@ class SearchSummarizer:
                             search_util.remove_blast_header(neg_hit.title), neg_hit.e,
                             e_diff, status)
                         #for k,v in hit.__dict__.items():
-                            # print(str(k) + ' ' + str(v))
+                            #print(str(k) + ' ' + str(v))
                         result_sum.add_hit(fwd_id, hit, status)
             fwd_hit_index += 1
 

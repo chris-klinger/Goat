@@ -9,6 +9,7 @@ from tkinter import ttk
 
 from gui.util import gui_util, input_form
 from summaries import summary_obj, summarizer
+from util import util
 
 ################################
 # Code for summarizing results #
@@ -183,6 +184,8 @@ class TwoSearchFrame(Frame):
         summer = summarizer.SearchSummarizer(sum_obj,
                 self.qdb, self.sdb, self.udb)
         summer.summarize_two_results()
+        #print()
+        #print()
         #print('\n' + str(sum_obj))
         #for qid in sum_obj.queries:
             #print('\t' + qid)
@@ -191,6 +194,9 @@ class TwoSearchFrame(Frame):
                 #print('\t\t' + uid)
                 #uobj = qobj.fetch_db_summary(uid)
                 #for hit in uobj.positive_hit_list:
+                    #hobj = uobj.hits[hit]
+                    #for k,v in hobj.__dict__.items():
+                        #print(str(k) + ' ' + str(v))
                     #print('\t\t\t' + str(hit))
         self.mdb.add_entry(name, sum_obj)
         self.mdb.commit()
@@ -230,8 +236,8 @@ class SummaryFrame(Frame):
         """Removes a summary object and all associated sub-objects. Removal should
         be by whole summary, not individual sub-objects, and in fact, perhaps may
         make this an illegal operation?"""
-        item_name = self.results.result_tree.focus()
-        item = self.results.result_tree.item(item_name)
+        item_name = self.summaries.summary_tree.focus()
+        item = self.summaries.summary_tree.item(item_name)
         if item['tags'][0] == 'summary':
             self.mdb.remove_entry(item['text'])
         else: # do we want to allow removal of anything other than summaries?
@@ -285,22 +291,30 @@ class SummaryTree(ttk.Treeview):
 
     def make_tree(self):
         """Builds a treeview display of searches/results"""
+        counter = util.IDCounter()
         for summary in self.mdb.list_entries():
+            uniq_s = str(counter.get_new_id())
+            #print(uniq_s)
             mobj = self.mdb[summary]
-            self.insert('','end',mobj,text=summary,tags=('summary'))
+            self.insert('','end',uniq_s,text=summary,tags=('summary'))
             for qid in mobj.query_list:
+                uniq_q = str(counter.get_new_id())
+                #print(uniq_q)
                 qobj = mobj.queries[qid]
-                self.insert(mobj,'end',qobj,text=qid,tags=('querysum'))
+                self.insert(uniq_s,'end',uniq_q,text=qid,tags=('querysum'))
                 for db in qobj.db_list:
+                    uniq_d = str(counter.get_new_id())
                     dbobj = qobj.dbs[db]
-                    self.insert(qobj,'end',dbobj,text=db,tags=('dbsum'))
+                    self.insert(uniq_q,'end',uniq_d,text=db,tags=('dbsum'))
                     for hitlist in dbobj.lists:
                         lobj = getattr(dbobj,hitlist)
                         if not len(lobj) == 0: # don't care about empty lists
-                            self.insert(dbobj,'end',lobj,text=hitlist,tags=('hitlist'))
+                            uniq_l = str(counter.get_new_id())
+                            self.insert(uniq_d,'end',uniq_l,text=hitlist,tags=('hitlist'))
                             for hit in lobj: # object here is a simple list
-                                hobj = dbobj.hits[hit]
-                                self.insert(lobj,'end',hobj,text=hit,tags=('hit'))
+                                uniq_h = str(counter.get_new_id())
+                                #hobj = dbobj.hits[hit]
+                                self.insert(uniq_l,'end',uniq_h,text=hit,tags=('hit'))
 
     def itemClicked(self, tag):
         """Builds a list of information for display by ResultInfo panel for
@@ -343,10 +357,10 @@ class SummaryTree(ttk.Treeview):
             tlist.extend([status, len(db_obj)])
             self.info.update_info('hitlist', *tlist)
         elif tag == 'hit':
-            print(tag)
-            print(db_obj)
-            for k,v in db_obj.__dict__.items():
-                print(str(k) + ' ' + str(v))
+            #print(tag)
+            #print(db_obj)
+            #for k,v in db_obj.__dict__.items():
+                #print(str(k) + ' ' + str(v))
             hlist = []
             hlist.extend([db_obj.fwd_id, db_obj.fwd_evalue])
             if db_obj.pos_rev_id: # not None
@@ -378,10 +392,14 @@ class SummaryTree(ttk.Treeview):
         elif index == 2:
             new_obj = obj.dbs[item]
             db_obj = new_obj
+            #print(db_obj)
         elif index == 3:
             new_obj = getattr(obj,item) # lists
         else:
+            #print('DB object is: ' + str(db_obj))
+            #print(item)
             new_obj = db_obj.hits[item] # go back to ResultSummary for actual hit
+            #print(new_obj.fwd_id)
         if len(item_list) == 1: # only one item remaining
             return new_obj
         else:
@@ -434,5 +452,7 @@ class ResultInfo(ttk.Label):
             labels.append('Hit Status')
         for l,v in zip(labels,values):
             display_string += (l + str(v) + '\n')
+        #print('Calling display info for tag: ' + display_type)
+        #print(str(values))
         self.displayInfo.set(display_string)
 
