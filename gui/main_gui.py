@@ -139,7 +139,10 @@ def summary_graphic():
 
 def summary_table():
     """Obtain a csv file containing summary information"""
-    pass
+    window = Toplevel()
+    goat_db = database_config.get_goat_db()
+    summary_db = database_config.get_summary_db(goat_db)
+    summary_gui.TableFrame(summary_db, window)
 
 def query_popup():
     window = Toplevel()

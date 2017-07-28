@@ -4,11 +4,12 @@ User is asked to choose between one or two searches to summarize, and then
 depending on this choice to fill in different forms for relevant information.
 """
 
+import os
 from tkinter import *
 from tkinter import ttk
 
 from gui.util import gui_util, input_form
-from summaries import summary_obj, summarizer
+from summaries import summary_obj, summarizer, summary_writer
 from util import util
 
 ################################
@@ -456,3 +457,66 @@ class ResultInfo(ttk.Label):
         #print(str(values))
         self.displayInfo.set(display_string)
 
+###################################################
+# Code for user input to create output table file #
+###################################################
+
+class TableFrame(Frame):
+    def __init__(self, summary_db, parent=None):
+        Frame.__init__(self, parent)
+        self.pack(expand=YES, fill=BOTH)
+        self.mdb = summary_db
+        self.curdir = os.getcwd()
+        self.entries = input_form.DefaultValueForm([('Name of output file',''),
+                ('Location',self.curdir)], self,
+                [('Choose Directory', self.onChoose, {'side':RIGHT})]) # buttons
+        self.summary = gui_util.ComboBoxFrame(self,
+                choices=list(self.mdb.list_entries()),
+                labeltext='Summary to output table name for')
+        self.toolbar = Frame(self)
+        self.toolbar.pack(side=BOTTOM, fill=X)
+
+        self.parent = parent
+        self.parent.protocol("WM_DELETE_WINDOW", self.onClose)
+
+        self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
+                        ('Cancel', self.onClose, {'side':RIGHT})]
+        for (label, action, where) in self.buttons:
+            Button(self.toolbar, text=label, command=action).pack(where)
+
+    def onChoose(self):
+        """Pops up directory choice"""
+        dirpath = filedialog.askdirectory()
+        for entry_row in self.entries.row_list:
+            if entry_row.label_text == 'Location':
+                entry_row.entry.delete(0,'end') # delete previous entry first
+                entry_row.entry.insert(0,dirpath)
+
+    def onClose(self):
+        """Closes dbs and destroys window"""
+        self.mdb.close()
+        self.parent.destroy()
+
+    def onSubmit(self):
+        """Gets information to generate a writer object and write info"""
+        for row in self.entries.row_list:
+            if row.label_text == 'Name of output file':
+                name = row.entry.get()
+            else: # other row
+                outdir = row.entry.get()
+        sname = self.summary.selected.get()
+        sobj = self.mdb[sname]
+        # now check for file details
+        if name == '': # user did not enter value
+            name = sname + '_summary_table.csv'
+        else:
+            if not name.endswith('.csv'):
+                name = name + '.csv'
+        outpath = os.path.join(outdir,name)
+        if os.path.exists(outpath):
+            pass # freak out
+        fobj = open(outpath,'w') # open file for writing
+        # Finally, instantiate the required object and run it
+        writer = summary_writer.ResultSummaryWriter(sobj, fobj)
+        writer.write()
+        self.onClose()
