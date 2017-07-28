@@ -160,6 +160,9 @@ class SearchSummarizer:
                     #print(fwd_hit.title)
                     rev_hits = rev_uobj.parsed_result.descriptions
                     status,pos_hit,neg_hit,e_diff = self.reverse_hit_status(fwd_qobj, rev_hits)
+                    #print(status)
+                    #print(pos_hit)
+                    #print(neg_hit)
                     fwd_id = search_util.remove_blast_header(fwd_hit.title)
                     if status != 'negative': # there is a hit to add
                         #print('hit status ' + status)
@@ -167,6 +170,8 @@ class SearchSummarizer:
                             search_util.remove_blast_header(pos_hit.title), pos_hit.e,
                             search_util.remove_blast_header(neg_hit.title), neg_hit.e,
                             e_diff, status)
+                        #for k,v in hit.__dict__.items():
+                            # print(str(k) + ' ' + str(v))
                         result_sum.add_hit(fwd_id, hit, status)
             fwd_hit_index += 1
 

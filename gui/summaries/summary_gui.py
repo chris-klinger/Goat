@@ -324,17 +324,37 @@ class SummaryTree(ttk.Treeview):
             mlist.append(db_obj.next_evalue)
             self.info.update_info('summary', *mlist)
         elif tag == 'querysum':
-            #print(db_obj)
-            pass
+            qlist = []
+            qlist.extend([item['text'], len(db_obj.db_list)])
+            self.info.update_info('querysum', *qlist)
         elif tag == 'dbsum':
-            #print(db_obj)
-            pass
+            dlist = []
+            dlist.extend([item['text'], db_obj.status])
+            self.info.update_info('dbsum', *dlist)
         elif tag == 'hitlist':
-            #print(db_obj)
-            pass
+            tlist = []
+            name = item['text']
+            if name == 'positive_hit_list':
+                status = 'positive'
+            elif name == 'tentative_hit_list':
+                status = 'tentative'
+            else: # unlikely
+                status = 'unlikely'
+            tlist.extend([status, len(db_obj)])
+            self.info.update_info('hitlist', *tlist)
         elif tag == 'hit':
-            #print(db_obj)
-            pass
+            print(tag)
+            print(db_obj)
+            for k,v in db_obj.__dict__.items():
+                print(str(k) + ' ' + str(v))
+            hlist = []
+            hlist.extend([db_obj.fwd_id, db_obj.fwd_evalue])
+            if db_obj.pos_rev_id: # not None
+                hlist.extend([db_obj.pos_rev_id, db_obj.pos_rev_evalue,
+                    db_obj.neg_rev_id, db_obj.neg_rev_evalue,
+                    db_obj.rev_evalue_diff])
+            hlist.append(db_obj.status)
+            self.info.update_info('hit', *hlist)
 
     def get_ancestors(self, item_name, item_list=[]):
         """Recurs until root node to return a list of ancestors"""
@@ -394,7 +414,24 @@ class ResultInfo(ttk.Label):
                     'Reverse E-value cutoff: ', 'Reverse Hit Number Cutoff: '])
             labels.append('Next Hit Evalue Cutoff: ')
         elif display_type == 'querysum':
-            pass
+            display_string += ('Query Information: \n\n\n')
+            labels = ['Query Name: ', 'Number of Databases Searched In: ']
+        elif display_type == 'dbsum':
+            display_string += ('Database Information: \n\n\n')
+            labels = ['Database Name: ', 'Status of Searches in Database: ']
+        elif display_type == 'hitlist':
+            display_string += ('Hit Group Information: \n\n\n')
+            labels = ['Hit status(es): ', 'Number of Hits: ']
+        elif display_type == 'hit':
+            display_string += ('Hit Information: \n\n\n')
+            labels = ['Forward Query ID: ', 'Forward Evalue: ']
+            if len(values) > 3:
+                labels.extend(['First Positive Reverse Hit ID: ',
+                    'First Positive Reverse Hit Evalue: ',
+                    'First Negative Reverse Hit ID: ',
+                    'First Negative Reverse Hit Evalue: ',
+                    'Reverse Hits Evalue Difference: '])
+            labels.append('Hit Status')
         for l,v in zip(labels,values):
             display_string += (l + str(v) + '\n')
         self.displayInfo.set(display_string)
