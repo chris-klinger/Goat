@@ -9,10 +9,13 @@ search.
 
 import os
 
+from tkinter import *
 from Bio.Blast import NCBIXML
 
 from searches.blast import blast_setup
 from results import result_obj
+
+from gui.searches import threaded_search
 
 # Placeholder - should be through settings eventually
 blast_path = '/usr/local/ncbi/blast/bin'
@@ -21,13 +24,15 @@ tmp_dir = '/Users/cklinger/git/Goat/tmp'
 class SearchRunner:
     """Actually runs searches"""
     def __init__(self, search_obj, query_db, record_db, result_db,
-            mode='new', fwd_search=None):
+            mode='new', fwd_search=None, threaded=False):
         self.sobj = search_obj
         self.qdb = query_db
         self.rdb = record_db
         self.udb = result_db
         self.mode = mode
         self.fobj = fwd_search
+        self.threaded = threaded # threaded or not
+        self.search_list = [] # for threading searches
 
     def get_unique_outpath(self, query, db, sep='-'):
         """Returns an outpath for a given query and database"""
@@ -64,6 +69,11 @@ class SearchRunner:
             else: # run for all dbs
                 for db in self.sobj.databases:
                     self.call_run(self.sobj.name, qid, qobj, db)
+        if self.threaded:
+            popup = Toplevel()
+            runner = threaded_search.ProgressFrame(self.search_list,
+                    callback = self.threaded_callback, parent=popup)
+            runner.run()
 
     def call_run(self, sid, qid, qobj, db):
         """Calls the run_one for each query/db pair"""
@@ -73,7 +83,10 @@ class SearchRunner:
         for v in db_obj.files.values():
             if v.filetype == self.sobj.db_type:
                 dbf = v.filepath # worry about more than one possible file?
-        self.run_one(qid, db, qobj, dbf, uniq_out, self.udb, result_id)
+        if self.threaded:
+            self.search_list.append([self.sobj,qid, db, qobj, dbf, uniq_out, self.udb, result_id])
+        else:
+            self.run_one(qid, db, qobj, dbf, uniq_out, self.udb, result_id)
 
     def run_one(self, qid, db, qobj, dbf, outpath, result_db, result_id):
         """Runs each individual search"""
@@ -102,6 +115,15 @@ class SearchRunner:
                 blast_result = NCBIXML.read(open(robj.outpath))
                 robj.parsed_result = blast_result
                 robj.parsed = True
-            if not self.sobj.keep_output and robj.parsed:
+            if not self.sobj.keep_output: #and robj.parsed:
                 os.remove(robj.outpath)
             self.udb[result] = robj # add back to db
+
+    def threaded_callback(self, *robjs):
+        """Takes care of doing things with the completed searches"""
+        print("Calling thread callback function")
+        for robj in robjs:
+            rid = robj.name
+            self.sobj.add_result(rid)
+            self.udb[rid] = robj
+        self.parse()

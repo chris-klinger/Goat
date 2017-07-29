@@ -71,8 +71,10 @@ class SearchFrame(Frame):
         # store search object in database
         self.sdb[sname] = sobj # should eventually make a check that we did actually select something!
         # now run the search and parse the output
-        runner = search_runner.SearchRunner(sobj, self.qdb, self.rdb, self.udb)
-        print("calling runner.run() from forward search")
+        #runner = search_runner.SearchRunner(sobj, self.qdb, self.rdb, self.udb)
+        runner = search_runner.SearchRunner(sobj, self.qdb, self.rdb, self.udb,
+                threaded=True)
+        print("calling threaded runner.run() from forward search")
         runner.run()
         print("calling runner.parse() from forward search")
         runner.parse()
