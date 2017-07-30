@@ -8,6 +8,7 @@ indication of overall progress.
 from tkinter import *
 from tkinter import ttk
 import threading, queue
+#import time
 
 from searches.blast import blast_setup
 from results import result_obj
@@ -21,9 +22,6 @@ class ProgressFrame(Frame):
         Frame.__init__(self, parent)
         self.pack()
         self.search_list = search_list # list with objects and args
-        self._length = len(self.search_list)
-        self.queue = queue.Queue()
-        self.robjs = [] # initialize and empty list
         self.callback = callback
         self.callback_args = callback_args
         self.parent = parent
@@ -42,16 +40,14 @@ class ProgressFrame(Frame):
                 maximum = len(self.search_list))
         self.p.pack()
 
-        self.run()
-
-    def run(self):
-        """Instantiates the thread consumer/queue and calls the thread"""
-        # Invoke a non-blocking thread parallel to GUI
+        # start producer thread, consumer loop
+        self.queue = queue.Queue()
         threading.Thread(target=self._run).start()
         self.thread_consumer()
 
     def _run(self):
         """Function called by the thread, runs each BLAST search"""
+        robjs = []
         for sobj,qid,db,qobj,dbf,outpath,rdb,rid in self.search_list:
             if sobj.algorithm == 'blast':
                 if sobj.q_type == 'protein' and sobj.db_type == 'protein':
@@ -59,22 +55,25 @@ class ProgressFrame(Frame):
                         dbf, outpath)
                     blast_search.run_from_stdin()
             robj = result_obj.Result(rid, sobj.algorithm,
-            sobj.q_type, sobj.db_type, qid, db, sobj.name, outpath)
-            self.queue.put(robj) # indicates success
+                sobj.q_type, sobj.db_type, qid, db, sobj.name, outpath)
+            robjs.append(robj)
+            curr_val = self.pvar.get()
+            curr_val += 1
+            self.pvar.set(curr_val)
+        self.queue.put(robjs) # indicates success
 
     def thread_consumer(self):
         """Checks the queue regularly for new results"""
-        while not len(self.robjs) == self._length: # still BLAST results to get
-            try:
-                new_robj = self.queue.get(block=False)
-                self.robjs.append(new_robj)
-                curr_val = self.pvar.get()
-                curr_val += 1
-                self.pvar.set(curr_val)
-            except(queue.Empty): # nothing to grab
-                self.after(250, self.thread_consumer)
+        #while not len(self.robjs) == self._length: # still BLAST results to get
+        try:
+            #print('trying')
+            robjs = self.queue.get(block=False)
+        except(queue.Empty): # nothing to grab
+            #print('got nothing')
+            self.after(200, self.thread_consumer)
         # when finished
-        if self.callback:
-            self.callback_args = self.robjs
-            self.callback(*self.callback_args)
-        self.parent.destroy()
+        else:
+            #print("calling else block")
+            if self.callback:
+                self.callback(*robjs)
+            self.parent.destroy()
