@@ -8,6 +8,8 @@ remove result objects though.
 from tkinter import *
 from tkinter import ttk
 
+from util import util
+
 class ResultFrame(Frame):
     def __init__(self, result_db, search_db, parent=None):
         Frame.__init__(self, parent)
@@ -85,19 +87,23 @@ class ResultTree(ttk.Treeview):
 
     def make_tree(self):
         """Builds a treeview display of searches/results"""
+        counter = util.IDCounter()
         for search in self.sdb.list_entries():
-            self.insert('','end',search,text=search,tags=('search'))
+            uniq_s = str(counter.get_new_id())
+            self.insert('','end',uniq_s,text=search,tags=('search'))
             sobj = self.sdb[search]
             for result_id in sobj.list_results():
-                self.insert(search,'end',result_id,text=result_id,tags=('result'))
+                uniq_r = str(counter.get_new_id())
+                self.insert(uniq_s,'end',uniq_r,text=result_id,tags=('result'))
 
     def itemClicked(self, item_type):
         """Builds a list of information for display by ResultInfo panel for
         either searches or results; delegates formatting/display to panel"""
-        item = self.focus()
+        item_id = self.focus()
+        item = self.item(item_id)
         if item_type == 'search':
             slist = []
-            sobj = self.sdb[item]
+            sobj = self.sdb[item['text']]
             slist.extend([sobj.name, sobj.algorithm, sobj.q_type, sobj.db_type,
                 len(sobj.results)])
             # Following try/except to deal with issue in previous search_runner;
@@ -109,7 +115,7 @@ class ResultTree(ttk.Treeview):
             self.info.update_info('search', *slist)
         elif item_type == 'result':
             ulist = []
-            uobj = self.udb[item]
+            uobj = self.udb[item['text']]
             ulist.extend([uobj.name, uobj.query, uobj.database]) # add num hits?
             self.info.update_info('result', *ulist)
 
