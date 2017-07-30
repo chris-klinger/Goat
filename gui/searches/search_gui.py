@@ -55,7 +55,7 @@ class SearchFrame(Frame):
                 sname = row.entry.get()
             elif row.label_text == 'Location':
                 location = row.entry.get()
-        if params.keep_output.checked == 0:
+        if params.keep_output.checked.get() == 0:
             ko = False
         else:
             ko = True
@@ -343,7 +343,7 @@ class ReverseSearchFrame(Frame):
                 sname = row.entry.get()
             elif row.label_text == 'Location':
                 location = row.entry.get()
-        if params.keep_output.checked == 0:
+        if params.keep_output.checked.get() == 0:
             ko = False
         else:
             ko = True

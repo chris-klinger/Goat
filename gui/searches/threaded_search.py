@@ -24,7 +24,7 @@ class ProgressFrame(Frame):
         self.algorithm = algorithm
         self.search_list = search_list # list with objects and args
         self.num_todo = len(search_list)
-        self.num_finished = 0
+        self.num_finished = 1 # don't index from zero, first search is number 1
         self.callback = callback
         self.callback_args = callback_args
 
