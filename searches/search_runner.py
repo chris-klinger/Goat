@@ -24,7 +24,7 @@ tmp_dir = '/Users/cklinger/git/Goat/tmp'
 class SearchRunner:
     """Actually runs searches"""
     def __init__(self, search_obj, query_db, record_db, result_db,
-            mode='new', fwd_search=None, threaded=False):
+            mode='new', fwd_search=None, threaded=False, gui=None):
         self.sobj = search_obj
         self.qdb = query_db
         self.rdb = record_db
@@ -33,6 +33,7 @@ class SearchRunner:
         self.fobj = fwd_search
         self.threaded = threaded # threaded or not
         self.search_list = [] # for threading searches
+        self.gui = gui # used to close
 
     def get_unique_outpath(self, query, db, sep='-'):
         """Returns an outpath for a given query and database"""
@@ -56,10 +57,10 @@ class SearchRunner:
                 # Alternatively, find a more direct way of getting query without so much looping?
                 qsobj = self.qdb.fetch_search(self.fobj.name)
                 for uid in qsobj.list_entries():
-                    print(uid)
+                    #print(uid)
                     uobj = qsobj.fetch_entry(uid)
                     for query in uobj.list_entries():
-                        print(query)
+                        #print(query)
                         if query == qid:
                             qobj = uobj.fetch_entry(query)
             if qobj.target_db: # i.e. is not None
@@ -70,10 +71,10 @@ class SearchRunner:
                 for db in self.sobj.databases:
                     self.call_run(self.sobj.name, qid, qobj, db)
         if self.threaded:
-            popup = Toplevel()
-            runner = threaded_search.ProgressFrame(self.search_list,
+            print('calling popup')
+            popup = Tk()
+            threaded_search.ProgressFrame(self.search_list,
                     callback = self.threaded_callback, parent=popup)
-            runner.run()
 
     def call_run(self, sid, qid, qobj, db):
         """Calls the run_one for each query/db pair"""
@@ -127,3 +128,4 @@ class SearchRunner:
             self.sobj.add_result(rid)
             self.udb[rid] = robj
         self.parse()
+        self.gui.onSaveQuit()

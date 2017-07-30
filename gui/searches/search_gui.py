@@ -73,13 +73,13 @@ class SearchFrame(Frame):
         # now run the search and parse the output
         #runner = search_runner.SearchRunner(sobj, self.qdb, self.rdb, self.udb)
         runner = search_runner.SearchRunner(sobj, self.qdb, self.rdb, self.udb,
-                threaded=True)
+                threaded=True, gui=self)
         print("calling threaded runner.run() from forward search")
         runner.run()
-        print("calling runner.parse() from forward search")
-        runner.parse()
-        print("calling self.onSaveQuit() from forward search")
-        self.onSaveQuit()
+        #print("calling runner.parse() from forward search")
+        #runner.parse()
+        #print("calling self.onSaveQuit() from forward search")
+        #self.onSaveQuit()
 
 class SearchGui(ttk.Panedwindow):
     def __init__(self, query_db, record_db, parent=None):
@@ -332,10 +332,10 @@ class ReverseSearchFrame(Frame):
         # Now get all needed queries
         queries = []
         for uid in fwd_sobj.list_results(): # result ids
-            print(uid)
+            #print(uid)
             uobj = self.udb[uid]
             for qid in uobj.list_queries():
-                print('\t' + str(qid))
+                #print('\t' + str(qid))
                 queries.append(qid)
         params = self.params
         for row in params.entries.row_list:
@@ -359,14 +359,18 @@ class ReverseSearchFrame(Frame):
         # store search object in database
         self.sdb[sname] = rev_sobj # should eventually make a check that we did actually select something!
         # now run the search and parse the output
+        #runner = search_runner.SearchRunner(rev_sobj, self.qdb, self.rdb, self.udb,
+                #mode='old', fwd_search=fwd_sobj)
+        #print("calling runner.run() from reverse search")
+        #runner.run()
         runner = search_runner.SearchRunner(rev_sobj, self.qdb, self.rdb, self.udb,
-                mode='old', fwd_search=fwd_sobj)
-        print("calling runner.run() from reverse search")
+                mode='old', fwd_search=fwd_sobj, threaded=True, gui=self)
+        print("calling threaded runner.run() from reverse search")
         runner.run()
-        print("calling runner.parse() from reverse search")
-        runner.parse()
-        print("calling self.onSaveQuit() from reverse search")
-        self.onSaveQuit()
+        #print("calling runner.parse() from reverse search")
+        #runner.parse()
+        #print("calling self.onSaveQuit() from reverse search")
+        #self.onSaveQuit()
 
 class ReverseParamFrame(Frame):
     """Like ParamFrame, but without query and db type options"""

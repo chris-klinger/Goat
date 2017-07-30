@@ -42,10 +42,12 @@ class ProgressFrame(Frame):
                 maximum = len(self.search_list))
         self.p.pack()
 
+        self.run()
+
     def run(self):
         """Instantiates the thread consumer/queue and calls the thread"""
         # Invoke a non-blocking thread parallel to GUI
-        threading.Thread(target = self._run).start()
+        threading.Thread(target=self._run).start()
         self.thread_consumer()
 
     def _run(self):
@@ -62,16 +64,17 @@ class ProgressFrame(Frame):
 
     def thread_consumer(self):
         """Checks the queue regularly for new results"""
-        try:
-            new_robj = self.queue.get(block=False)
-            self.robjs.append(new_robj)
-            curr_val = self.pvar.get()
-            curr_val += 1
-            self.pvar.set(curr_val)
-        except(queue.Empty): # nothing to grab
-            self.after(250, self.thread_consumer)
-        else: # when finished
-            if self.callback:
-                self.callback_args = self.robjs
-                self.callback(*self.callback_args)
-            self.parent.destroy()
+        while not len(self.robjs) == self._length: # still BLAST results to get
+            try:
+                new_robj = self.queue.get(block=False)
+                self.robjs.append(new_robj)
+                curr_val = self.pvar.get()
+                curr_val += 1
+                self.pvar.set(curr_val)
+            except(queue.Empty): # nothing to grab
+                self.after(250, self.thread_consumer)
+        # when finished
+        if self.callback:
+            self.callback_args = self.robjs
+            self.callback(*self.callback_args)
+        self.parent.destroy()

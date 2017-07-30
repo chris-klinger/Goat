@@ -75,18 +75,18 @@ def search_popup():
     record_db = database_config.get_record_db(goat_db)
     search_db = database_config.get_search_db(goat_db)
     result_db = database_config.get_result_db(goat_db)
-    if askyesno(
-        message='Run a reverse search?',
-        icon='question', title='Reverse Search'):
-        window = Toplevel()
-        search_gui.ReverseSearchFrame(query_db,record_db,search_db,result_db,window)
-    else: # set up a new search
-        window = Toplevel()
-        search_gui.SearchFrame(query_db,record_db,search_db,result_db,window)
+    window = Toplevel()
+    search_gui.SearchFrame(query_db,record_db,search_db,result_db,window)
 
 def reverse_search():
     """Run a reverse search from an existing forward search"""
-    pass
+    goat_db = database_config.get_goat_db()
+    query_db = database_config.get_query_db(goat_db)
+    record_db = database_config.get_record_db(goat_db)
+    search_db = database_config.get_search_db(goat_db)
+    result_db = database_config.get_result_db(goat_db)
+    window = Toplevel()
+    search_gui.ReverseSearchFrame(query_db,record_db,search_db,result_db,window)
 
 def result_search():
     """Run a forward search using queries from a previous search"""
