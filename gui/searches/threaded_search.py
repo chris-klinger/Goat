@@ -17,28 +17,36 @@ blast_path = '/usr/local/ncbi/blast/bin'
 tmp_dir = '/Users/cklinger/git/Goat/tmp'
 
 class ProgressFrame(Frame):
-    def __init__(self, search_list, callback=None,
+    def __init__(self, algorithm, search_list, callback=None,
         callback_args=None, parent=None):
         Frame.__init__(self, parent)
-        self.pack()
+        self.pack(expand=YES, fill=BOTH)
+        self.algorithm = algorithm
         self.search_list = search_list # list with objects and args
+        self.num_todo = len(search_list)
+        self.num_finished = 0
         self.callback = callback
         self.callback_args = callback_args
-        self.parent = parent
 
         # Make non-modal, i.e. un-closeable
+        self.parent = parent
         self.parent.protocol('WM_DELETE_WINDOW', lambda: None)
 
-        # Code to add progress bar
-        self.pvar = IntVar()
-        self.pvar.set(0) # initial progress is zero
+        # Add some information
+        Label(self, text='Searching for queries using {}'.format(self.algorithm)).pack()
+
+        # Code to add progress bar, update 'value' attr after each search
         self.p = ttk.Progressbar(self, # parent
                 orient = HORIZONTAL,
-                length = 100,
+                length = 200,
                 mode = 'determinate', # specifies a set number of steps
-                variable = self.pvar, # tied to variable for auto updates
                 maximum = len(self.search_list))
         self.p.pack()
+
+        # Add another label that can be modified on each search
+        self.search_label = Label(self, text='Performing search {} of {}'.format(
+            self.num_finished, self.num_todo), anchor='center', justify='center')
+        self.search_label.pack(side=BOTTOM, expand=YES)
 
         # start producer thread, consumer loop
         self.queue = queue.Queue()
@@ -57,14 +65,15 @@ class ProgressFrame(Frame):
             robj = result_obj.Result(rid, sobj.algorithm,
                 sobj.q_type, sobj.db_type, qid, db, sobj.name, outpath)
             robjs.append(robj)
-            curr_val = self.pvar.get()
-            curr_val += 1
-            self.pvar.set(curr_val)
+            self.num_finished += 1
         self.queue.put(robjs) # indicates success
 
     def thread_consumer(self):
         """Checks the queue regularly for new results"""
-        #while not len(self.robjs) == self._length: # still BLAST results to get
+        # Even if there are no results to grab, update status bar each time
+        self.p['value'] = self.num_finished
+        self.search_label['text'] = 'Performing search {} of {}'.format(
+            self.num_finished, self.num_todo)
         try:
             #print('trying')
             robjs = self.queue.get(block=False)

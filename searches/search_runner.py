@@ -73,7 +73,7 @@ class SearchRunner:
         if self.threaded:
             print('calling popup')
             popup = Tk()
-            threaded_search.ProgressFrame(self.search_list,
+            threaded_search.ProgressFrame(self.sobj.algorithm, self.search_list,
                     callback = self.threaded_callback, parent=popup)
 
     def call_run(self, sid, qid, qobj, db):
