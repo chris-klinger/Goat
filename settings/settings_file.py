@@ -12,9 +12,10 @@ class Settings:
 
 class SettingsFile:
     """Interface for underlying settings object"""
-    def __init__(self, db_name):
-        # Explicit dict assignment bypasses setattr
-        self.__dict__['db_name'] = db_name
+    def __init__(self, db_name=None):
+        if db_name:
+            # Explicit dict assignment bypasses setattr
+            self.__dict__['db_name'] = db_name
 
     def __getattr__(self, attr):
         """Gets attribute from settings object"""

@@ -7,6 +7,8 @@ import time
 from tkinter import *
 from tkinter import ttk, filedialog, messagebox
 
+from bin.initialize_goat import configs
+
 from databases import record_file
 from gui.util import input_form
 
@@ -16,11 +18,13 @@ valid_file_types = ['protein','genomic']
 default_attrs = ['identity','genus','species','strain','supergroup','files']
 
 class DatabaseFrame(Frame):
-    def __init__(self, database, parent=None):
+    def __init__(self, parent=None): #database, parent=None):
         Frame.__init__(self, parent)
         self.pack(expand=YES, fill=BOTH)
-        self.db = database
-        self.db_panel = DatabaseGui(database,self)
+        #self.db = database
+        self.db = configs['record_db']
+        #self.db_panel = DatabaseGui(database,self)
+        self.db_panel = DatabaseGui(self.db,self)
         self.toolbar = Frame(self)
         self.toolbar.pack(side=BOTTOM, fill=X)
 

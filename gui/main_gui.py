@@ -155,9 +155,11 @@ def database_popup():
     window = Toplevel()
     #db = database_config.get_record_db()
     #database_gui.DatabaseFrame(database_config.get_record_db(),window)
-    goat_db = database_config.get_goat_db()
-    record_db = database_config.get_record_db(goat_db)
-    database_gui.DatabaseFrame(record_db,window)
+    #goat_db = database_config.get_goat_db()
+    #record_db = database_config.get_record_db(goat_db)
+    #database_gui.DatabaseFrame(record_db,window)
+    database_gui.DatabaseFrame(window)
+
 
 def database_table():
     """Obtain csv-style file with information for one or more databases"""

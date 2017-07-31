@@ -23,18 +23,16 @@ class GoatDB:
             db = DB(self.storage)
             connection = db.open()
             self.root = connection.root()
-            if not 'searches' in self.root.keys():
-                self.root['searches'] = OOBTree()
         else: # first time accessing
             self.storage = FileStorage.FileStorage(filepath)
             db = DB(self.storage)
             connection = db.open()
             self.root = connection.root()
             # create data structures
-            self.root['records'] = OOBTree()
             self.root['queries'] = OOBTree()
-            self.root['searches'] = OOBTree()
+            self.root['records'] = OOBTree()
             self.root['results'] = OOBTree()
+            self.root['searches'] = OOBTree()
             self.root['summaries'] = OOBTree()
 
     def _commit(self):

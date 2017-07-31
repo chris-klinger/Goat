@@ -51,7 +51,7 @@ def main_goat():
     search_interface.search_loop(goat_dir)
 
 def goat_gui():
-    initialize_goat.initialize()
+    initialize_goat.initialize(goat_dir)
     main_gui.run()
 
 if __name__ == '__main__':
