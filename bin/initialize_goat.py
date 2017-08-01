@@ -17,6 +17,7 @@ from records import record_db
 from results import result_db
 from searches import search_db
 from summaries import summary_db
+from util import util
 
 # global import for database connection
 configs = {}
@@ -25,6 +26,8 @@ def initialize(base_dir):
     """Runs other initialization functions"""
     initialize_settings(base_dir)
     initialize_dbs(base_dir)
+    # Add a global thread counter
+    configs['threads'] = util.ThreadCounter()
 
 def initialize_settings(base_dir):
     """Checks for a settings file"""

@@ -40,12 +40,6 @@ class SearchFrame(Frame):
         """Close without actually running the search"""
         self.parent.destroy()
 
-    def onSaveQuit(self):
-        """Commits changes to dbs after a search"""
-        for db in self._dbs:
-            db.commit()
-        self.onClose()
-
     def onRun(self):
         """Runs the search and populates the necessary files/databases"""
         params = self.search.param_frame
@@ -77,6 +71,8 @@ class SearchFrame(Frame):
                 threaded=True, gui=self)
         print("calling threaded runner.run() from forward search")
         runner.run()
+        # Can destroy once run starts
+        self.onClose()
         #print("calling runner.parse() from forward search")
         #runner.parse()
         #print("calling self.onSaveQuit() from forward search")

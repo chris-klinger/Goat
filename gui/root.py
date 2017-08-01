@@ -5,6 +5,8 @@ This module contains the code for the main root window of Goat.
 from tkinter import *
 from tkinter.messagebox import *
 
+from bin.initialize_goat import configs
+
 from settings import settings_config
 from gui.settings import settings_form
 from gui.database import database_gui
@@ -34,10 +36,14 @@ class RootFrame(Frame):
         # Finally, pack window to display
         self.pack(expand=YES, fill=BOTH)
 
+        # Keep track of whether or not windows are open
+
     def onClose(self):
         """Make sure to close the connection to the main database"""
+        # First check if any threads are running
+        if configs['threads'].exist():
+            pass # freak out
         # import configs after instantiation so they are actually populated
-        from bin.initialize_goat import configs
         configs['goat_db'].close()
         # now destroy the window
         self.parent.destroy()
@@ -47,37 +53,53 @@ class RootFrame(Frame):
         self.parent.config(menu=top) # set the menu option
 
         file_menu = Menu(top)
-        file_menu.add_command(label='settings', command=self.settings_popup, underline=0)
-        file_menu.add_command(label='quit', command=self.onClose, underline=0)
+        file_menu.add_command(label='settings',
+                command=self.settings_popup, underline=0)
+        file_menu.add_command(label='quit',
+                command=self.onClose, underline=0)
         top.add_cascade(label='File', menu=file_menu, underline=0)
 
         search_menu = Menu(top, tearoff=False)
-        search_menu.add_command(label='new search', command=self.search_popup, underline=0)
-        search_menu.add_command(label='reverse search', command=self.reverse_search, underline=0)
-        search_menu.add_command(label='search from result', command=self.result_search, underline=0)
-        search_menu.add_command(label='run analysis', command=self.analysis_popup, underline=0)
+        search_menu.add_command(label='new search',
+                command=self.search_popup, underline=0)
+        search_menu.add_command(label='reverse search',
+                command=self.reverse_search, underline=0)
+        search_menu.add_command(label='search from result',
+                command=self.result_search, underline=0)
+        search_menu.add_command(label='run analysis',
+                command=self.analysis_popup, underline=0)
         top.add_cascade(label='Search', menu=search_menu, underline=0)
 
         results_menu = Menu(top, tearoff=False)
-        results_menu.add_command(label='view result(s)', command=self.result_viewer, underline=0)
-        results_menu.add_command(label='sequences from result', command=self.result_sequences, underline=0)
+        results_menu.add_command(label='view result(s)',
+                command=self.result_viewer, underline=0)
+        results_menu.add_command(label='sequences from result',
+                command=self.result_sequences, underline=0)
         top.add_cascade(label='Results', menu=results_menu, underline=0)
 
         summary_menu = Menu(top, tearoff=False)
-        summary_menu.add_command(label='summarize result(s)', command=self.summarize_results, underline=0)
-        summary_menu.add_command(label='view summaries', command=self.summary_viewer, underline=0)
-        summary_menu.add_command(label='sequences from summary', command=self.summary_sequences, underline=0)
-        summary_menu.add_command(label='summary graphic', command=self.summary_graphic, underline=0)
-        summary_menu.add_command(label='summary table', command=self.summary_table, underline=0)
+        summary_menu.add_command(label='summarize result(s)',
+                command=self.summarize_results, underline=0)
+        summary_menu.add_command(label='view summaries',
+                command=self.summary_viewer, underline=0)
+        summary_menu.add_command(label='sequences from summary',
+                command=self.summary_sequences, underline=0)
+        summary_menu.add_command(label='summary graphic',
+                command=self.summary_graphic, underline=0)
+        summary_menu.add_command(label='summary table',
+                command=self.summary_table, underline=0)
         top.add_cascade(label='Summaries', menu=summary_menu, underline=0)
 
         query_menu = Menu(top, tearoff=False)
-        query_menu.add_command(label='modify queries', command=self.query_popup, underline=0)
+        query_menu.add_command(label='modify queries',
+                command=self.query_popup, underline=0)
         top.add_cascade(label='Queries', menu=query_menu, underline=0)
 
         db_menu = Menu(top, tearoff=False)
-        db_menu.add_command(label='modify databases', command=self.database_popup, underline=0)
-        db_menu.add_command(label='database table', command=self.database_table, underline=0)
+        db_menu.add_command(label='modify databases',
+                command=self.database_popup, underline=0)
+        db_menu.add_command(label='database table',
+                command=self.database_table, underline=0)
         top.add_cascade(label='Databases', menu=db_menu, underline=0)
 
     def settings_popup(self):

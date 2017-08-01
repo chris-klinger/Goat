@@ -12,6 +12,8 @@ import os
 from tkinter import *
 from Bio.Blast import NCBIXML
 
+from bin.initialize_goat import configs
+
 from searches.blast import blast_setup
 from results import result_obj
 
@@ -75,6 +77,8 @@ class SearchRunner:
             popup = Tk()
             threaded_search.ProgressFrame(self.sobj.algorithm, self.search_list,
                     callback = self.threaded_callback, parent=popup)
+            # store the thread on a global for program awareness
+            configs['threads'].add_thread()
 
     def call_run(self, sid, qid, qobj, db):
         """Calls the run_one for each query/db pair"""
@@ -122,10 +126,16 @@ class SearchRunner:
 
     def threaded_callback(self, *robjs):
         """Takes care of doing things with the completed searches"""
-        print("Calling thread callback function")
-        for robj in robjs:
-            rid = robj.name
-            self.sobj.add_result(rid)
-            self.udb[rid] = robj
-        self.parse()
-        self.gui.onSaveQuit()
+        #print("Calling thread callback function")
+        # remove thread from global first
+        configs['threads'].remove_thread()
+        try:
+            for robj in robjs:
+                rid = robj.name
+                self.sobj.add_result(rid)
+                self.udb[rid] = robj
+            self.parse()
+        finally: # commit no matter what?
+            # now ensure dbs are updated
+            configs['search_db'].commit()
+            configs['result_db'].commit()
