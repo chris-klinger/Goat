@@ -8,15 +8,17 @@ remove result objects though.
 from tkinter import *
 from tkinter import ttk
 
+from bin.initialize_goat import configs
+
 from util import util
 
 class ResultFrame(Frame):
-    def __init__(self, result_db, search_db, parent=None):
+    def __init__(self, parent=None):
         Frame.__init__(self, parent)
-        self.udb = result_db
-        self.sdb = search_db
+        self.udb = configs['result_db']
+        self.sdb = configs['search_db']
         self.parent = parent
-        self.results = ResultGui(result_db, search_db, self)
+        self.results = ResultGui(self.udb, self.sdb, self)
         self.pack(expand=YES, fill=BOTH)
         self.toolbar = Frame(self)
         self.toolbar.pack(side=BOTTOM, expand=YES, fill=X)
@@ -32,8 +34,6 @@ class ResultFrame(Frame):
 
     def onClose(self):
         """Close associated database and destroy window"""
-        self.udb.close()
-        self.sdb.close()
         self.parent.destroy()
 
     def onRemove(self):

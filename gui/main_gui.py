@@ -7,8 +7,6 @@ from tkinter import *
 from tkinter.messagebox import *
 
 from settings import settings_config
-from databases import database_config
-from searches import search_obj
 from gui.settings import settings_form
 from gui.database import database_gui
 from gui.searches import search_gui
@@ -70,23 +68,13 @@ def settings_popup():
    settings_form.SettingsForm(settings_config.list_settings(),window)
 
 def search_popup():
-    goat_db = database_config.get_goat_db()
-    query_db = database_config.get_query_db(goat_db)
-    record_db = database_config.get_record_db(goat_db)
-    search_db = database_config.get_search_db(goat_db)
-    result_db = database_config.get_result_db(goat_db)
     window = Toplevel()
-    search_gui.SearchFrame(query_db,record_db,search_db,result_db,window)
+    search_gui.SearchFrame(window)
 
 def reverse_search():
     """Run a reverse search from an existing forward search"""
-    goat_db = database_config.get_goat_db()
-    query_db = database_config.get_query_db(goat_db)
-    record_db = database_config.get_record_db(goat_db)
-    search_db = database_config.get_search_db(goat_db)
-    result_db = database_config.get_result_db(goat_db)
     window = Toplevel()
-    search_gui.ReverseSearchFrame(query_db,record_db,search_db,result_db,window)
+    search_gui.ReverseSearchFrame(window)
 
 def result_search():
     """Run a forward search using queries from a previous search"""
@@ -99,12 +87,7 @@ def analysis_popup():
 def result_viewer():
     """View information for results from previous searches"""
     window = Toplevel()
-    goat_db = database_config.get_goat_db()
-    #query_db = database_config.get_query_db(goat_db)
-    #record_db = database_config.get_record_db(goat_db)
-    result_db = database_config.get_result_db(goat_db)
-    search_db = database_config.get_search_db(goat_db)
-    result_gui.ResultFrame(result_db, search_db, window)
+    result_gui.ResultFrame(window)
 
 def result_sequences():
     """Obtain sequence file(s) from a search result"""
@@ -112,22 +95,13 @@ def result_sequences():
 
 def summarize_results():
     """Obtain a summary for one or more results"""
-    goat_db = database_config.get_goat_db()
-    query_db = database_config.get_query_db(goat_db)
-    search_db = database_config.get_search_db(goat_db)
-    result_db = database_config.get_result_db(goat_db)
-    summary_db = database_config.get_summary_db(goat_db)
-    # Call a window first to determine one or two searches
     window = Toplevel()
-    summary_gui.SearchSummaryFrame(summary_db, query_db, search_db, result_db, window)
+    summary_gui.SearchSummaryFrame(window)
 
 def summary_viewer():
     """View information for summaries"""
     window = Toplevel()
-    goat_db = database_config.get_goat_db()
-    result_db = database_config.get_result_db(goat_db)
-    summary_db = database_config.get_summary_db(goat_db)
-    summary_gui.SummaryFrame(summary_db, result_db, window)
+    summary_gui.SummaryFrame(window)
 
 def summary_sequences():
     """Obtain sequence file(s) from a summary"""
@@ -140,26 +114,15 @@ def summary_graphic():
 def summary_table():
     """Obtain a csv file containing summary information"""
     window = Toplevel()
-    goat_db = database_config.get_goat_db()
-    summary_db = database_config.get_summary_db(goat_db)
-    summary_gui.TableFrame(summary_db, window)
+    summary_gui.TableFrame(window)
 
 def query_popup():
     window = Toplevel()
-    goat_db = database_config.get_goat_db()
-    query_db = database_config.get_query_db(goat_db)
-    record_db = database_config.get_record_db(goat_db)
-    query_gui.QueryFrame(query_db, record_db, window)
+    query_gui.QueryFrame(window)
 
 def database_popup():
     window = Toplevel()
-    #db = database_config.get_record_db()
-    #database_gui.DatabaseFrame(database_config.get_record_db(),window)
-    #goat_db = database_config.get_goat_db()
-    #record_db = database_config.get_record_db(goat_db)
-    #database_gui.DatabaseFrame(record_db,window)
     database_gui.DatabaseFrame(window)
-
 
 def database_table():
     """Obtain csv-style file with information for one or more databases"""
@@ -168,7 +131,9 @@ def database_table():
 def run():
     root = Tk()
     root.title('Goat')
-    make_menu(root)
-    msg = Label(root, text=help_msg)
-    msg.pack(expand=YES, fill=BOTH)
+    from gui.root import RootFrame
+    RootFrame(root)
+    #make_menu(root)
+    #msg = Label(root, text=help_msg)
+    #msg.pack(expand=YES, fill=BOTH)
     root.mainloop()

@@ -3,14 +3,14 @@
 import os, sys
 
 from bin import initialize_goat
-from settings import settings_interface
+#from settings import settings_interface
 #from databases import database_interface,database_records,record_db
-from databases import goat_db
-from records import record_db
-from queries import query_db
-from results import result_db
-from searches import search_db
-from summaries import summary_db
+#from databases import goat_db
+#from records import record_db
+#from queries import query_db
+#from results import result_db
+#from searches import search_db
+#from summaries import summary_db
 from gui import main_gui
 
 goat_dir = os.path.dirname(os.path.realpath(sys.argv[0]))

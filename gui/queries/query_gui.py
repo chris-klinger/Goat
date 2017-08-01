@@ -5,17 +5,19 @@ This module contains code for dealing with viewing and updating queries
 from tkinter import *
 from tkinter import ttk, messagebox
 
+from bin.initialize_goat import configs
+
 from gui.queries import add_query_gui, racc_gui, set_gui
 #from gui.util import input_form
 from gui.util import gui_util
 
 class QueryFrame(Frame):
-    def __init__(self, query_db, record_db, parent=None):
+    def __init__(self, parent=None):
         Frame.__init__(self, parent)
-        self.qdb = query_db
-        self.rdb = record_db
+        self.qdb = configs['query_db']
+        self.rdb = configs['record_db']
         self.pack(expand=YES, fill=BOTH)
-        self.query = QueryGui(query_db, record_db, self)
+        self.query = QueryGui(self.qdb, self.rdb, self)
         self.toolbar = Frame(self)
         self.toolbar.pack(side=BOTTOM, expand=YES, fill=X)
 
@@ -36,8 +38,6 @@ class QueryFrame(Frame):
         Need to implement a method of determining whether changes have occurred,
         so that closing without changing anything bypasses commit but closing after
         unsaved changes prompts user to save them or not"""
-        self.qdb.close()
-        self.rdb.close()
         self.parent.destroy()
 
     def onAddQueries(self):

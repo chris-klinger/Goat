@@ -8,6 +8,8 @@ import os
 from tkinter import *
 from tkinter import ttk
 
+from bin.initialize_goat import configs
+
 from gui.util import gui_util, input_form
 from summaries import summary_obj, summarizer, summary_writer
 from util import util
@@ -17,12 +19,12 @@ from util import util
 ################################
 
 class SearchSummaryFrame(Frame):
-    def __init__(self, summary_db, query_db, search_db, result_db, parent):
+    def __init__(self, parent):
         Frame.__init__(self, parent)
-        self.mdb = summary_db
-        self.qdb = query_db
-        self.sdb = search_db
-        self.udb = result_db
+        self.mdb = configs['summary_db']
+        self.qdb = configs['query_db']
+        self.sdb = configs['search_db']
+        self.udb = configs['result_db']
         self._dbs = (self.mdb, self.qdb, self.sdb, self.udb)
         self.pack(expand=YES, fill=BOTH)
         self.radio_box = gui_util.RadioBoxFrame(self,
@@ -41,8 +43,6 @@ class SearchSummaryFrame(Frame):
 
     def onClose(self):
         """Close dbs"""
-        for db in self._dbs:
-            db.close()
         self.parent.destroy()
 
     def onCancel(self):
@@ -208,12 +208,12 @@ class TwoSearchFrame(Frame):
 ##############################
 
 class SummaryFrame(Frame):
-    def __init__(self, summary_db, result_db, parent=None):
+    def __init__(self, parent=None):
         Frame.__init__(self, parent)
-        self.mdb = summary_db
-        self.udb = result_db
+        self.mdb = configs['summary_db']
+        self.udb = configs['result_db']
         self.parent = parent
-        self.summaries = SummaryGui(summary_db, result_db, self)
+        self.summaries = SummaryGui(self.mdb, self.udb, self)
         self.pack(expand=YES, fill=BOTH)
         self.toolbar = Frame(self)
         self.toolbar.pack(side=BOTTOM, expand=YES, fill=X)
@@ -229,8 +229,6 @@ class SummaryFrame(Frame):
 
     def onClose(self):
         """Close associated database and destroy window"""
-        self.mdb.close()
-        self.udb.close()
         self.parent.destroy()
 
     def onRemove(self):
@@ -462,10 +460,10 @@ class ResultInfo(ttk.Label):
 ###################################################
 
 class TableFrame(Frame):
-    def __init__(self, summary_db, parent=None):
+    def __init__(self, parent=None):
         Frame.__init__(self, parent)
         self.pack(expand=YES, fill=BOTH)
-        self.mdb = summary_db
+        self.mdb = configs['summary_db']
         self.curdir = os.getcwd()
         self.entries = input_form.DefaultValueForm([('Name of output file',''),
                 ('Location',self.curdir)], self,
@@ -494,7 +492,6 @@ class TableFrame(Frame):
 
     def onClose(self):
         """Closes dbs and destroys window"""
-        self.mdb.close()
         self.parent.destroy()
 
     def onSubmit(self):

@@ -39,7 +39,7 @@ class GoatDB:
         import transaction
         transaction.commit()
 
-    def _close(self):
+    def close(self):
         #self._commit() # one final commit to be sure
         self.storage.close()
 

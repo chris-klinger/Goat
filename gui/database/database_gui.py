@@ -32,7 +32,8 @@ class DatabaseFrame(Frame):
         self.parent = parent
         self.parent.protocol("WM_DELETE_WINDOW", self.onClose)
 
-        self.buttons = [('Remove', self.onRemove, {'side':RIGHT}),
+        self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
+                        ('Remove', self.onRemove, {'side':RIGHT}),
                         ('Modify', self.onModify, {'side':RIGHT}),
                         ('Add', self.onAdd, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
@@ -41,8 +42,12 @@ class DatabaseFrame(Frame):
     def onClose(self):
         """Signals to close database connection when window is closed, but not
         before to prevent ValueError raises from main_gui code block"""
-        self.db.close() # close connection
         self.parent.destroy() # destroy window
+
+    def onSubmit(self):
+        """Commits changes to database before closing"""
+        self.db.commit()
+        self.onClose()
 
     def onRemove(self):
         """Removes an existing record object"""

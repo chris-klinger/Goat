@@ -6,22 +6,25 @@ import os
 from tkinter import *
 from tkinter import ttk, filedialog #, messagebox
 
+from bin.initialize_goat import configs
+
 from searches import search_obj, search_runner
 from results import intermediate
 from gui.util import input_form, gui_util
 #from gui.database import database_gui
 
 class SearchFrame(Frame):
-    def __init__(self, query_db, record_db, search_db, result_db, parent=None):
+    def __init__(self, parent=None): #query_db, record_db, search_db, result_db, parent=None):
         Frame.__init__(self, parent)
-        self.qdb = query_db
-        self.rdb = record_db
-        self.sdb = search_db
-        self.udb = result_db
+        self.qdb = configs['query_db']
+        self.rdb = configs['record_db']
+        self.sdb = configs['search_db']
+        self.udb = configs['result_db']
         self._dbs = [self.qdb, self.rdb, self.sdb, self.udb]
 
         self.pack(expand=YES, fill=BOTH)
-        self.search = SearchGui(query_db, record_db, self)
+        #self.search = SearchGui(query_db, record_db, self)
+        self.search = SearchGui(self.qdb, self.rdb, self)
         self.toolbar = Frame(self)
         self.toolbar.pack(side=BOTTOM, expand=YES, fill=X)
 
@@ -35,8 +38,6 @@ class SearchFrame(Frame):
 
     def onClose(self):
         """Close without actually running the search"""
-        for db in self._dbs:
-            db.close()
         self.parent.destroy()
 
     def onSaveQuit(self):
@@ -286,12 +287,12 @@ class DatabaseWindow(Frame):
 ##########################################
 
 class ReverseSearchFrame(Frame):
-    def __init__(self, query_db, record_db, search_db, result_db, parent=None):
+    def __init__(self, parent=None):
         Frame.__init__(self, parent)
-        self.qdb = query_db
-        self.rdb = record_db
-        self.sdb = search_db
-        self.udb = result_db
+        self.qdb = configs['query_db']
+        self.rdb = configs['record_db']
+        self.sdb = configs['search_db']
+        self.udb = configs['result_db']
         self._dbs = [self.qdb, self.rdb, self.sdb, self.udb]
 
         self.search_name = gui_util.ComboBoxFrame(self,
@@ -312,8 +313,6 @@ class ReverseSearchFrame(Frame):
 
     def onClose(self):
         """Close without actually running the search"""
-        for db in self._dbs:
-            db.close()
         self.parent.destroy()
 
     def onSaveQuit(self):
