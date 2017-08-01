@@ -7,6 +7,7 @@ and the code necessary to perform manipulations on them.
 """
 
 import os
+from threading import Lock
 
 from ZODB import FileStorage, DB
 from BTrees.OOBTree import OOBTree
@@ -34,26 +35,29 @@ class GoatDB:
             self.root['results'] = OOBTree()
             self.root['searches'] = OOBTree()
             self.root['summaries'] = OOBTree()
+        self._lock = Lock()
 
     def _commit(self):
         import transaction
-        transaction.commit()
+        with self._lock:
+            transaction.commit()
 
     def close(self):
-        #self._commit() # one final commit to be sure
         self.storage.close()
 
     def list_entries(self, node):
-        return self.root[node].keys() # note: iterator!
+        with self._lock:
+            return self.root[node].keys() # note: iterator!
 
     def fetch_entry(self, node, key):
-        #print(node)
-        #print(key)
-        return self.root[node][key]
+        with self._lock:
+            return self.root[node][key]
 
     def put_entry(self, node, key, entry):
-        self.root[node][key] = entry
+        with self._lock:
+            self.root[node][key] = entry
 
     def remove_entry(self, node, key):
-        del self.root[node][key]
+        with self._lock:
+            del self.root[node][key]
 
