@@ -88,3 +88,15 @@ class ScrollBoxFrame(Frame):
 
     def onSelect(self, *args):
         pass # implement in other subclasses?
+
+def clip_text(width, font, string):
+    """Calculates the approximate character width of a window (in pixels) and
+    then clips the desired display string to fit within that window"""
+    import tkinter.font as tkf
+    f = tkf.Font(family=font) # here font is the name
+    char_width = f.measure('0') # 0 is a standard measure for width
+    num_chars = width/char_width
+    if len(string) < num_chars:
+        return string
+    else:
+        return (''.join([char for i,char in enumerate(string) if i < (num_chars-4)]) + '...')

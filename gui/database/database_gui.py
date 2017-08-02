@@ -10,7 +10,7 @@ from tkinter import ttk, filedialog, messagebox
 from bin.initialize_goat import configs
 
 from databases import record_file
-from gui.util import input_form
+from gui.util import input_form, gui_util
 
 # holds a set of types for files
 # note, these act as reserved keywords for Goat record attributes
@@ -26,7 +26,7 @@ class DatabaseFrame(Frame):
         #self.db_panel = DatabaseGui(database,self)
         self.db_panel = DatabaseGui(self.db,self)
         self.toolbar = Frame(self)
-        self.toolbar.pack(side=BOTTOM, fill=X)
+        self.toolbar.pack(expand=YES, side=BOTTOM, fill=X)
 
         # override parent window destruction handler to ensure DB integrity
         self.parent = parent
@@ -177,25 +177,49 @@ class InfoPanel(ttk.Label):
                 anchor='center',justify='center') # centre and justify label text
         self.displayInfo.set('') # initialize to an empty value
 
+        self._display = ''
+        self.bind('<Configure>', self.draw_info)
+
     def update_info(self,display_type,*values):
         """Takes a list of values and displays it depending on whether the item
         clicked is a record or file"""
-        display_string = ''
-        display_string += (values[0] + ' ' + values[1] + '\n\n\n\n')
+        # create a new modified list
+        to_display = []
+        to_display.append(values[0] + ' ' + values[1])
         if display_type == 'record':
             if len(values) > 2: # additional info present
                 for index,value in enumerate(values[2:]):
                     if index % 2 == 0: # even value, key in dictionary
-                        display_string += (values[index+2] + ' ') # +2 compensates for first two list values
+                        temp = ''
+                        temp += (values[index+2] + ' ') # +2 compensates for first two list values
                     else: # odd value, value in dictionary
-                        display_string += (values[index+2] + '\n')
+                        temp += (values[index+2])
+                        to_display.append(temp)
         else:
-            display_string += ('Filename: ' + values[2] + '\n')
-            display_string += ('Filepath: ' + values[3] + '\n')
-            display_string += ('Filetype: ' + values[4] + '\n')
-            display_string += ('Number of entries ' + str(values[5]) + '\n')
-            display_string += ('Number of lines ' + str(values[6]) + '\n')
-            display_string += ('Number of bases ' + str(values[7]) + '\n')
+            to_display.append('Filename: ' + values[2])
+            to_display.append('Filepath: ' + values[3])
+            to_display.append('Filetype: ' + values[4])
+            to_display.append('Number of entries ' + str(values[5]))
+            to_display.append('Number of lines ' + str(values[6]))
+            to_display.append('Number of bases ' + str(values[7]))
+        self._display = to_display
+        self.displayInfo.set('\n'.join([val for val in to_display]))
+        self.draw_info()
+
+    def draw_info(self, event=None):
+        """Draw on first instantiation"""
+        # first ensure root window is updated
+        configs['root'].update_idletasks()
+        # get current parameters of window
+        curr_width = self.winfo_width()
+        font_name = self['font']
+        # clip any text that is too long
+        san = [gui_util.clip_text(curr_width, font_name, val) for val in self._display]
+        # join back into a string
+        display_string = ''
+        if len(san) > 0:
+            for line in san:
+                display_string += line + '\n'
         self.displayInfo.set(display_string)
 
 class NewAttrForm(input_form.Form):
@@ -310,7 +334,7 @@ class RecordFrame(Frame):
         except(IndexError): # no removed files
             pass
         self.db.commit()
-        print(self.db_widget.db_viewer.make_tree)
+        #print(self.db_widget.db_viewer.make_tree)
         self.db_widget.db_viewer.make_tree() # signal back to re-draw tree
         time.sleep(1)
         self.parent.destroy()

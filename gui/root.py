@@ -38,6 +38,9 @@ class RootFrame(Frame):
 
         # Keep track of whether or not windows are open
 
+        # add current value of root to configs
+        configs['root'] = self
+
     def onClose(self):
         """Make sure to close the connection to the main database"""
         # First check if any threads are running
