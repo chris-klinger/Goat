@@ -151,34 +151,24 @@ class AddFileFrame(Frame):
 
     def onSubmit(self):
         """Signals back to other widget to update queries"""
-        #try:
-            #print(self.cfile.content['Filename'].get())
-            #print(self.qtype.selected.get())
-            #print(self.alphabet.selected.get())
-            #print(self.record.selected.get())
-            #print(self.add_raccs.selected.get())
-        queries = query_file.FastaFile(self.cfile.content['Filename'].get(),
-            self.qtype.selected.get(), self.alphabet.selected.get(),
-            self.record.selected.get(), self.add_raccs.selected.get()).get_queries()
-        if self.add_raccs.selected.get() != 'no': # we want to add raccs
-            print(self.record.selected.get())
-            if self.record.selected.get() == '': # but there is not associated record!
-                raise AttributeError
-                # if everything is ok, spawn another thread to deal with searches
-            #pframe = threaded_search.ProgressFrame(queries, self.rdb, update_listbox,
-                    #(self._owidget.query_list, queries), self)
-            #_thread.start_new_thread(pframe.run,())
-            for v in queries:
-                v.run_self_blast(self.rdb)
-            update_listbox(self._owidget.query_list, queries)
-        else: # no need to run searches
-            update_listbox(self._owidget.query_list, queries)
-            #self.parent.query_list.lbox_frame.add_items(k) # add to display
-            #self.parent.query_list.queries[k] = v # add to internal structure
-        #except(AttributeError):
-            # do not allow raccs if no record specified
-            #messagebox.showwarning('Incompatible options',
-                #'Cannot choose to add redundant accessions without associated record')
+        qtype = self.qtype.selected.get()
+        if qtype == 'seq':
+            queries = query_file.FastaFile(self.cfile.content['Filename'].get(),
+                qtype, self.alphabet.selected.get(), self.record.selected.get(),
+                self.add_raccs.selected.get()).get_queries()
+            if self.add_raccs.selected.get() != 'no': # we want to add raccs
+                if self.record.selected.get() == '': # but there is not associated record!
+                    raise AttributeError
+                for v in queries:
+                    v.run_self_blast(self.rdb)
+                update_listbox(self._owidget.query_list, queries)
+            else: # no need to run searches
+                update_listbox(self._owidget.query_list, queries)
+        elif qtype == 'hmm':
+            query = query_file.HMMFile(self.cfile.content['Filename'].get(),
+                qtype, self.alphabet.selected.get(), self.record.selected.get(),
+                self.add_raccs.selected.get()).get_query()
+            update_listbox(self._owidget.query_list, query)
         self.parent.destroy()
 
     def onCancel(self):

@@ -48,3 +48,20 @@ class FastaFile(QueryFile):
                 record=self.record, racc_mode=self.self_blast)
             queries.append([seq_record.id, qobj])
         return queries
+
+class HMMFile(QueryFile):
+    """HMM-format class for adding HMM queries"""
+    def parse(self):
+        """Somewhat naive, assumes only one query per file"""
+        with open(self.filepath,'U') as f:
+            return f.read()
+
+    def get_query(self):
+        """Just returns a single query object"""
+        hmm_obj = self.parse()
+        import re
+        m = re.match(r'NAME.+(\w+)', hmm_obj) # matches NAME field of header
+        name = m.group(1)
+        qobj = query_obj.Query(name, name, name, self.filepath, self.search_type,
+                self.db_type, hmm_obj, record=self.record)
+        return qobj
