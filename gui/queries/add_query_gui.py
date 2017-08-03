@@ -4,7 +4,7 @@ This module contains code for adding queries in Goat.
 
 from tkinter import *
 from tkinter import ttk
-import _thread
+#import _thread
 
 from queries import query_file
 from gui.util import gui_util, input_form
@@ -44,10 +44,12 @@ class AddQueryFrame(Frame):
         committed, and the window is closed"""
         to_add = self.layout.added_list.lbox_frame.item_dict # dictionary
         #print(to_add)
+        qlist = []
         qwidget_lbox = self.qwidget.query.query_frame.query_notebook.qlist # super gross...
         for k,v in to_add.items():
             self.qdb.add_query(k, v) # add to database - by object now
-        qwidget_lbox.add_items(to_add) # add to display
+            qlist.append([k,v])
+        qwidget_lbox.add_items(qlist) # add to display
         self.parent.destroy()
 
     def onCancel(self):
@@ -119,9 +121,9 @@ class AddedListFrame(Frame):
         self.other.lbox_frame.add_items(to_remove)
         self.lbox_frame.remove_items(*selected)
 
-def update_listbox(listbox, item_dict):
+def update_listbox(listbox, item_list):
     """Actually updates the listbox"""
-    listbox.lbox_frame.add_items(item_dict) # add to display
+    listbox.lbox_frame.add_items(item_list) # add to display
 
 class AddFileFrame(Frame):
     def __init__(self, record_db, layout, parent=None):
@@ -165,10 +167,10 @@ class AddFileFrame(Frame):
             else: # no need to run searches
                 update_listbox(self._owidget.query_list, queries)
         elif qtype == 'hmm':
-            query = query_file.HMMFile(self.cfile.content['Filename'].get(),
+            queries = query_file.HMMFile(self.cfile.content['Filename'].get(),
                 qtype, self.alphabet.selected.get(), self.record.selected.get(),
                 self.add_raccs.selected.get()).get_query()
-            update_listbox(self._owidget.query_list, query)
+            update_listbox(self._owidget.query_list, queries)
         self.parent.destroy()
 
     def onCancel(self):

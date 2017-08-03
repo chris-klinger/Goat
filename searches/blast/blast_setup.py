@@ -40,7 +40,6 @@ class BLAST():
         args = []
         # first argument should always be the type of BLAST
         args.append(os.path.join(self.blast_path, blast_type))
-        #out = self.get_uniq_out(sep)
         # note, query location here needs to be changed once a scheme is in place
         # to hold separate query files for each
         args.extend(['-query', self.query.location, '-db', self.db, '-out', self.out,

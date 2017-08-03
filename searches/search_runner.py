@@ -15,12 +15,14 @@ from Bio.Blast import NCBIXML
 from bin.initialize_goat import configs
 
 from searches.blast import blast_setup
+from searches.hmmer import hmmer_setup
 from results import result_obj
 
 from gui.searches import threaded_search
 
 # Placeholder - should be through settings eventually
 blast_path = '/usr/local/ncbi/blast/bin'
+hmmer_path = '/Users/cklinger/src/hmmer-3.1b1-macosx-intel/src'
 tmp_dir = '/Users/cklinger/git/Goat/tmp'
 
 class SearchRunner:
@@ -79,6 +81,10 @@ class SearchRunner:
                     callback = self.threaded_callback, parent=popup)
             # store the thread on a global for program awareness
             configs['threads'].add_thread()
+        else:
+            # now ensure dbs are updated
+            configs['search_db'].commit()
+            configs['result_db'].commit()
 
     def call_run(self, sid, qid, qobj, db):
         """Calls the run_one for each query/db pair"""
@@ -102,15 +108,20 @@ class SearchRunner:
             else:
                 pass # sort out eventually
             blast_search.run_from_stdin()
-            robj = result_obj.Result(result_id, self.sobj.algorithm,
+        elif self.sobj.algorithm == 'hmmer':
+            if self.sobj.q_type == 'protein' and self.sobj.db_type == 'protein':
+                hmmer_search = hmmer_setup.ProtHMMer(hmmer_path, qobj,
+                        dbf, outpath)
+            else:
+                pass # sort out eventually
+            hmmer_search.run_from_stdin()
+        robj = result_obj.Result(result_id, self.sobj.algorithm,
                 self.sobj.q_type, self.sobj.db_type, qid, db, self.sobj.name,
                 outpath)
-            print("Adding {} result to {} search object".format(result_id,self.sobj))
-            self.sobj.add_result(result_id) # function ensures persistent object updated
-            print("Adding {} rid and {} robj to result db".format(result_id,robj))
-            self.udb[result_id] = robj # add to result db
-        elif self.sobj.algorithm == 'hmmer':
-            pass # include more algorithms later
+        #print("Adding {} result to {} search object".format(result_id,self.sobj))
+        self.sobj.add_result(result_id) # function ensures persistent object updated
+        #print("Adding {} rid and {} robj to result db".format(result_id,robj))
+        self.udb[result_id] = robj # add to result db
 
     def parse(self):
         """Parses output files from search"""

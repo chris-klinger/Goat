@@ -58,10 +58,12 @@ class HMMFile(QueryFile):
 
     def get_query(self):
         """Just returns a single query object"""
+        queries = []
         hmm_obj = self.parse()
         import re
-        m = re.match(r'NAME.+(\w+)', hmm_obj) # matches NAME field of header
+        m = re.search(r'NAME\s+(\w+)', hmm_obj) # matches NAME field of header
         name = m.group(1)
         qobj = query_obj.Query(name, name, name, self.filepath, self.search_type,
                 self.db_type, hmm_obj, record=self.record)
-        return qobj
+        queries.append([name, qobj])
+        return queries

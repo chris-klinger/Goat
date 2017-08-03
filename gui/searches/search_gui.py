@@ -68,15 +68,15 @@ class SearchFrame(Frame):
         # now run the search and parse the output
         #runner = search_runner.SearchRunner(sobj, self.qdb, self.rdb, self.udb)
         runner = search_runner.SearchRunner(sobj, self.qdb, self.rdb, self.udb,
-                threaded=True, gui=self)
+                threaded=False, gui=self)
         print("calling threaded runner.run() from forward search")
         runner.run()
         # Can destroy once run starts
+        #self.onClose()
+        print("calling runner.parse() from forward search")
+        runner.parse()
+        print("calling self.onSaveQuit() from forward search")
         self.onClose()
-        #print("calling runner.parse() from forward search")
-        #runner.parse()
-        #print("calling self.onSaveQuit() from forward search")
-        #self.onSaveQuit()
 
 class SearchGui(ttk.Panedwindow):
     def __init__(self, query_db, record_db, parent=None):

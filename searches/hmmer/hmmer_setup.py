@@ -7,7 +7,7 @@ programs within the HMMer package.
 
 import os, subprocess
 
-class HMMER():
+class HMMer():
     """
     Parental HMMer class from which all (HMM-based and non-iterative) HMMer
     subclasses derive. Parameters specific to one or more flavours of HMMer
@@ -54,6 +54,9 @@ class HMMER():
         """Runs HMMer using obj as stdin"""
         args = []
         args.append(os.path.join(self.hmmer_path, hmmer_type))
+        # specify the tabular output file
+        args.append('--tblout')
+        args.append(self.out)
         # now add some arguments
         if self.kwargs:
             for k,v in self.kwargs:
@@ -67,24 +70,24 @@ class HMMER():
         try:
             hmmer = subprocess.Popen(args, stdin=subprocess.PIPE)
             # send file as stdin
-            hmmer.stdin.write(self.query.sequence) # sequence here is the entire parsed file
+            hmmer.stdin.write(self.query.sequence.encode('utf-8')) # sequence here is the entire parsed file
             hmmer.communicate() # actually run the search
         except(Exception):
             pass # freak out
 
 
-class ProtHMMER(HMMER):
+class ProtHMMer(HMMer):
     """Subclass for searching protein queries with HMMer"""
     hmmprot_options = ['domE', 'domT', 'incdomE', 'incdomT', 'domZ', 'tformat']
-    valid_options = HMMER.valid_options.extend(hmmprot_options)
+    valid_options = HMMer.valid_options.extend(hmmprot_options)
 
     def run_from_file(self, valid_options=valid_options, sep='_'):
-        HMMER.run_from_file(self, 'hmmsearch', valid_options, sep)
+        HMMer.run_from_file(self, 'hmmsearch', valid_options, sep)
 
     def run_from_stdin(self, valid_options=valid_options, sep='_'):
-        HMMER.run_from_stdin(self, 'nhmmer', valid_options, sep)
+        HMMer.run_from_stdin(self, 'hmmsearch', valid_options, sep)
 
-class NucHMMER(HMMER):
+class NuclHMMer(HMMer):
     """Subclass for searching nucelotide queries with HMMer"""
     pass
 
