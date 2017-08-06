@@ -5,7 +5,7 @@ nhmmer, and also probably for other programs such as phmmer.
 """
 
 from util.directories import dirfiles
-from hmmer_record import *
+from searches.hmmer import hmmer_record
 
 class HMMerParser:
     """
@@ -24,7 +24,7 @@ class HMMerParser:
         with open(self.filepath,'U') as f:
             for line in dirfiles.nonblank_lines(f):
                 if not line.startswith('#'): # skip header lines
-                    llist = line.split()
+                    llist = line.split(maxsplit=18) # otherwise description is also split
                     parsed_lines.append(llist)
         return parsed_lines
 
@@ -36,16 +36,18 @@ class HMMsearchParser(HMMerParser):
     """Subclass to parse the main protein search output of HMMer."""
     def parse(self):
         """Iterates over lines in file to create an object"""
-        record = HMMerRecord('protein')
+        record = hmmer_record.HMMerRecord('protein')
         for entry in self.read():
-            descr = ProtDescr(*entry) # should unpack list of lists into args?
+            descr = hmmer_record.ProtDescr(*entry) # should unpack list of lists into args?
             record.add_description(descr)
+        return record
 
 class NHMMerParser(HMMerParser):
     """Subclass to parse the main protein search output of HMMer."""
     def parse(self):
         """Iterates over lines in file to create an object"""
-        record = HMMerRecord('nucleotide')
+        record = hmmer_record.HMMerRecord('nucleotide')
         for entry in self.read():
-            descr = ProtDescr(*entry) # should unpack list of lists into args?
+            descr = hmmer_record.NuclDescr(*entry) # should unpack list of lists into args?
             record.add_description(descr)
+        return record

@@ -15,7 +15,7 @@ from Bio.Blast import NCBIXML
 from bin.initialize_goat import configs
 
 from searches.blast import blast_setup
-from searches.hmmer import hmmer_setup
+from searches.hmmer import hmmer_setup, hmmer_parser
 from results import result_obj
 
 from gui.searches import threaded_search
@@ -127,10 +127,16 @@ class SearchRunner:
         """Parses output files from search"""
         for result in self.sobj.results:
             robj = self.udb[result]
+            # Parse result first
             if robj.algorithm == 'blast':
                 blast_result = NCBIXML.read(open(robj.outpath))
                 robj.parsed_result = blast_result
-                robj.parsed = True
+            elif robj.algorithm == 'hmmer':
+                # need to sort out prot/nuc later
+                hmmer_result = hmmer_parser.HMMsearchParser(robj.outpath).parse()
+                robj.parsed_result = hmmer_result
+            # Set parsed flag and check for object removal
+            robj.parsed = True
             if not self.sobj.keep_output: #and robj.parsed:
                 os.remove(robj.outpath)
             self.udb[result] = robj # add back to db

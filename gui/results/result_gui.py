@@ -116,6 +116,9 @@ class ResultTree(ttk.Treeview):
         elif item_type == 'result':
             ulist = []
             uobj = self.udb[item['text']]
+            for descr in uobj.parsed_result.descriptions:
+                for k,v in descr.__dict__.items():
+                    print(str(k) + '  ' + str(v))
             ulist.extend([uobj.name, uobj.query, uobj.database]) # add num hits?
             self.info.update_info('result', *ulist)
 
