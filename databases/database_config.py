@@ -27,6 +27,15 @@ def get_record_db(db_obj):
 def get_query_db(db_obj):
     return goat.get_query_db(db_obj)
 
+def get_search_db(db_obj):
+    return goat.get_search_db(db_obj)
+
+def get_result_db(db_obj):
+    return goat.get_result_db(db_obj)
+
+def get_summary_db(db_obj):
+    return goat.get_summary_db(db_obj)
+
 def get_db_dir_path(goat_dir):
     """Returns full pathname to db directory"""
     return os.path.join(goat_dir, 'DB')

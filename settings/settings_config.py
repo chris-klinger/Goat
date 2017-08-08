@@ -6,29 +6,8 @@ including code to create, add, remove, or change settings
 import os, pickle
 
 import goat
-from settings.settings_file import Settings, SettingsFile
+from settings.settings_file import SettingsFile
 from util.inputs import prompts
-
-#print('from settings config')
-#print(dir(goat))
-#settings_file = goat.get_settings_file()
-
-# deferred call to goat module object due to import issues?!
-def get_settings_file():
-    return goat.get_settings_file()
-    #return '/Users/cklinger/git/Goat/settings/goat_settings.pkl'
-
-def check_for_settings():
-    """Checks whether a settings file currently exists"""
-    if os.path.exists(get_settings_file()):
-        return True
-    return False
-
-def create_settings():
-    """Creates the initial settings file"""
-    with open(get_settings_file, 'wb') as o:
-        settings = Settings()
-        pickle.dump(settings, o)
 
 def add_setting(**kwargs):
     """Adds to settings file"""
