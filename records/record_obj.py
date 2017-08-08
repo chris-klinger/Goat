@@ -7,7 +7,7 @@ database class itself.
 
 from persistent import Persistent
 
-from databases import record_file
+from records import record_file
 
 class Record(Persistent):
     """
@@ -22,6 +22,11 @@ class Record(Persistent):
         self.strain = strain
         self.supergroup = supergroup
         self.files = {} # initialize an empty list
+
+    def update(self, **kwargs):
+        """Convenience function to update attrs"""
+        for attr,value in kwargs.items():
+            setattr(self, attr, value)
 
     def add_file(self, name, filepath, filetype, **kwargs):
         new_file = record_file.FastaFile(name, filepath, filetype, **kwargs)

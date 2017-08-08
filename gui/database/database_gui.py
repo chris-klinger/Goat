@@ -9,7 +9,7 @@ from tkinter import ttk, filedialog, messagebox
 
 from bin.initialize_goat import configs
 
-from databases import record_file
+from records import record_file, record_obj
 from gui.util import input_form, gui_util
 
 # holds a set of types for files
@@ -53,7 +53,8 @@ class DatabaseFrame(Frame):
         """Removes an existing record object"""
         item = self.db_panel.current_item() # first (and only) item in list of tags
         if item['tags'][0] == 'record':
-            self.db.remove_record(item['text'])
+            #self.db.remove_record(item['text'])
+            self.db.remove_entry(item['text'])
         elif item['tags'][0] == 'file':
             pass # do we want to be able to remove files directly?
 
@@ -65,16 +66,16 @@ class DatabaseFrame(Frame):
         methods to deal with adding/removing/changing attributes."""
         item = self.db_panel.current_item()
         if item['tags'][0] == 'record': # first (and only) item in list of tags
-            record_obj = self.db[item['text']] # text also holds the ID
+            robj = self.db[item['text']] # text also holds the ID
             # get default values
-            record_list = [('record identity', record_obj.identity),
-                ('genus', record_obj.genus), ('species', record_obj.species),
-                ('strain', record_obj.strain), ('supergroup', record_obj.supergroup)]
-            for k,v in record_obj.__dict__.items():
+            record_list = [('record identity', robj.identity),
+                ('genus', robj.genus), ('species', robj.species),
+                ('strain', robj.strain), ('supergroup', robj.supergroup)]
+            for k,v in robj.__dict__.items():
                 if not k in default_attrs:
                     record_list.append((k,v)) # add any other attributes that may be present
             window = Toplevel()
-            RecordFrame(record_list, record_obj.files, self.db, self.db_panel, window)
+            RecordFrame(record_list, robj.files, self.db, self.db_panel, window)
         elif item['tags'][0] == 'file':
             pass # do we want to be able to modify files?
 
@@ -132,13 +133,15 @@ class DatabaseViewer(ttk.Treeview):
     def make_tree(self):
         """Builds a treeview display of records"""
         #print('Making tree')
-        for record in self.db.list_records():
+        for record in self.db.list_entries():
             #print(record)
-            record_obj = self.db[record] # should be able to index
+            robj = self.db[record] # should be able to index
+            #print(robj)
             # use record identity as label in tree
-            self.insert('','end',record,text=record_obj.identity,tags=('record'))
+            #self.insert('','end',record,text=robj.identity,tags=('record'))
+            self.insert('','end',record,text=record,tags=('record'))
             # now add files (if present), as subheadings for the record
-            for k in record_obj.files.keys():
+            for k in robj.files.keys():
                 self.insert(record,'end',(record + '_' + k),text=k,tags=('file'))
 
     def itemClicked(self, item_type):
@@ -158,11 +161,11 @@ class DatabaseViewer(ttk.Treeview):
         elif item_type == 'file':
             flist = []
             record,filename = item.rsplit('_',1)[0], item.rsplit('_',1)[1] # chop back off the name
-            record_obj = self.db[record]
+            robj = self.db[record]
             # file ID makes up header
-            file_obj = record_obj.files[filename]
+            file_obj = robj.files[filename]
             # add additional information
-            flist.extend((record_obj.genus, record_obj.species, file_obj.name,
+            flist.extend((robj.genus, robj.species, file_obj.name,
                 file_obj.filepath, file_obj.filetype, file_obj.num_entries,
                 file_obj.num_lines, file_obj.num_bases))
             self.info.update_info('file', *flist)
@@ -197,75 +200,6 @@ class InfoPanel(gui_util.InfoPanel):
         self.displayInfo.set('\n'.join([val for val in to_display]))
         self.draw_info()
 
-class NewAttrForm(input_form.Form):
-    def onSubmit(self):
-        new_attr = self.content['new attribute'].get()
-        new_value = self.content['value'].get()
-        self.other.update_attr('add',new_attr,new_value)
-        self.parent.destroy()
-
-class NewFileForm(input_form.DefaultValueForm):
-    def __init__(self, entry_list, parent=None, other_widget=None, entrysize=40):
-        buttons = [('Cancel', self.onCancel, {'side':RIGHT}),
-                   ('Submit', self.onSubmit, {'side':RIGHT}),
-                   ('Choose file', self.onAdd, {'side':LEFT})]
-        input_form.DefaultValueForm.__init__(self, entry_list, parent, buttons, entrysize)
-        self.other = other_widget
-
-    def onCancel(self):
-        self.parent.destroy()
-
-    def onAdd(self):
-        """Pops up file choice dialogue"""
-        filepath = filedialog.askopenfilename()
-        for entry_row in self.row_list:
-            if entry_row.label_text == 'filepath':
-                entry_row.entry.insert(0,filepath) # update choice in window
-
-    def onSubmit(self):
-        try:
-            for key in self.content.keys():
-                if self.content[key].get() == '': # no added value
-                    raise AttributeError # do not allow submission without info
-                if key == 'filename':
-                    new_file = self.content[key].get()
-                elif key == 'filepath':
-                    filepath = self.content[key].get()
-                else:
-                    filetype = self.content[key].get()
-            self.other.add_file(new_file, filepath, filetype)
-            self.parent.destroy()
-        except(AttributeError):
-            # do not allow submission and warn user if values are blank
-            messagebox.showwarning('Add File Warning', 'Cannot leave blank entries')
-
-class RemovalFrame(Frame):
-    def __init__(self, attrs, attr_widget, parent=None):
-        Frame.__init__(self, parent)
-        self.pack(expand=YES, fill=BOTH)
-        self.attr_widget = attr_widget
-        self.selected_attr = StringVar()
-        self.attr_box = ttk.Combobox(self, textvariable=self.selected_attr)
-        self.attr_box['values'] = attrs
-        self.attr_box.pack(side=TOP, expand=YES, fill=X)
-
-        self.toolbar = Frame(self)
-        self.toolbar.pack(expand=YES, side=BOTTOM, fill=X)
-
-        self.buttons = [('Cancel', self.onCancel, {'side':RIGHT}),
-                        ('Submit', self.onSubmit, {'side':RIGHT})]
-        for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
-
-    def onCancel(self):
-        self.parent.destroy()
-
-    def onSubmit(self):
-        """Signal back to remove attribute"""
-        attr = self.selected_attr.get()
-        self.attr_widget.update_attr('remove',attr)
-        self.parent.destroy()
-
 class RecordFrame(Frame):
     def __init__(self, entry_list, record_files, database, db_widget, parent=None, entrysize=40):
         Frame.__init__(self, parent)
@@ -294,21 +228,25 @@ class RecordFrame(Frame):
             if not (k == 'record identity'):
                 remaining[k] = attrs[k].get()
         #if record_id in self.db.keys(): # record is already present
-        if record_id in self.db.list_records():
-            self.db.update_record(record_id, **remaining)
+        if record_id in self.db.list_entries():
+            #self.db.update_record(record_id, **remaining)
+            db_obj = self.db[record_id]
         else:
-            self.db.add_record(record_id, **remaining)
+            db_obj = record_obj.Record(record_id)
+            self.db[record_id] = db_obj
+        # either way, update record object with new info
+        db_obj.update(**remaining)
         try:
             for n,p,t in self.record_gui.return_new_files():
-                self.db.add_record_file(record_id, n, p, t)
+                db_obj.add_file(n, p, t)
         except(IndexError): # no added files
             pass
         try:
             for n in self.record_gui.return_removed_files():
-                self.db.remove_record_file(record_id, n)
+                db_obj.remove_file(n)
         except(IndexError): # no removed files
             pass
-        self.db.commit()
+        #self.db.commit()
         #print(self.db_widget.db_viewer.make_tree)
         self.db_widget.db_viewer.make_tree() # signal back to re-draw tree
         time.sleep(1)
@@ -364,6 +302,40 @@ class AttributeForm(input_form.DefaultValueForm):
         """Removes a record attribute"""
         window = Toplevel()
         RemovalFrame([row.label_text for row in self.row_list],self,window)
+
+class NewAttrForm(input_form.Form):
+    def onSubmit(self):
+        new_attr = self.content['new attribute'].get()
+        new_value = self.content['value'].get()
+        self.other.update_attr('add',new_attr,new_value)
+        self.parent.destroy()
+
+class RemovalFrame(Frame):
+    def __init__(self, attrs, attr_widget, parent=None):
+        Frame.__init__(self, parent)
+        self.pack(expand=YES, fill=BOTH)
+        self.attr_widget = attr_widget
+        self.selected_attr = StringVar()
+        self.attr_box = ttk.Combobox(self, textvariable=self.selected_attr)
+        self.attr_box['values'] = attrs
+        self.attr_box.pack(side=TOP, expand=YES, fill=X)
+
+        self.toolbar = Frame(self)
+        self.toolbar.pack(expand=YES, side=BOTTOM, fill=X)
+
+        self.buttons = [('Cancel', self.onCancel, {'side':RIGHT}),
+                        ('Submit', self.onSubmit, {'side':RIGHT})]
+        for (label, action, where) in self.buttons:
+            Button(self.toolbar, text=label, command=action).pack(where)
+
+    def onCancel(self):
+        self.parent.destroy()
+
+    def onSubmit(self):
+        """Signal back to remove attribute"""
+        attr = self.selected_attr.get()
+        self.attr_widget.update_attr('remove',attr)
+        self.parent.destroy()
 
 class FileFrame(Frame):
     def __init__(self, file_dict, parent=None):
@@ -440,6 +412,41 @@ class FileFrame(Frame):
         self.file_dict[new_file] = ff
         self._add(new_file) # add to temporary selection
         self.new_files.append([new_file, filepath, filetype]) # for permanent addition later
+
+class NewFileForm(input_form.DefaultValueForm):
+    def __init__(self, entry_list, parent=None, other_widget=None, entrysize=40):
+        buttons = [('Cancel', self.onCancel, {'side':RIGHT}),
+                   ('Submit', self.onSubmit, {'side':RIGHT}),
+                   ('Choose file', self.onAdd, {'side':LEFT})]
+        input_form.DefaultValueForm.__init__(self, entry_list, parent, buttons, entrysize)
+        self.other = other_widget
+
+    def onCancel(self):
+        self.parent.destroy()
+
+    def onAdd(self):
+        """Pops up file choice dialogue"""
+        filepath = filedialog.askopenfilename()
+        for entry_row in self.row_list:
+            if entry_row.label_text == 'filepath':
+                entry_row.entry.insert(0,filepath) # update choice in window
+
+    def onSubmit(self):
+        try:
+            for key in self.content.keys():
+                if self.content[key].get() == '': # no added value
+                    raise AttributeError # do not allow submission without info
+                if key == 'filename':
+                    new_file = self.content[key].get()
+                elif key == 'filepath':
+                    filepath = self.content[key].get()
+                else:
+                    filetype = self.content[key].get()
+            self.other.add_file(new_file, filepath, filetype)
+            self.parent.destroy()
+        except(AttributeError):
+            # do not allow submission and warn user if values are blank
+            messagebox.showwarning('Add File Warning', 'Cannot leave blank entries')
 
 class FilePanel(gui_util.InfoPanel):
     def __init__(self, parent=None):
