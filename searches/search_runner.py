@@ -27,17 +27,21 @@ tmp_dir = '/Users/cklinger/git/Goat/tmp'
 
 class SearchRunner:
     """Actually runs searches"""
-    def __init__(self, search_obj, query_db, record_db, result_db,
-            mode='new', fwd_search=None, threaded=False, gui=None):
+    def __init__(self, search_name, search_obj, query_db, record_db, result_db, search_db,
+            mode='new', fwd_search=None, threaded=False, gui=None, no_win=True, owidget=None):
         self.sobj = search_obj
         self.qdb = query_db
         self.rdb = record_db
         self.udb = result_db
+        self.sdb = search_db
+        self.sdb[search_name] = search_obj
         self.mode = mode
         self.fobj = fwd_search
         self.threaded = threaded # threaded or not
         self.search_list = [] # for threading searches
         self.gui = gui # used to close
+        self.no_win = no_win # whether or not to close
+        self.owidget = owidget # signal back to other widget
 
     def get_unique_outpath(self, query, db, sep='-'):
         """Returns an outpath for a given query and database"""
@@ -75,10 +79,14 @@ class SearchRunner:
                 for db in self.sobj.databases:
                     self.call_run(self.sobj.name, qid, qobj, db)
         if self.threaded:
-            print('calling popup')
-            popup = Tk()
-            threaded_search.ProgressFrame(self.sobj.algorithm, self.search_list,
-                    callback = self.threaded_callback, parent=popup)
+            if not self.gui:
+                print('calling popup')
+                popup = Tk()
+            else:
+                popup = self.gui
+            ts = threaded_search.ProgressFrame(self.sobj.algorithm, self.search_list,
+                    callback = self.threaded_callback, parent=popup, no_win=self.no_win)
+            ts.run()
             # store the thread on a global for program awareness
             configs['threads'].add_thread()
         else:
@@ -151,8 +159,13 @@ class SearchRunner:
                 rid = robj.name
                 self.sobj.add_result(rid)
                 self.udb[rid] = robj
+            print('parsing output')
             self.parse()
         finally: # commit no matter what?
             # now ensure dbs are updated
             configs['search_db'].commit()
             configs['result_db'].commit()
+            # signal to finish searches
+            if self.owidget:
+                self.owidget._cont()
+

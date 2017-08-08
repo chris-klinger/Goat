@@ -14,6 +14,7 @@ from gui.searches import search_gui
 from gui.results import result_gui
 from gui.queries import query_gui
 from gui.summaries import summary_gui
+from gui.analyses import analysis_gui
 
 help_msg="""
 Goat: an integrated platform for bioinformatic sequence analysis
@@ -124,7 +125,8 @@ class RootFrame(Frame):
 
     def analysis_popup(self):
         """Run a full analysis, typically forward-reverse"""
-        pass
+        window = Toplevel()
+        analysis_gui.AnalysisPicker(window)
 
     def result_viewer(self):
         """View information for results from previous searches"""

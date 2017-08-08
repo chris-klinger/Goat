@@ -64,15 +64,14 @@ class SearchFrame(Frame):
             keep_output = ko,
             output_location = location)
         # store search object in database
-        self.sdb[sname] = sobj # should eventually make a check that we did actually select something!
+        #self.sdb[sname] = sobj # should eventually make a check that we did actually select something!
         # now run the search and parse the output
         #runner = search_runner.SearchRunner(sobj, self.qdb, self.rdb, self.udb)
-        runner = search_runner.SearchRunner(sobj, self.qdb, self.rdb, self.udb,
+        runner = search_runner.SearchRunner(name, sobj, self.qdb, self.rdb, self.udb, self.sdb,
                 threaded=False, gui=self)
         print("calling threaded runner.run() from forward search")
         runner.run()
         # Can destroy once run starts
-        #self.onClose()
         print("calling runner.parse() from forward search")
         runner.parse()
         print("calling self.onSaveQuit() from forward search")
@@ -352,13 +351,13 @@ class ReverseSearchFrame(Frame):
             keep_output = ko,
             output_location = location)
         # store search object in database
-        self.sdb[sname] = rev_sobj # should eventually make a check that we did actually select something!
+        #self.sdb[sname] = rev_sobj # should eventually make a check that we did actually select something!
         # now run the search and parse the output
         #runner = search_runner.SearchRunner(rev_sobj, self.qdb, self.rdb, self.udb,
                 #mode='old', fwd_search=fwd_sobj)
         #print("calling runner.run() from reverse search")
         #runner.run()
-        runner = search_runner.SearchRunner(rev_sobj, self.qdb, self.rdb, self.udb,
+        runner = search_runner.SearchRunner(name, rev_sobj, self.qdb, self.rdb, self.udb, self.sdb,
                 mode='old', fwd_search=fwd_sobj, threaded=True, gui=self)
         print("calling threaded runner.run() from reverse search")
         runner.run()

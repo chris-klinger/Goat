@@ -18,7 +18,7 @@ tmp_dir = '/Users/cklinger/git/Goat/tmp'
 
 class ProgressFrame(Frame):
     def __init__(self, algorithm, search_list, callback=None,
-        callback_args=None, parent=None):
+        callback_args=None, parent=None, no_win=True):
         Frame.__init__(self, parent)
         self.pack(expand=YES, fill=BOTH)
         self.algorithm = algorithm
@@ -27,6 +27,7 @@ class ProgressFrame(Frame):
         self.num_finished = 1 # don't index from zero, first search is number 1
         self.callback = callback
         self.callback_args = callback_args
+        self.no_win = no_win
 
         # Make non-modal, i.e. un-closeable
         self.parent = parent
@@ -48,7 +49,8 @@ class ProgressFrame(Frame):
             self.num_finished, self.num_todo), anchor='center', justify='center')
         self.search_label.pack(side=BOTTOM, expand=YES)
 
-        # start producer thread, consumer loop
+    def run(self):
+        """start producer thread, consumer loop"""
         self.queue = queue.Queue()
         threading.Thread(target=self._run).start()
         self.thread_consumer()
@@ -85,4 +87,5 @@ class ProgressFrame(Frame):
             #print("calling else block")
             if self.callback:
                 self.callback(*robjs)
-            self.parent.destroy()
+            if self.no_win:
+                self.parent.destroy()
