@@ -11,6 +11,7 @@ from tkinter import ttk
 from bin.initialize_goat import configs
 
 from util import util
+from gui.util import gui_util
 
 class ResultFrame(Frame):
     def __init__(self, parent=None):
@@ -116,36 +117,32 @@ class ResultTree(ttk.Treeview):
         elif item_type == 'result':
             ulist = []
             uobj = self.udb[item['text']]
-            for descr in uobj.parsed_result.descriptions:
-                for k,v in descr.__dict__.items():
-                    print(str(k) + '  ' + str(v))
+            #for descr in uobj.parsed_result.descriptions:
+            #    for k,v in descr.__dict__.items():
+            #        print(str(k) + '  ' + str(v))
             ulist.extend([uobj.name, uobj.query, uobj.database]) # add num hits?
             self.info.update_info('result', *ulist)
 
-class ResultInfo(ttk.Label):
+class ResultInfo(gui_util.InfoPanel):
     def __init__(self, parent=None):
-        ttk.Label.__init__(self, parent)
-        self.pack(expand=YES, fill=BOTH)
-        self.displayInfo = StringVar()
-        self.config(textvariable = self.displayInfo,
-                width=-75,
-                anchor='center', justify='center')
-        self.displayInfo.set('')
+        gui_util.InfoPanel.__init__(self, parent)
 
     def update_info(self, display_type, *values):
         """Displays information on either searches or results"""
-        display_string = ''
+        to_display = []
         if display_type == 'search':
-            display_string += ('Search Information: \n\n\n')
-            display_string += ('Search Name: ' + values[0] + '\n')
-            display_string += ('Algorithm used: ' + values[1] + '\n')
-            display_string += ('Query alphabet: ' + values[2] + '\n')
-            display_string += ('Database alphabet: ' + values[3] + '\n')
-            display_string += ('Number of results: ' + str(values[4]) + '\n')
-            display_string += ('Number of databases: ' + str(values[5]) + '\n')
+            to_display.append('Search Information: \n')
+            to_display.append('Search Name: ' + values[0])
+            to_display.append('Algorithm used: ' + values[1])
+            to_display.append('Query alphabet: ' + values[2])
+            to_display.append('Database alphabet: ' + values[3])
+            to_display.append('Number of results: ' + str(values[4]))
+            to_display.append('Number of databases: ' + str(values[5]))
         elif display_type == 'result':
-            display_string += ('Result Information: \n\n\n')
-            display_string += ('Result name: ' + values[0] + '\n')
-            display_string += ('Query: ' + values[1] + '\n')
-            display_string += ('Database: ' + values[2] + '\n')
-        self.displayInfo.set(display_string)
+            to_display.append('Result Information: \n')
+            to_display.append('Result name: ' + values[0])
+            to_display.append('Query: ' + values[1])
+            to_display.append('Database: ' + values[2])
+        self._display = to_display
+        self.displayInfo.set('\n'.join([val for val in to_display]))
+        self.draw_info()

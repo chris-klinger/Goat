@@ -406,21 +406,16 @@ class SummaryTree(ttk.Treeview):
             index += 1
             return self.get_item_from_db(item_list, new_obj, index, db_obj) # recur
 
-class ResultInfo(ttk.Label):
+class ResultInfo(gui_util.InfoPanel):
     def __init__(self, parent=None):
-        ttk.Label.__init__(self, parent)
-        self.pack(expand=YES, fill=BOTH)
-        self.displayInfo = StringVar()
-        self.config(textvariable = self.displayInfo,
-                width=-75,
-                anchor='center', justify='center')
-        self.displayInfo.set('')
+        gui_util.InfoPanel.__init__(self, parent)
 
     def update_info(self, display_type, *values):
         """Displays information on either searches or results"""
-        display_string = ''
+        #display_string = ''
+        to_display = []
         if display_type == 'summary':
-            display_string += ('Summary Information: \n\n\n')
+            to_display.append('Summary Information: \n')
             labels = ['Summary Name: ', 'Number Queries: ', 'Forward Search: ',
                     'Forward Query Type: ', 'Forward Database Type: ',
                     'Forward Search Algorithm: ', 'Forward E-value cutoff: ',
@@ -431,16 +426,16 @@ class ResultInfo(ttk.Label):
                     'Reverse E-value cutoff: ', 'Reverse Hit Number Cutoff: '])
             labels.append('Next Hit Evalue Cutoff: ')
         elif display_type == 'querysum':
-            display_string += ('Query Information: \n\n\n')
+            to_display.append('Query Information: \n')
             labels = ['Query Name: ', 'Number of Databases Searched In: ']
         elif display_type == 'dbsum':
-            display_string += ('Database Information: \n\n\n')
+            to_display.append('Database Information: \n')
             labels = ['Database Name: ', 'Status of Searches in Database: ']
         elif display_type == 'hitlist':
-            display_string += ('Hit Group Information: \n\n\n')
+            to_display.append('Hit Group Information: \n')
             labels = ['Hit status(es): ', 'Number of Hits: ']
         elif display_type == 'hit':
-            display_string += ('Hit Information: \n\n\n')
+            to_display.append('Hit Information: \n')
             labels = ['Forward Query ID: ', 'Forward Evalue: ']
             if len(values) > 3:
                 labels.extend(['First Positive Reverse Hit ID: ',
@@ -448,12 +443,12 @@ class ResultInfo(ttk.Label):
                     'First Negative Reverse Hit ID: ',
                     'First Negative Reverse Hit Evalue: ',
                     'Reverse Hits Evalue Difference: '])
-            labels.append('Hit Status')
+                labels.append('Hit Status: ')
         for l,v in zip(labels,values):
-            display_string += (l + str(v) + '\n')
-        #print('Calling display info for tag: ' + display_type)
-        #print(str(values))
-        self.displayInfo.set(display_string)
+            to_display.append(l + str(v))
+        self._display = to_display
+        self.displayInfo.set('\n'.join([val for val in to_display]))
+        self.draw_info()
 
 ###################################################
 # Code for user input to create output table file #

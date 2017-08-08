@@ -4,6 +4,12 @@ This module contains various multi-use tools for constructing GUI interfaces.
 
 from tkinter import *
 
+from bin.initialize_goat import configs
+
+##################
+# Helper Classes #
+##################
+
 class ComboBoxFrame(Frame):
     def __init__(self, parent=None, choices=None, labeltext=None):
         Frame.__init__(self, parent)
@@ -88,6 +94,43 @@ class ScrollBoxFrame(Frame):
 
     def onSelect(self, *args):
         pass # implement in other subclasses?
+
+class InfoPanel(ttk.Label):
+    def __init__(self, parent=None, width=-50, anchor='center', justify='center'):
+        ttk.Label.__init__(self, parent)
+        self.pack(expand=YES,fill=BOTH)
+        self.displayInfo = StringVar() # variable watches for updates
+        self.config(textvariable=self.displayInfo, # associate label text with variable
+                width=width, # set a sane minimum width)
+                anchor=anchor,justify=justify) # centre and justify label text
+        self.displayInfo.set('') # initialize to an empty value
+
+        self._display = ''
+        self.bind('<Configure>', self.draw_info) # re-draw on window resizes
+
+    def update_info(self,display_type,*values):
+        """Implement in sublcass"""
+        raise NotImplementedError
+
+    def draw_info(self, event=None):
+        """Draw on first instantiation"""
+        # first ensure root window is updated
+        configs['root'].update_idletasks()
+        # get current parameters of window
+        curr_width = self.winfo_width()
+        font_name = self['font']
+        # clip any text that is too long
+        san = [clip_text(curr_width, font_name, val) for val in self._display]
+        # join back into a string
+        display_string = ''
+        if len(san) > 0:
+            for line in san:
+                display_string += line + '\n'
+        self.displayInfo.set(display_string)
+
+####################
+# Helper Functions #
+####################
 
 def clip_text(width, font, string):
     """Calculates the approximate character width of a window (in pixels) and

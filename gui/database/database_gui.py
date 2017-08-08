@@ -167,18 +167,9 @@ class DatabaseViewer(ttk.Treeview):
                 file_obj.num_lines, file_obj.num_bases))
             self.info.update_info('file', *flist)
 
-class InfoPanel(ttk.Label):
+class InfoPanel(gui_util.InfoPanel):
     def __init__(self, parent=None):
-        ttk.Label.__init__(self, parent)
-        self.pack(side=RIGHT,expand=YES,fill=BOTH)
-        self.displayInfo = StringVar() # variable watches for updates
-        self.config(textvariable=self.displayInfo, # associate label text with variable
-                width=-50, # set a sane minimum width)
-                anchor='center',justify='center') # centre and justify label text
-        self.displayInfo.set('') # initialize to an empty value
-
-        self._display = ''
-        self.bind('<Configure>', self.draw_info)
+        gui_util.InfoPanel.__init__(self, parent)
 
     def update_info(self,display_type,*values):
         """Takes a list of values and displays it depending on whether the item
@@ -205,22 +196,6 @@ class InfoPanel(ttk.Label):
         self._display = to_display
         self.displayInfo.set('\n'.join([val for val in to_display]))
         self.draw_info()
-
-    def draw_info(self, event=None):
-        """Draw on first instantiation"""
-        # first ensure root window is updated
-        configs['root'].update_idletasks()
-        # get current parameters of window
-        curr_width = self.winfo_width()
-        font_name = self['font']
-        # clip any text that is too long
-        san = [gui_util.clip_text(curr_width, font_name, val) for val in self._display]
-        # join back into a string
-        display_string = ''
-        if len(san) > 0:
-            for line in san:
-                display_string += line + '\n'
-        self.displayInfo.set(display_string)
 
 class NewAttrForm(input_form.Form):
     def onSubmit(self):
@@ -466,26 +441,22 @@ class FileFrame(Frame):
         self._add(new_file) # add to temporary selection
         self.new_files.append([new_file, filepath, filetype]) # for permanent addition later
 
-class FilePanel(ttk.Label):
+class FilePanel(gui_util.InfoPanel):
     def __init__(self, parent=None):
-        ttk.Label.__init__(self, parent)
-        self.pack(expand=YES,fill=BOTH)
-        self.displayInfo = StringVar() # variable watches for updates
-        self.config(textvariable=self.displayInfo, # associate label text with variable
-                width=-80, # set a sane minimum width)
-                anchor='center',justify='center') # centre and justify label text
-        self.displayInfo.set('File Info') # initialize to an empty value
+        gui_util.InfoPanel.__init__(self, parent)
+        self._display = ['File Info']
+        self.displayInfo.set('File Info')
+        self.draw_info
 
     def update_info(self, *values):
         """Parses file info for display"""
-        display_string = ''
-        display_string += ('Filename: ' + values[0] + '\n')
-        display_string += ('Filepath: ' + values[1] + '\n')
-        display_string += ('Filetype: ' + values[2] + '\n')
-        display_string += ('Number of entries ' + str(values[3]) + '\n')
-        display_string += ('Number of lines ' + str(values[4]) + '\n')
-        display_string += ('Number of bases ' + str(values[5]) + '\n')
-        self.displayInfo.set(display_string)
+        to_display = []
+        to_display.extend([('Filename: ' + values[0]), ('Filepath: ' + values[1]),
+        ('Filetype: ' + values[2]), ('Number of entries ' + str(values[3])),
+        ('Number of lines ' + str(values[4])), ('Number of bases ' + str(values[5]))])
+        self._display = to_display
+        self.displayInfo.set('\n'.join([val for val in to_display]))
+        self.draw_info()
 
     def clear_display(self):
         """Helper function to clear display"""
