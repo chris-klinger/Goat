@@ -139,7 +139,7 @@ class AddFileFrame(Frame):
         self.alphabet = gui_util.RadioBoxFrame(self, [('Protein','protein'),
             ('Genomic','genomic')], labeltext='Sequence alphabet')
         self.record = gui_util.ComboBoxFrame(self,
-                list(self.rdb.list_records()), # record db keys; use list function or returns a generator
+                list(self.rdb.list_entries()), # record db keys; use list function or returns a generator
                 labeltext='Associated record')
         self.add_raccs = gui_util.RadioBoxFrame(self, [('No','no'), ('Auto','auto'),
             ('Manual','man')], labeltext='Add Redundant Accessions?')
@@ -246,7 +246,7 @@ class SeqInfoFrame(Frame):
                 labeltext='Query type')
         self.alphabet = gui_util.RadioBoxFrame(self, [('Protein','protein'), ('Genomic','genomic')],
                 labeltext='Sequence alphabet')
-        self.record = gui_util.ComboBoxFrame(self, self.rdb.list_records(), # record db keys
+        self.record = gui_util.ComboBoxFrame(self, self.rdb.list_entries(), # record db keys
                 labeltext='Associated record')
         self.add_raccs = gui_util.RadioBoxFrame(self, [('No','no'), ('Auto','auto'),
             ('Manual','man')], labeltext='Add Redundant Accessions?')

@@ -64,6 +64,9 @@ class ScrollBoxFrame(Frame):
         if items:
             self.add_items(items)
 
+    def onSelect(self, *args):
+        pass # implement in other subclasses?
+
     def add_items(self, items, mode='end'):#item_dict):
         """General case addition of items"""
         if mode == 'end': # add each item to end of list
@@ -92,8 +95,13 @@ class ScrollBoxFrame(Frame):
             del self.item_dict[item]
             num_removals += 1
 
-    def onSelect(self, *args):
-        pass # implement in other subclasses?
+    def selection(self):
+        """Returns current selection"""
+        return self.listbox.curselection()
+
+    def get(self, index):
+        """Returns item corresponding to index"""
+        return self.listbox.get(index)
 
 class InfoPanel(ttk.Label):
     def __init__(self, parent=None, width=-50, anchor='center', justify='center'):

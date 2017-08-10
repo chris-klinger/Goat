@@ -12,7 +12,7 @@ from gui.settings import settings_form
 from gui.database import database_gui
 from gui.searches import search_gui
 from gui.results import result_gui
-from gui.queries import query_gui
+from gui.queries import main_query_gui #query_gui
 from gui.summaries import summary_gui
 from gui.analyses import analysis_gui
 
@@ -162,7 +162,8 @@ class RootFrame(Frame):
 
     def query_popup(self):
         window = Toplevel()
-        query_gui.QueryFrame(window)
+        #query_gui.QueryFrame(window)
+        main_query_gui.QueryFrame(window)
 
     def database_popup(self):
         window = Toplevel()

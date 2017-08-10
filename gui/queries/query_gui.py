@@ -240,7 +240,7 @@ class QuerySetViewer(ttk.Treeview):
 class QueryScrollBox(gui_util.ScrollBoxFrame):#Listbox):
     def __init__(self, query_db, other_widget, parent=None):
         to_display = []
-        for key in query_db.list_queries():
+        for key in query_db.list_entries():
             #print("fetching queries")
             #print(key)
             value = query_db[key]
@@ -267,36 +267,29 @@ class QueryScrollBox(gui_util.ScrollBoxFrame):#Listbox):
             #print(to_display)
             self.other.update_info('query', *to_display)
 
-class QueryInfo(ttk.Label):
+class QueryInfo(gui_util.InfoPanel):
     def __init__(self, parent=None):
-        ttk.Label.__init__(self, parent)
-        self.pack(expand=YES, fill=BOTH)
-        self.displayInfo = StringVar() # re-displays on update
-        self.config(textvariable = self.displayInfo,
-                width=-75, # set wide to accommodate raccs?
-                anchor='center',justify='center')
-        self.displayInfo.set('') # initialize to empty value
+        gui_util.InfoPanel.__init__(self, parent)
 
     def update_info(self, display_type, *values):
         """Takes a list of values and displays it depending on whether the item
         clicked represents a single record or a single set. Calling function has
         responsibility to disregard multiple selections for display"""
-        display_string = ''
+        to_display = []
         if display_type == 'set':
-            display_string += ('Query Set Information: \n\n\n')
-            display_string += ('Query Set Name: ' + values[0] + '\n')
-            display_string += ('Number of queries: ' + values[1] + '\n')
+            to_display.extend([('Query Set Information: \n'), ('Query Set Name: ' + values[0]),
+            ('Number of queries: ' + values[1])])
             # more information to display for sets here?
         elif display_type == 'query':
-            display_string += ('Query Information: \n\n\n')
-            display_string += ('Query Identity: ' + values[0] + '\n')
-            display_string += ('Query Name: ' + values[1] + '\n')
-            display_string += ('Query Type: ' + values[2] + '\n') # e.g. Seq or HMM
-            display_string += ('Query Alphabet: ' + values[3] + '\n') # e.g. protein
-            display_string += ('Query Record: ' + values[4] + '\n')
-            if len(display_string) > 5: # redundant accessions present
-                display_string += ('Redundant Accessions: ' + '\n')
+            to_display.extend([('Query Information: \n'), ('Query Identity: ' + values[0]),
+            ('Query Name: ' + values[1]), ('Query Type: ' + values[2]), # e.g. Seq or HMM
+            ('Query Alphabet: ' + values[3]), # e.g. protein
+            ('Query Record: ' + values[4])])
+            if len(values) > 5: # redundant accessions present
+                to_display.append('Redundant Accessions: ')
                 for value in values[5:]: # remaining args
-                    display_string += ('  ' + value + '\n')
-        self.displayInfo.set(display_string)
+                    to_display.append('  ' + value)
+        self._display = to_display
+        self.displayInfo.set('\n'.join([val for val in to_display]))
+        self.draw_info()
 

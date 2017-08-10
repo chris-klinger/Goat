@@ -218,7 +218,7 @@ class QSearchSetViewer(ttk.Treeview):
 class QSearchListViewer(gui_util.ScrollBoxFrame):
     def __init__(self, query_db, parent=None):
         to_display = [] # init with queries in db
-        for key in query_db.list_queries():
+        for key in query_db.list_entries():
             to_display.append([key,'']) # here, '' is 'value' as we don't need the obj
         gui_util.ScrollBoxFrame.__init__(self, parent, items=to_display)
         self.qdb = query_db

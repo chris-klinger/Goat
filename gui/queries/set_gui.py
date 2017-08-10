@@ -85,10 +85,10 @@ class SetGui(ttk.Panedwindow):
         populate both windows"""
         if not self.qset: # i.e. it is still NoneType; adding a new set
             self.set_list.lbox_frame.add_items(
-                    [(item,'') for item in self.qdb.list_queries()]) # add all queries
+                    [(item,'') for item in self.qdb.list_entries()]) # add all queries
         else:
             print(self.qset)
-            self.set_list.lbox_frame.add_items([(item,'') for item in self.qdb.list_queries()
+            self.set_list.lbox_frame.add_items([(item,'') for item in self.qdb.list_entries()
                 if not item in self.qdb.sets.qdict[self.qset]]) # add if not already present
             self.added_list.lbox_frame.add_items(
                     [(item,'') for item in self.qdb.sets.qdict[self.qset]])

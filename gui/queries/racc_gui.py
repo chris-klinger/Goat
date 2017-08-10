@@ -76,9 +76,11 @@ class AddRaccGui(ttk.Panedwindow):
             display_string = str(title) + '  ' + str(evalue)
             all_accs.append([display_string,(title,evalue)])
         if not len(self.qobj.redundant_accs) == 0: # there are hits
-            for title,evalue in self.qobj.redundant_accs: # already a list
-                display_string = str(title) + '  ' + str(evalue)
-                raccs.append([display_string,(title,evalue)])
+            for item in self.qobj.redundant_accs:
+                print(item)
+            #for title,evalue in self.qobj.redundant_accs: # already a list
+                #display_string = str(title) + '  ' + str(evalue)
+                #raccs.append([display_string,(title,evalue)])
         self.blast_list.lbox_frame.add_items(all_accs)
         self.added_list.lbox_frame.add_items(raccs)
 
@@ -93,7 +95,7 @@ class QueryInfoFrame(Frame):
                 labeltext='Query type')
         self.alphabet = gui_util.RadioBoxFrame(self, [('Protein','protein'), ('Genomic','genomic')],
                 labeltext='Sequence alphabet')
-        self.record = gui_util.ComboBoxFrame(self, self.rdb.list_records(), # record db keys
+        self.record = gui_util.ComboBoxFrame(self, self.rdb.list_entries(), # record db keys
                 labeltext='Associated record')
         self.toolbar = Frame(self)
         self.toolbar.pack(side=BOTTOM, expand=YES, fill=X)
