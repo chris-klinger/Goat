@@ -5,12 +5,14 @@ separate windows to interact with different types of queries for modifying/
 adding them to the underlying database.
 """
 
+import random
 from tkinter import *
 from tkinter import ttk, messagebox
 
 from bin.initialize_goat import configs
 
 from gui.util import gui_util, input_form
+from searches import search_obj, new_threaded_search
 
 class QueryFrame(Frame):
     def __init__(self, parent=None):
@@ -228,13 +230,8 @@ class AddQueryFrame(Frame):
     def onSubmit(self):
         """Add all entries in 'To be Added' side of columns to parent widget"""
         to_add = self.columns.get_to_add() # returns a dict
-        other_lbox = 'placeholder for now'
-        qlist = []
-        for k,v in to_add.items():
-            self.qdb.add_entry(k,v)
-            qlist.append([k,v])
-        other_lbox.add_items(qlist) # add to other widget's display
-        # Note, need to do something in here about redundant accessions!!!
+        submission = QuerySubmission(to_add, self.other)
+        submission.submit()
         self.parent.destroy()
 
     def onCancel(self):
@@ -258,6 +255,89 @@ class AddQueryFrame(Frame):
         """
         window = Toplevel()
         AddSeqManFrame(window, self.columns)
+
+class QuerySubmission:
+    """
+    Sorts out adding queries to the main query widget. Namely, determines if any
+    need to run searches for raccs and then runs those searches before adding all
+    queries to the other widget; else just adds them
+    """
+    def __init__(self, qdict, other_widget):
+        self.qdict = qdict
+        self.other = other_widget # to add the queries to
+        self.qlist = [] # all queries
+
+    def submit(self):
+        """
+        Determines whether or not to run searches, either runs them or not, and
+        then signals query widget to update with new queries.
+        """
+        to_search = [] # those that need blast searches performed
+        for k,v in to_add.items():
+            # no matter what, add to query db now
+            self.qdb.add_entry(k,v)
+            if v.search_type == 'seq':
+                if (v.racc_mode != 'no' and not v.search_ran): # need raccs
+                    to_search.append(k) # works by qid
+            elif v.search_type == 'hmm':
+                for qid in v.associated_queries:
+                    qobj = self.qdb[qid]
+                    if (qobj.racc_mode != 'no' and not qobj.search_ran):
+                        to_search.append(qid)
+            else: # for msa
+                pass
+            # no matter what, append to list for query widget
+            self.qlist.append([k,v])
+        if len(to_search) > 0: # searches to be run
+            self.run_racc_search(to_search)
+        else:
+            self.other.add_queries(self.qlist) # add to other widget's display
+
+    def run_racc_search(self, qid_list):
+        """Creates a search object and runs the search"""
+        # create a randomly unique search name
+        search_name = ''.join([random.choice(string.letters) for i in range(20)])
+        self.sobj = search_obj.Search(
+                name=search_name,
+                algorithm='blast',
+                q_type=None,
+                db_type=None,
+                queries=qid_list,
+                databases=None)
+        window = Toplevel()
+        prog_frame = new_threaded_search(self.sobj, 'racc', window,
+                other_widget=self, callback=self.racc_callback)
+        prog_frame.run()
+
+    def racc_callback(self):
+        """Parses output files, adds accs to qobjs, and then removes all db entries"""
+        configs['threads'].remove_thread()
+        self.udb = configs['result_db']
+        try:
+            for uid in self.sobj.list_results:
+                robj = self.udb[uid]
+                qobj = self.qdb[robj.query]
+                self.add_self_blast(qobj, robj.parsed_result)
+        except:
+            pass # freak out
+        finally:
+            # don't want to keep these in the db
+            for rid in self.sobj.results:
+                self.udb.remove_entry(rid)
+            self.sdb.remove_entry(self.sobj.name)
+            # add to other widget's display
+            self.other.add_queries(self.qlist)
+
+    def add_self_blast(self, qobj, blast_result):
+        """Adds hits to qobj attribute before removal"""
+        lines = []
+        seen = set()
+        for hit in blast_result.descriptions:
+            new_title = search_util.remove_blast_header(hit.title)
+            if not new_title in seen:
+                lines.append([new_title, hit.e])
+                seen.add(new_title)
+        qobj.all_accs = lines
 
 class QueryColumns(ttk.Panedwindow):
     def __init__(self, parent=None):
@@ -591,7 +671,7 @@ class ModifySeqQuery(Frame):
 class ModSeqWindow(ttk.Panedwindow):
     def __init__(self, parent=None, qobj=None):
         ttk.Panedwindow.__init__(self, parent, orient=HORIZONTAL)
-        self.qobj = query
+        self.qobj = qobj
         self.pack(expand=YES, fill=BOTH)
         self.query_info = SeqQueryInfo(self)
         self.blast_list = BlastListFrame(self, 'BLAST Hits')
@@ -608,10 +688,13 @@ class ModSeqWindow(ttk.Panedwindow):
     def populate_windows(self):
         """Retrieves information from the passed in query and changes the child
         display windows to display this information"""
-        for row in self.query_info.name.row_list:
-            if row.label_text == 'Name':
+        for row in self.query_info.names.row_list:
+            if row.label_text == 'Identity':
+                row.entry.insert(0,self.qobj.identity)
+            elif row.label_text == 'Name':
                 row.entry.insert(0,self.qobj.name) # insert name
-        self.query_info.qtype.selected.set(self.qobj.search_type) # select search type
+            else:
+                row.entry.insert(0,self.qobj.description)
         self.query_info.alphabet.selected.set(self.qobj.db_type) # select db type
         self.query_info.record.selected.set(self.qobj.record) # select record
         # Now populate both racc windows
@@ -621,7 +704,7 @@ class ModSeqWindow(ttk.Panedwindow):
             display_string = str(title) + '  ' + str(evalue)
             all_accs.append([display_string,(title,evalue)])
         if not len(self.qobj.redundant_accs) == 0: # there are hits
-            for title,evalue in self.qobj.redundant_accs: # already a list
+            for title,evalue in self.qobj.raccs: # already a list
                 display_string = str(title) + '  ' + str(evalue)
                 raccs.append([display_string,(title,evalue)])
         self.blast_list.lbox_frame.add_items(all_accs)

@@ -10,7 +10,8 @@ from persistent import Persistent
 class Query(Persistent):
     """Generic Query class"""
     def __init__(self, identity, name=None, description=None, location=None,
-            alphabet=None, sequence=None, target_db=None, original_query=None):
+            alphabet=None, sequence=None, target_db=None, original_query=None,
+            tag='standard'):
         # standard attributes for all queries
         self.identity = identity
         self.name = name
@@ -21,6 +22,8 @@ class Query(Persistent):
         # attributes for reverse searches
         self.target_db = target_db # if present, name of record
         self.original_query = original_query # if present = qid
+        # whether or not to display in main window
+        self.tag = tag
 
 class SeqQuery(Query):
     """

@@ -10,7 +10,7 @@ class Search(Persistent):
     def __init__(self, name, algorithm, q_type, db_type, queries, databases,
             keep_output=False, output_location=None, **params):
         self.name = name
-        self.algorithm = algorithm
+        self.algorithm = algorithm # note, lowercase!
         self.q_type = q_type # e.g. protein
         self.db_type = db_type # e.g. protein
         self.queries = queries # list of qids
