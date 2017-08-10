@@ -5,14 +5,16 @@ separate windows to interact with different types of queries for modifying/
 adding them to the underlying database.
 """
 
-import random
+import string,random
 from tkinter import *
 from tkinter import ttk, messagebox
 
 from bin.initialize_goat import configs
 
 from gui.util import gui_util, input_form
-from searches import search_obj, new_threaded_search
+from queries import query_file
+from searches import search_obj, search_util
+from gui.searches import new_threaded_search
 
 class QueryFrame(Frame):
     def __init__(self, parent=None):
@@ -48,6 +50,13 @@ class QueryFrame(Frame):
         window = Toplevel()
         AddQueryFrame(window, self, qtype)
 
+    def add_queries(self, qlist):
+        """
+        Called from onAdd frame once queries are ready to submit. List has key,
+        value pairs to add to the scrollbox.
+        """
+        self.paned_window.add_items(qlist)
+
     def onModify(self):
         """
         Determines which window is selected in the associated notebook widget and
@@ -71,13 +80,25 @@ class QueryFrame(Frame):
         confirmation before removing them from the database.
         """
         to_remove = self.paned_window.notebook_selection() # returns indices
-        if len(to_remove) > 0:
+        #print(to_remove)
+        rlen = len(to_remove)
+        remove = False
+        if rlen == 1:
             if messagebox.askyesno(
-                message = "Delete {} query(ies)?".format(rlen),
-                icon='question', title='Remove query(ies)'):
-                for qid in to_remove: # items holds a reference
-                    self.qdb.remove_query(qid)
-                self.paned_window.remove_items(to_remove) # remove from listbox and internal data structures
+                    message = "Delete {} query?".format(rlen),
+                    icon='question', title='Remove query'):
+                remove = True
+        elif rlen > 1:
+            if messagebox.askyesno(
+                    message = "Delete {} queries?".format(rlen),
+                    icon='question', title='Remove queries'):
+                remove = True
+        if remove:
+            for index in to_remove:
+                qid = self.paned_window.notebook_item(index)
+                self.qdb.remove_entry(qid)
+            # remove from listbox and internal data structures
+            self.paned_window.remove_items(to_remove)
 
 class SplitQueryWindow(ttk.Panedwindow):
     def __init__(self, parent=None):
@@ -99,6 +120,10 @@ class SplitQueryWindow(ttk.Panedwindow):
     def notebook_item(self, index):
         """Returns a specific item name from the list"""
         return self.notebook.get_item(index)
+
+    def add_items(self, qlist):
+        """Signals to notebook to add items"""
+        self.notebook.add_items(qlist)
 
     def remove_items(self, indices):
         """Signals to notebook to remove items"""
@@ -131,9 +156,9 @@ class QueryNotebook(ttk.Notebook):
         if tab == 'seq':
             return self.seqs.selection()
         elif tab == 'hmm':
-            return self.hmm.selection()
+            return self.hmms.selection()
         else:
-            return self.msa.selection()
+            return self.msas.selection()
 
     def get_item(self, index):
         """Returns the item name corresponding to index"""
@@ -144,6 +169,22 @@ class QueryNotebook(ttk.Notebook):
             return self.hmms.get(index)
         else:
             return self.msas.get(index)
+
+    def add_items(self, qlist):
+        """Adds each item to the widget"""
+        seq_queries = []
+        hmm_queries = []
+        msa_queries = []
+        for k,v in qlist:
+            if v.search_type == 'seq':
+                seq_queries.append([k,v])
+            elif v.search_type == 'hmm':
+                hmm_queries.append([k,v])
+            else:
+                msa_queries.append([k,v])
+        self.seqs.add_items(seq_queries)
+        self.hmms.add_items(hmm_queries)
+        self.msas.add_items(msa_queries)
 
     def remove_items(self, indices):
         """Removes items from widget"""
@@ -181,7 +222,28 @@ class SeqScrollBox(QueryScrollBox):
         QueryScrollBox.__init__(self, parent, other_widget, 'seq')
 
     def onSelect(self, *args):
-        pass
+        """
+        Checks whether only a single item is selected and then, if so, updates
+        the display panel; if more than one selected does nothing.
+        """
+        selected = self.listbox.curselection()
+        if len(selected) > 1:
+            pass
+        else:
+            to_display = []
+            item = self.get(selected)
+            qobj = self.qdb[item]
+            to_display.extend([
+                ('Sequence Query Information' + '\n'),
+                ('Query Identity: ' + str(qobj.identity)),
+                ('Query Name: ' + str(qobj.name)),
+                ('Query Alphabet: ' + str(qobj.alphabet)),
+                ('Associated Record: ' + str(qobj.record))])
+            if len(qobj.raccs) > 0:
+                to_display.append('Redundant Accessions:')
+                for racc in qobj.raccs: # raccs is a list of lists
+                    to_display.append(str(racc[0]) + ' ' + str(racc[1]))
+            self.other.update_info(to_display)
 
 class HMMScrollBox(QueryScrollBox):
     def __init__(self, parent=None, other_widget=None):
@@ -265,6 +327,7 @@ class QuerySubmission:
     def __init__(self, qdict, other_widget):
         self.qdict = qdict
         self.other = other_widget # to add the queries to
+        self.qdb = configs['query_db']
         self.qlist = [] # all queries
 
     def submit(self):
@@ -273,7 +336,7 @@ class QuerySubmission:
         then signals query widget to update with new queries.
         """
         to_search = [] # those that need blast searches performed
-        for k,v in to_add.items():
+        for k,v in self.qdict.items():
             # no matter what, add to query db now
             self.qdb.add_entry(k,v)
             if v.search_type == 'seq':
@@ -296,7 +359,7 @@ class QuerySubmission:
     def run_racc_search(self, qid_list):
         """Creates a search object and runs the search"""
         # create a randomly unique search name
-        search_name = ''.join([random.choice(string.letters) for i in range(20)])
+        search_name = ''.join([random.choice(string.ascii_letters) for i in range(20)])
         self.sobj = search_obj.Search(
                 name=search_name,
                 algorithm='blast',
@@ -305,7 +368,7 @@ class QuerySubmission:
                 queries=qid_list,
                 databases=None)
         window = Toplevel()
-        prog_frame = new_threaded_search(self.sobj, 'racc', window,
+        prog_frame = new_threaded_search.ProgressFrame(self.sobj, 'racc', window,
                 other_widget=self, callback=self.racc_callback)
         prog_frame.run()
 
@@ -314,7 +377,9 @@ class QuerySubmission:
         configs['threads'].remove_thread()
         self.udb = configs['result_db']
         try:
-            for uid in self.sobj.list_results:
+            #print('entering try block')
+            for uid in self.sobj.list_results():
+                #print(uid)
                 robj = self.udb[uid]
                 qobj = self.qdb[robj.query]
                 self.add_self_blast(qobj, robj.parsed_result)
@@ -324,20 +389,21 @@ class QuerySubmission:
             # don't want to keep these in the db
             for rid in self.sobj.results:
                 self.udb.remove_entry(rid)
-            self.sdb.remove_entry(self.sobj.name)
             # add to other widget's display
             self.other.add_queries(self.qlist)
 
     def add_self_blast(self, qobj, blast_result):
         """Adds hits to qobj attribute before removal"""
+        #print('adding self blast')
         lines = []
         seen = set()
         for hit in blast_result.descriptions:
+            #print(hit)
             new_title = search_util.remove_blast_header(hit.title)
             if not new_title in seen:
                 lines.append([new_title, hit.e])
                 seen.add(new_title)
-        qobj.all_accs = lines
+        qobj.add_all_accs(lines)
 
 class QueryColumns(ttk.Panedwindow):
     def __init__(self, parent=None):
@@ -352,8 +418,12 @@ class QueryColumns(ttk.Panedwindow):
         self.added_list.link_widget(self.query_list)
 
     def add_queries(self, query_list):
-        """Called from adding windows, adds new queries to widget"""
-        self.query_list.lbox_frame.add_items(query_list)
+        """
+        Called from adding windows, adds new queries to widget;
+        Before these were added to query_list but now add to added_list, as we
+        assume the user wants the queries as a default
+        """
+        self.added_list.lbox_frame.add_items(query_list)
 
     def get_to_add(self):
         """Returns the dictionary of objects to add"""
@@ -363,7 +433,7 @@ class QueryListFrame(Frame):
     def __init__(self, parent, text):
         Frame.__init__(self, parent)
         self.lbox_frame = gui_util.ScrollBoxFrame(self, text)
-        self.lbox_frame.listbox.bind('<Return>', self.onAdd)
+        self.lbox_frame.listbox.bind('<Return>', lambda x:self.onAdd())
         self.toolbar = Frame(self)
         self.toolbar.pack(expand=YES, fill=X, side=BOTTOM)
         self.buttons = [('Add', self.onAdd, {'side':RIGHT})]
@@ -383,13 +453,13 @@ class QueryListFrame(Frame):
             value = self.lbox_frame.item_dict[item] # fetch associated value
             to_add.append([item, value]) # build dictionary
         self.other.lbox_frame.add_items(to_add) # add as dictionary
-        self.lbox_frame.remove_items(*selected) # also removes from internal list and dict
+        self.lbox_frame.remove_items(selected) # also removes from internal list and dict
 
 class AddedListFrame(Frame):
     def __init__(self, parent, text):
         Frame.__init__(self, parent)
         self.lbox_frame = gui_util.ScrollBoxFrame(self, text)
-        self.lbox_frame.listbox.bind('<Return>', self.onRemove)
+        self.lbox_frame.listbox.bind('<Return>', lambda x:self.onRemove())
         self.toolbar = Frame(self)
         self.toolbar.pack(expand=YES, fill=X, side=BOTTOM)
         self.buttons = [('Remove', self.onRemove, {'side':RIGHT})]
@@ -410,7 +480,7 @@ class AddedListFrame(Frame):
             value = self.lbox_frame.item_dict[item]
             to_remove.append([item, value])
         self.other.lbox_frame.add_items(to_remove)
-        self.lbox_frame.remove_items(*selected)
+        self.lbox_frame.remove_items(selected)
 
     def to_add(self):
         """Returns dictionary associated with items"""
@@ -449,10 +519,11 @@ class AddSeqFileFrame(Frame):
 
     def onSubmit(self):
         """Get queries from file and add them to the columns widget"""
-        queries = query_file.FastaFile(self.cfile.content['Filename'].get(),
+        queries = query_file.FastaFile(self.sel_file.content['Filename'].get(),
             self.alphabet.selected.get(), self.record.selected.get(),
             self.add_raccs.selected.get()).get_queries()
         self.other.add_queries(queries)
+        self.parent.destroy()
 
     def onCancel(self):
         self.parent.destroy()
@@ -652,16 +723,23 @@ class ModifySeqQuery(Frame):
         """Submits and signals back to the other widget to do something"""
         new_attrs = {}
         info = self.layout.query_info
-        for row in info.name.row_list: # can we get without for-loop?
-            if row.label_text == 'Name':
+        for row in info.names.row_list: # can we get without for-loop?
+            if row.label_text == 'Identity':
+                new_attrs['identity'] = row.entry.get()
+            elif row.label_text == 'Name':
                 new_attrs['name'] = row.entry.get()
-        new_attrs['search_type'] = info.qtype.selected.get()
-        new_attrs['db_type'] = info.alphabet.selected.get()
+            else:
+                new_attrs['description'] = row.entry.get()
+        new_attrs['alphabet'] = info.alphabet.selected.get()
         new_attrs['record'] = info.record.selected.get()
         for attr,value in new_attrs.items():
             setattr(self.qobj,attr,value) # change values, or reset unchanged ones
-        self.qobj.modify_raccs(*self.layout.added_list.lbox_frame.item_list)
-        self.qdb.add_query(self.qobj.identity,self.qobj) # adding back same as modifying
+        #self.qobj.add_raccs(self.layout.added_list.lbox_frame.item_list)
+        racc_window = self.layout.added_list.lbox_frame
+        raccs = []
+        for item in racc_window.item_list:
+            raccs.append(racc_window.item_dict[item]) # value is title,evalue tuple
+        self.qobj.add_raccs(raccs)
         self.parent.destroy()
 
     def onCancel(self):
@@ -675,7 +753,7 @@ class ModSeqWindow(ttk.Panedwindow):
         self.pack(expand=YES, fill=BOTH)
         self.query_info = SeqQueryInfo(self)
         self.blast_list = BlastListFrame(self, 'BLAST Hits')
-        self.added_list = AddedListFrame(self, 'To be Added')
+        self.added_list = BlastAddedFrame(self, 'To be Added')
         self.add(self.query_info)
         self.add(self.blast_list)
         self.add(self.added_list)
@@ -695,7 +773,7 @@ class ModSeqWindow(ttk.Panedwindow):
                 row.entry.insert(0,self.qobj.name) # insert name
             else:
                 row.entry.insert(0,self.qobj.description)
-        self.query_info.alphabet.selected.set(self.qobj.db_type) # select db type
+        self.query_info.alphabet.selected.set(self.qobj.alphabet) # select db type
         self.query_info.record.selected.set(self.qobj.record) # select record
         # Now populate both racc windows
         all_accs = []
@@ -703,7 +781,7 @@ class ModSeqWindow(ttk.Panedwindow):
         for title,evalue in self.qobj.all_accs: # list of lists
             display_string = str(title) + '  ' + str(evalue)
             all_accs.append([display_string,(title,evalue)])
-        if not len(self.qobj.redundant_accs) == 0: # there are hits
+        if not len(self.qobj.raccs) == 0: # there are hits
             for title,evalue in self.qobj.raccs: # already a list
                 display_string = str(title) + '  ' + str(evalue)
                 raccs.append([display_string,(title,evalue)])
@@ -732,7 +810,7 @@ class BlastListFrame(Frame):
     def __init__(self, parent, text):
         Frame.__init__(self, parent)
         self.lbox_frame = gui_util.ScrollBoxFrame(self, text)
-        self.lbox_frame.listbox.bind('<Return>', self.onAdd)
+        self.lbox_frame.listbox.bind('<Return>', lambda x:self.onAdd())
 
         self.toolbar = Frame(self)
         self.toolbar.pack(expand=YES, fill=X, side=BOTTOM)
@@ -753,13 +831,13 @@ class BlastListFrame(Frame):
             value = self.lbox_frame.item_dict[item]
             to_add.append([item, value, index])
         self.other.lbox_frame.add_items(to_add, 'index')
-        self.lbox_frame.remove_items(*selected)
+        self.lbox_frame.remove_items(selected)
 
-class AddedListFrame(Frame):
+class BlastAddedFrame(Frame):
     def __init__(self, parent, text):
         Frame.__init__(self, parent)
         self.lbox_frame = gui_util.ScrollBoxFrame(self, text)
-        self.lbox_frame.listbox.bind('<Return>', self.onRemove)
+        self.lbox_frame.listbox.bind('<Return>', lambda x:self.onRemove())
 
         self.toolbar = Frame(self)
         self.toolbar.pack(expand=YES, fill=X, side=BOTTOM)
@@ -780,7 +858,7 @@ class AddedListFrame(Frame):
             value = self.lbox_frame.item_dict[item]
             to_remove.append([item, value, index])
         self.other.lbox_frame.add_items(to_remove, 'index')
-        self.lbox_frame.remove_items(*selected)
+        self.lbox_frame.remove_items(selected)
 
 class ModifyHMMQuery(Frame):
     def __init__(self, parent=None, qobj=None):

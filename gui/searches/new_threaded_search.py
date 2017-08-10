@@ -6,8 +6,12 @@ provide a better way to feed back the callback from a search to the main GUI
 regardless of whether or not threading is used.
 """
 
+import threading, queue
+
 from tkinter import *
 from tkinter import ttk
+
+from bin.initialize_goat import configs
 
 from searches import new_search_runner
 
@@ -24,7 +28,6 @@ class ProgressFrame(Frame):
         self.threaded = threaded
         self.other = other_widget
         self.callback = callback
-        self.callback_args = callback_args
 
         # Make non-modal, i.e. un-closeable
         self.parent = parent
@@ -35,16 +38,17 @@ class ProgressFrame(Frame):
             self.start_sobj.algorithm), anchor='center', justify='center')
         self.search_info.pack(expand=YES)
 
+        # Determine the maximum number of searches to do
+        self.num_todo = self.determine_max_searches(self.start_sobj, mode)
         # Code to add progress bar, update 'value' attr after each search
         self.p = ttk.Progressbar(self, # parent
                 orient = HORIZONTAL,
                 length = 200,
                 mode = 'determinate', # specifies a set number of steps
-                maximum = len(self.search_list))
+                maximum = self.num_todo)
         self.p.pack()
         # Default starting value for the search bar
         self.num_finished = 1 # don't index from zero, first search is number 1
-        self.num_todo = 1 # default value, changed later
 
         # Add another label to report hard numbers in progress bar
         self.search_label = Label(self, text='Performing search {} of {}'.format(
@@ -54,7 +58,7 @@ class ProgressFrame(Frame):
     def run(self):
         """start producer thread, consumer loop"""
         if self.threaded:
-            import threading, queue
+            configs['threads'].add_thread()
             # always create the queue
             self.queue = queue.Queue()
             if self.mode == 'racc':
@@ -93,10 +97,16 @@ class ProgressFrame(Frame):
         else:
             if done:
                 if self.callback:
-                    self.callback(*callback_args)
+                    print('calling callback function')
+                    self.callback()
             self.parent.destroy()
 
     def increment_search_count(self):
         """Increments counter after each search finishes"""
         self.num_finished += 1
+
+    def determine_max_searches(self, sobj, mode):
+        """Determines the number of searches to run"""
+        if mode == 'racc':
+            return len(sobj.queries)
 

@@ -2,8 +2,6 @@
 This module contains code for dealing with viewing and updating databases
 """
 
-import time
-
 from tkinter import *
 from tkinter import ttk, filedialog, messagebox
 
@@ -127,7 +125,8 @@ class DatabaseViewer(ttk.Treeview):
 
     def upate(self):
         """Updates the view upon addition/removal of records"""
-        #print('DatabaseViewer update called')
+        for item in self.get_children():
+            self.delete(item)
         self.make_tree()
 
     def make_tree(self):
@@ -248,8 +247,8 @@ class RecordFrame(Frame):
             pass
         #self.db.commit()
         #print(self.db_widget.db_viewer.make_tree)
-        self.db_widget.db_viewer.make_tree() # signal back to re-draw tree
-        time.sleep(1)
+        #self.db_widget.db_viewer.make_tree() # signal back to re-draw tree
+        self.db_widget.db_viewer.update()
         self.parent.destroy()
 
 class RecordGui(ttk.Panedwindow):

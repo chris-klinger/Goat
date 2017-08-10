@@ -40,6 +40,16 @@ class SeqQuery(Query):
         self.all_accs = []
         self.raccs = [] # redundant_accessions
 
+    def add_all_accs(self, hit_list):
+        """Adds results after self-BLAST"""
+        self.all_accs = hit_list
+        self._p_changed = 1
+
+    def add_raccs(self, racc_list):
+        """Adds redundant accessions"""
+        self.raccs = racc_list
+        self._p_changed = 1
+
 class HMMQuery(Query):
     """
     HMM object for a single hmm-based query. At minimum, need to provide the file/

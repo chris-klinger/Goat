@@ -82,7 +82,7 @@ class ScrollBoxFrame(Frame):
                     self.item_list.insert(index,item) # keep inherent index in list
                     self.item_dict[item] = value
 
-    def remove_items(self, *indices):
+    def remove_items(self, indices):
         """General case removal of items - note that removal is by index so
         must account for different length of list upon each subsequent item
         removal otherwise remove incorrect item(s) and risk ValueError"""
@@ -116,9 +116,10 @@ class InfoPanel(ttk.Label):
         self._display = ''
         self.bind('<Configure>', self.draw_info) # re-draw on window resizes
 
-    def update_info(self,display_type,*values):
+    def update_info(self, values):
         """Implement in sublcass"""
-        raise NotImplementedError
+        self._display = values
+        self.draw_info()
 
     def draw_info(self, event=None):
         """Draw on first instantiation"""
