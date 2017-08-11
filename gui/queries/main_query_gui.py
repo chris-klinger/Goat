@@ -773,11 +773,11 @@ class ModifySeqQuery(Frame):
         new_attrs['record'] = info.record.selected.get()
         for attr,value in new_attrs.items():
             setattr(self.qobj,attr,value) # change values, or reset unchanged ones
-        #self.qobj.add_raccs(self.layout.added_list.lbox_frame.item_list)
         racc_window = self.layout.added_list.lbox_frame
         raccs = []
         for item in racc_window.item_list:
-            raccs.append(racc_window.item_dict[item]) # value is title,evalue tuple
+            title,evalue = racc_window.item_dict[item] # value is title,evalue tuple
+            raccs.append([title,evalue])
         self.qobj.add_raccs(raccs)
         self.parent.destroy()
 
@@ -817,15 +817,14 @@ class ModSeqWindow(ttk.Panedwindow):
         # Now populate both racc windows
         all_accs = []
         raccs = []
-        for title,evalue in self.qobj.all_accs: # list of lists
-            display_string = str(title) + '  ' + str(evalue)
-            all_accs.append([display_string,(title,evalue)])
-        if not len(self.qobj.raccs) == 0: # there are hits
-            for title,evalue in self.qobj.raccs: # already a list
-                display_string = str(title) + '  ' + str(evalue)
-                raccs.append([display_string,(title,evalue)])
+        for index,item in enumerate(self.qobj.all_accs): # item is a tuple
+            display_string = str(item[0]) + '  ' + str(item[1])
+            if item in self.qobj.raccs:
+                raccs.append([display_string,item,index])
+            else:
+                all_accs.append([display_string,item])
         self.blast_list.lbox_frame.add_items(all_accs)
-        self.added_list.lbox_frame.add_items(raccs)
+        self.added_list.lbox_frame.add_items(raccs, mode='index')
 
 class SeqQueryInfo(Frame):
     def __init__(self, parent=None):
