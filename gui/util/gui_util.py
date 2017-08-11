@@ -11,7 +11,8 @@ from bin.initialize_goat import configs
 ##################
 
 class ComboBoxFrame(Frame):
-    def __init__(self, parent=None, choices=None, labeltext=None):
+    def __init__(self, parent=None, choices=None, labeltext=None,
+            select_function=None):
         Frame.__init__(self, parent)
         self.choices = choices
         self.pack()
@@ -21,6 +22,18 @@ class ComboBoxFrame(Frame):
         self.combobox = ttk.Combobox(self, textvariable=self.selected)
         self.combobox['values'] = (choices if choices else [])
         self.combobox.pack()
+        if select_function: # for combobox selection
+            self.select_function = select_function
+            self.combobox.bind('<<ComboboxSelected>>',
+                    lambda x: self.onSelect()) # lambda prevents passing the event object
+
+    def get(self):
+        """Convenience function"""
+        return self.combobox.get()
+
+    def onSelect(self):
+        """Triggers built-in function"""
+        self.select_function()
 
     def add_items(self, items):
         """Convenience function"""

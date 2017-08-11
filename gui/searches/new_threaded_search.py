@@ -28,6 +28,7 @@ class ProgressFrame(Frame):
         self.threaded = threaded
         self.other = other_widget
         self.callback = callback
+        self.callback_args = callback_args
 
         # Make non-modal, i.e. un-closeable
         self.parent = parent
@@ -97,8 +98,10 @@ class ProgressFrame(Frame):
         else:
             if done:
                 if self.callback:
-                    #print('calling callback function')
-                    self.callback()
+                    if self.callback_args:
+                        self.callback(*self.callback_args)
+                    else:
+                        self.callback()
             self.parent.destroy()
 
     def increment_search_count(self):

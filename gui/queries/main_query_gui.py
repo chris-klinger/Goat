@@ -68,13 +68,13 @@ class QueryFrame(Frame):
         if len(to_mod) == 1: # exactly one item selected
             item = self.paned_window.notebook_item(to_mod)
             qobj = self.qdb[item]
-        window = Toplevel()
-        if qobj.search_type == 'seq':
-            ModifySeqQuery(window, qobj)
-        elif qobj.search_type == 'hmm':
-            ModifyHMMQuery(window, qobj)
-        else:
-            ModifyMSAQuery(window, qobj)
+            window = Toplevel()
+            if qobj.search_type == 'seq':
+                ModifySeqQuery(window, qobj)
+            elif qobj.search_type == 'hmm':
+                ModifyHMMQuery(window, qobj)
+            else:
+                ModifyMSAQuery(window, qobj)
 
     def onRemove(self):
         """
@@ -361,28 +361,31 @@ class QuerySubmission:
         Determines whether or not to run searches, either runs them or not, and
         then signals query widget to update with new queries.
         """
-        to_search = [] # those that need blast searches performed
+        seqs_to_search = [] # those that need blast searches performed
+        hmms_to_search = [] # different lists for each
         for k,v in self.qdict.items():
             # no matter what, add to query db now
             self.qdb.add_entry(k,v)
             if v.search_type == 'seq':
                 if (v.racc_mode != 'no' and not v.search_ran): # need raccs
-                    to_search.append(k) # works by qid
+                    seqs_to_search.append(k) # works by qid
             elif v.search_type == 'hmm':
                 for qid in v.associated_queries:
                     qobj = self.mqdb[qid]
                     if (qobj.racc_mode != 'no' and not qobj.search_ran):
-                        to_search.append(qid)
+                        hmms_to_search.append(qid)
             else: # for msa
                 pass
             # no matter what, append to list for query widget
             self.qlist.append([k,v])
-        if len(to_search) > 0: # searches to be run
-            self.run_racc_search(to_search)
+        if len(seqs_to_search) > 0: # searches to be run
+            self.run_racc_search(seqs_to_search, 'seq')
+        if len(hmms_to_search) > 0:
+            self.run_racc_search(hmms_to_search, 'hmm')
         else:
             self.other.add_queries(self.qlist) # add to other widget's display
 
-    def run_racc_search(self, qid_list):
+    def run_racc_search(self, qid_list, qtype):
         """Creates a search object and runs the search"""
         # create a randomly unique search name
         search_name = ''.join([random.choice(string.ascii_letters) for i in range(20)])
@@ -395,19 +398,20 @@ class QuerySubmission:
                 databases=None)
         window = Toplevel()
         prog_frame = new_threaded_search.ProgressFrame(self.sobj, 'racc', window,
-                other_widget=self, callback=self.racc_callback)
+                other_widget=self, callback=self.racc_callback, callback_args=(qtype,))
         prog_frame.run()
 
-    def racc_callback(self):
+    def racc_callback(self, qtype):
         """Parses output files, adds accs to qobjs, and then removes all db entries"""
         configs['threads'].remove_thread()
         self.udb = configs['result_db']
         try:
-            #print('entering try block')
             for uid in self.sobj.list_results():
-                #print(uid)
                 robj = self.udb[uid]
-                qobj = self.qdb[robj.query]
+                if qtype == 'seq':
+                    qobj = self.qdb[robj.query]
+                elif qtype == 'hmm':
+                    qobj = self.mqdb[robj.query]
                 self.add_self_blast(qobj, robj.parsed_result)
         except:
             pass # freak out
@@ -897,7 +901,126 @@ class BlastAddedFrame(Frame):
 
 class ModifyHMMQuery(Frame):
     def __init__(self, parent=None, qobj=None):
-        pass
+        Frame.__init__(self, parent)
+        self.parent = parent
+        self.qobj = qobj
+        self.qdb = configs['query_db']
+        self.pack(expand=YES, fill=BOTH)
+        self.layout = ModHMMWindow(self, qobj)
+        # tool bar and buttons
+        self.toolbar = Frame(self)
+        self.toolbar.pack(side=BOTTOM, expand=YES, fill=X)
+        self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
+                        ('Cancel', self.onCancel, {'side':RIGHT})]
+        for (label, action, where) in self.buttons:
+            Button(self.toolbar, text=label, command=action).pack(where)
+
+    def onSubmit(self):
+        """Submits and signals back to the other widget to do something"""
+        new_attrs = {}
+        info = self.layout.query_info
+        for row in info.names.row_list: # can we get without for-loop?
+            if row.label_text == 'Identity':
+                new_attrs['identity'] = row.entry.get()
+            elif row.label_text == 'Name':
+                new_attrs['name'] = row.entry.get()
+            else:
+                new_attrs['description'] = row.entry.get()
+        new_attrs['alphabet'] = info.alphabet.selected.get()
+        for attr,value in new_attrs.items():
+            setattr(self.qobj,attr,value) # change values, or reset unchanged ones
+        # Deal with Raccs here at some point!
+        #racc_window = self.layout.added_list.lbox_frame
+        #raccs = []
+        #for item in racc_window.item_list:
+            #raccs.append(racc_window.item_dict[item]) # value is title,evalue tuple
+        #self.qobj.add_raccs(raccs)
+        self.parent.destroy()
+
+    def onCancel(self):
+        """Closes the window without actually modifying raccs"""
+        self.parent.destroy()
+
+class ModHMMWindow(ttk.Panedwindow):
+    def __init__(self, parent=None, qobj=None):
+        ttk.Panedwindow.__init__(self, parent, orient=HORIZONTAL)
+        self.qobj = qobj
+        self.mqdb = configs['misc_queries']
+        self.pack(expand=YES, fill=BOTH)
+        self.query_info = HMMQueryInfo(self, self.qobj)
+        self.blast_list = BlastListFrame(self, 'BLAST Hits')
+        self.added_list = BlastAddedFrame(self, 'To be Added')
+        self.add(self.query_info)
+        self.add(self.blast_list)
+        self.add(self.added_list)
+        # to avoid AttributeError, link widgets after each is assigned
+        self.blast_list.link_widget(self.added_list)
+        self.added_list.link_widget(self.blast_list)
+        # set windows to current state of selected query
+        self.populate_windows()
+
+    def populate_windows(self):
+        """
+        Retrieves information from the passed in query and changes the child
+        display windows to display this information
+        """
+        for row in self.query_info.names.row_list:
+            if row.label_text == 'Identity':
+                row.entry.insert(0,self.qobj.identity)
+            elif row.label_text == 'Name':
+                row.entry.insert(0,self.qobj.name) # insert name
+            else:
+                row.entry.insert(0,self.qobj.description)
+        self.query_info.alphabet.selected.set(self.qobj.alphabet) # select db type
+
+    def populate_acc_windows(self, qid):
+        """
+        Called when the value of the associated queries combobox changes, grabs
+        the relevant query object from the misc_queries db and populates the
+        windows with it.
+        """
+        try:
+            qobj = self.mqdb[qid]
+            # Now populate both racc windows
+            all_accs = []
+            raccs = []
+            for title,evalue in qobj.all_accs: # list of lists
+                display_string = str(title) + '  ' + str(evalue)
+                all_accs.append([display_string,(title,evalue)])
+            if not len(qobj.raccs) == 0: # there are hits
+                for title,evalue in qobj.raccs: # already a list
+                    display_string = str(title) + '  ' + str(evalue)
+                    raccs.append([display_string,(title,evalue)])
+            self.blast_list.lbox_frame.add_items(all_accs)
+            self.added_list.lbox_frame.add_items(raccs)
+        except KeyError: # qobj not in db
+            print('threw exception')
+            pass
+
+class HMMQueryInfo(Frame):
+    def __init__(self, parent=None, hmm_obj=None):
+        Frame.__init__(self, parent)
+        self.parent = parent
+        self.hobj = hmm_obj
+        self.pack(expand=YES, fill=BOTH)
+        Label(self, text='Query Information').pack(expand=YES, fill=X, side=TOP)
+        self.names = input_form.DefaultValueForm(
+                [('Identity',''), ('Name',''), ('Description','')],
+                self)
+        self.alphabet = gui_util.RadioBoxFrame(self,
+                [('Protein','protein'), ('Genomic','genomic')],
+                labeltext='Sequence alphabet')
+        self.assoc_queries = gui_util.ComboBoxFrame(self,
+                list(self.hobj.associated_queries),
+                labeltext='Associated queries',
+                select_function=self.onSelect)
+        self.toolbar = Frame(self)
+        self.toolbar.pack(side=BOTTOM, expand=YES, fill=X)
+
+    def onSelect(self):
+        """Signals back to parent widget to populate listboxes"""
+        qid = self.assoc_queries.get()
+        self.parent.populate_acc_windows(qid)
 
 class ModifyMSAQuery(Frame):
     def __init__(self, parent=None, qobj=None):
