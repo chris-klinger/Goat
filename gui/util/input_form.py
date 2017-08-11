@@ -61,6 +61,12 @@ class DefaultValueForm(Frame):
             for (label, action, where) in self.buttons:
                 Button(self, text=label, command=action).pack(where)
 
+    def get(self, label):
+        """Convenience function"""
+        for row in self.row_list:
+            if row.label_text == label:
+                return row.entry.get()
+
     def onSubmit(self):
         pass
 
