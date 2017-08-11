@@ -127,6 +127,11 @@ class ScrollBoxFrame(Frame):
         """Returns item corresponding to index"""
         return self.listbox.get(index)
 
+    def clear(self):
+        """Removes all entries"""
+        indices = list(range(len(self.item_list)))
+        self.remove_items(indices)
+
 class InfoPanel(ttk.Label):
     def __init__(self, parent=None, width=-50, anchor='center', justify='center'):
         ttk.Label.__init__(self, parent)

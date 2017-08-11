@@ -904,6 +904,7 @@ class ModifyHMMQuery(Frame):
         self.parent = parent
         self.qobj = qobj
         self.qdb = configs['query_db']
+        self.mqdb = configs['misc_queries']
         self.pack(expand=YES, fill=BOTH)
         self.layout = ModHMMWindow(self, qobj)
         # tool bar and buttons
@@ -928,12 +929,12 @@ class ModifyHMMQuery(Frame):
         new_attrs['alphabet'] = info.alphabet.selected.get()
         for attr,value in new_attrs.items():
             setattr(self.qobj,attr,value) # change values, or reset unchanged ones
-        # Deal with Raccs here at some point!
-        #racc_window = self.layout.added_list.lbox_frame
-        #raccs = []
-        #for item in racc_window.item_list:
-            #raccs.append(racc_window.item_dict[item]) # value is title,evalue tuple
-        #self.qobj.add_raccs(raccs)
+        # Check for current raccs in window and add to dict first
+        self.layout.add_current_raccs()
+        # Add raccs to query objects now from dict
+        for qid in self.layout.racc_dict.keys():
+            qobj = self.mqdb[qid]
+            qobj.add_raccs(self.layout.racc_dict[qid]['raccs']) # should be a list of raccs
         self.parent.destroy()
 
     def onCancel(self):
@@ -957,6 +958,11 @@ class ModHMMWindow(ttk.Panedwindow):
         self.added_list.link_widget(self.blast_list)
         # set windows to current state of selected query
         self.populate_windows()
+        # keep a dict of all associated query raccs
+        self.racc_dict = {}
+        self.populate_racc_dict()
+        # set an instance value to current qid
+        self.curr_qid = None
 
     def populate_windows(self):
         """
@@ -972,29 +978,72 @@ class ModHMMWindow(ttk.Panedwindow):
                 row.entry.insert(0,self.qobj.description)
         self.query_info.alphabet.selected.set(self.qobj.alphabet) # select db type
 
+    def populate_racc_dict(self):
+        """
+        For each query in the associated queries list of the hmm object, adds an
+        entry with the current value of both all accs and raccs for use with the
+        populate_acc_windows function; if submitted, this dict is also used to
+        update the relevant query object in the misc_queries DB.
+        """
+        for qid in self.qobj.associated_queries:
+            self.racc_dict[qid] = {} # nested dictionary easiest for use
+            qobj = self.mqdb[qid]
+            self.racc_dict[qid]['all_accs'] = qobj.all_accs
+            self.racc_dict[qid]['raccs'] = qobj.raccs
+
     def populate_acc_windows(self, qid):
         """
         Called when the value of the associated queries combobox changes, grabs
         the relevant query object from the misc_queries db and populates the
         windows with it.
         """
+        # first attempt to set
+        if self.curr_qid:
+            self.add_raccs_to_dict()
+        # clear windows
+        self.blast_list.lbox_frame.clear()
+        self.added_list.lbox_frame.clear()
+        # attempt to re-populate the windows
         try:
-            qobj = self.mqdb[qid]
+            #qobj = self.mqdb[qid]
+            qdict = self.racc_dict[qid]
             # Now populate both racc windows
             all_accs = []
             raccs = []
-            for title,evalue in qobj.all_accs: # list of lists
-                display_string = str(title) + '  ' + str(evalue)
-                all_accs.append([display_string,(title,evalue)])
-            if not len(qobj.raccs) == 0: # there are hits
-                for title,evalue in qobj.raccs: # already a list
-                    display_string = str(title) + '  ' + str(evalue)
-                    raccs.append([display_string,(title,evalue)])
+            for index,item in enumerate(qdict['all_accs']): # item is a tuple
+                display_string = str(item[0]) + '  ' + str(item[1])
+                if item in qdict['raccs']:
+                    raccs.append([display_string,item,index])
+                else:
+                    all_accs.append([display_string,item])
             self.blast_list.lbox_frame.add_items(all_accs)
-            self.added_list.lbox_frame.add_items(raccs)
-        except KeyError: # qobj not in db
-            print('threw exception')
+            self.added_list.lbox_frame.add_items(raccs, mode='index')
+        except KeyError: # qid not in dict, possibly empty string
             pass
+        finally:
+            self.curr_qid = qid # no matter what change the current qid
+
+    def add_raccs_to_dict(self, qid=None):
+        """
+        Called before changing the listbox entries, adds the current value of the
+        racc listbox to the relevant qid entry in self.racc_dict.
+        """
+        if not qid:
+            qid = self.curr_qid
+        raccs = []
+        racc_window = self.added_list.lbox_frame
+        for item in racc_window.item_list:
+            title,evalue = racc_window.item_dict[item] # value is title,evalue tuple
+            raccs.append([title,evalue])
+        self.racc_dict[qid]['raccs'] = raccs
+
+    def add_current_raccs(self):
+        """
+        Called on parent submit; ensures that raccs chosen in current window are
+        also added to dict (otherwise not added because no switch occurred)
+        """
+        curr_qid = self.query_info.curr_query()
+        self.add_raccs_to_dict(curr_qid)
 
 class HMMQueryInfo(Frame):
     def __init__(self, parent=None, hmm_obj=None):
@@ -1016,13 +1065,15 @@ class HMMQueryInfo(Frame):
         self.toolbar = Frame(self)
         self.toolbar.pack(side=BOTTOM, expand=YES, fill=X)
 
+    def curr_query(self):
+        """Gets current value of associated queries combobox"""
+        return self.assoc_queries.get()
+
     def onSelect(self):
         """Signals back to parent widget to populate listboxes"""
-        qid = self.assoc_queries.get()
+        qid = self.curr_query()
         self.parent.populate_acc_windows(qid)
 
 class ModifyMSAQuery(Frame):
     def __init__(self, parent=None, qobj=None):
         pass
-
-
