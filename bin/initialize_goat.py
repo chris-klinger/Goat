@@ -56,13 +56,10 @@ def initialize_dbs(base_dir):
 def get_specific_dbs(db_obj):
     """Uses the db object to provide pointers to sub-objects"""
     from databases import dbs
-    #configs['query_db'] = query_db.QueryDB(db_obj)
     configs['query_db'] = dbs.QueryDB()
-    #configs['record_db'] = record_db.RecordDB(db_obj)
+    configs['misc_queries'] = dbs.MiscQDB()
+    configs['search_queries'] = dbs.SearchQDB()
     configs['record_db'] = dbs.RecordDB()
-    #configs['result_db'] = result_db.ResultDB(db_obj)
     configs['result_db'] = dbs.ResultDB()
-    #configs['search_db'] = search_db.SearchDB(db_obj)
     configs['search_db'] = dbs.SearchDB()
-    #configs['summary_db'] = summary_db.SummaryDB(db_obj)
     configs['summary_db'] = dbs.SummaryDB()

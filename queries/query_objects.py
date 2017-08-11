@@ -10,8 +10,7 @@ from persistent import Persistent
 class Query(Persistent):
     """Generic Query class"""
     def __init__(self, identity, name=None, description=None, location=None,
-            alphabet=None, sequence=None, target_db=None, original_query=None,
-            tag='standard'):
+            alphabet=None, sequence=None, target_db=None, original_query=None):
         # standard attributes for all queries
         self.identity = identity
         self.name = name
@@ -22,8 +21,6 @@ class Query(Persistent):
         # attributes for reverse searches
         self.target_db = target_db # if present, name of record
         self.original_query = original_query # if present = qid
-        # whether or not to display in main window
-        self.tag = tag
 
 class SeqQuery(Query):
     """
@@ -62,14 +59,50 @@ class HMMQuery(Query):
         Query.__init__(self, *args, **kwargs)
         self.search_type = 'hmm'
         self.associated_queries = [] # associated qids only!
-        self.seqs = [] # list of sequences
         self.seq_file = None
-        self.msa = None # msa object
+        if self.seq_file:
+            self.add_seqs()
         self.msa_file = None
+        if self.msa_file:
+            self.add_msa()
+        self.num_seqs = 0
+        self.num_determined = False
 
     def add_query(self, qid):
         """Convenience function"""
         self.associated_queries.append(qid)
+
+    def add_seqs(self):
+        """Adds sequences from supplied file"""
+        from Bio import SeqIO
+        self.seqs = []
+        try:
+            self.seqs = list(SeqIO.parse(self.seq_file, "fasta")) # otherwise generator!
+            self.determine_num_seqs(self.seqs)
+        except: # not FASTA
+            pass
+
+    def add_msa(self):
+        """Adds an MSA object from supplied file"""
+        from Bio import AlignIO
+        self.msa = None
+        for align_format in ['fasta','clustal','phylip','nexus']: # add more later
+            try:
+                self.msa = AlignIO.read(self.msa_file, align_format)
+                self.determine_num_seqs(self.msa)
+            except:
+                pass
+
+    def determine_num_seqs(self, iterable):
+        """Called from either add_seqs or add_msa"""
+        temp_num = 0
+        for seq in iterable:
+            temp_num += 1
+        if not self.num_determined:
+            self.num_seqs = temp_num
+        else:
+            if temp_num != self.num_seqs:
+                pass # warn user
 
 class MSAQuery(Query):
     """

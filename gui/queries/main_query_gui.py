@@ -21,6 +21,7 @@ class QueryFrame(Frame):
         Frame.__init__(self, parent)
         self.parent = parent
         self.qdb = configs['query_db']
+        self.mqdb = configs['misc_queries']
         self.pack(expand=YES, fill=BOTH)
         self.paned_window = SplitQueryWindow(self)
         # Add the toolbar and buttons
@@ -36,6 +37,7 @@ class QueryFrame(Frame):
 
     def onSubmit(self):
         self.qdb.commit()
+        self.mqdb.commit()
         self.parent.destroy()
 
     def onCancel(self):
@@ -250,7 +252,30 @@ class HMMScrollBox(QueryScrollBox):
         QueryScrollBox.__init__(self, parent, other_widget, 'hmm')
 
     def onSelect(self, *args):
-        pass
+        """
+        Checks whether only a single item is selected and then, if so, updates
+        the display panel; if more than one selected does nothing.
+        """
+        selected = self.listbox.curselection()
+        if len(selected) > 1:
+            pass
+        else:
+            to_display = []
+            item = self.get(selected)
+            qobj = self.qdb[item]
+            to_display.extend([
+                ('HMM Query Information' + '\n'),
+                ('Query Identity: ' + str(qobj.identity)),
+                ('Query Name: ' + str(qobj.name)),
+                ('Query Alphabet: ' + str(qobj.alphabet))])
+            if qobj.num_seqs != 0:
+                to_display.append(
+                    ('Number of Sequences: ' + str(qobj.num_seqs)))
+            if len(qobj.associated_queries) > 0:
+                to_display.append('Associated Queries:')
+                for qid in qobj.associated_queries:
+                    to_display.append(qid)
+            self.other.update_info(to_display)
 
 class MSAScrollBox(QueryScrollBox):
     def __init__(self, parent=None, other_widget=None):
@@ -268,7 +293,7 @@ class QueryInfo(gui_util.InfoPanel):
 #################################
 
 class AddQueryFrame(Frame):
-    def __init__(self, parent=None, query_widget=None, qtype=None):
+    def __init__(self, parent=None, query_widget=None, qtype=None, columns=None):
         Frame.__init__(self, parent)
         self.parent = parent
         self.other = query_widget
@@ -328,6 +353,7 @@ class QuerySubmission:
         self.qdict = qdict
         self.other = other_widget # to add the queries to
         self.qdb = configs['query_db']
+        self.mqdb = configs['misc_queries']
         self.qlist = [] # all queries
 
     def submit(self):
@@ -344,7 +370,7 @@ class QuerySubmission:
                     to_search.append(k) # works by qid
             elif v.search_type == 'hmm':
                 for qid in v.associated_queries:
-                    qobj = self.qdb[qid]
+                    qobj = self.mqdb[qid]
                     if (qobj.racc_mode != 'no' and not qobj.search_ran):
                         to_search.append(qid)
             else: # for msa
@@ -424,6 +450,10 @@ class QueryColumns(ttk.Panedwindow):
         assume the user wants the queries as a default
         """
         self.added_list.lbox_frame.add_items(query_list)
+
+    def add_possibilities(self, query_list):
+        """Same as add_queries, but do put in the query_list"""
+        self.query_list.lbox_frame.add_items(query_list)
 
     def get_to_add(self):
         """Returns the dictionary of objects to add"""
@@ -564,15 +594,19 @@ class AddHMMFileFrame(Frame):
 
     def onSubmit(self):
         """Get queries from file and add them to the columns widget"""
-        name,hmm_obj = query_file.FastaFile(self.sel_file.content['Filename'].get(),
-            self.alphabet.selected.get(), self.record.selected.get(),
-            self.add_raccs.selected.get()).get_queries()
+        queries = []
+        name,hmm_obj = query_file.HMMFile(self.sel_file.content['Filename'].get(),
+            self.alphabet.selected.get()).get_query()
         hmm_obj.msa_file = self.msa_file.content['Filename'].get()
+        hmm_obj.add_msa()
         hmm_obj.seq_file = self.seq_file.content['Filename'].get()
+        hmm_obj.add_seqs()
         if len(self.queries) > 0:
-            for qid,qobj in self.queries:
+            for qid in self.queries:
                 hmm_obj.add_query(qid)
-        self.other.add_queries([name,hmm_obj])
+        queries.append([name,hmm_obj])
+        self.other.add_queries(queries) # expects a list
+        self.parent.destroy()
 
     def onCancel(self):
         self.parent.destroy()
@@ -585,10 +619,11 @@ class AddHMMFileFrame(Frame):
     def add_items(self, query_list):
         """Adds items to internal list"""
         if len(self.queries) == 0:
-            self.query = query_list
+            self.queries = query_list
         else:
             for key in query_list:
                 self.queries.append(key)
+        self.qbox.add_items(query_list)
 
 class AddSeqQueryFrame(AddQueryFrame):
     """
@@ -604,7 +639,7 @@ class AddSeqQueryFrame(AddQueryFrame):
             qobj = self.qdb[qid]
             if qobj.search_type == 'seq':
                 queries.append((qid,qobj))
-        self.columns.add_queries(queries)
+        self.columns.add_possibilities(queries)
 
     def onSubmit(self):
         """Adds the selected queries to the HMM object"""

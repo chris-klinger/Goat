@@ -22,6 +22,17 @@ class ComboBoxFrame(Frame):
         self.combobox['values'] = (choices if choices else [])
         self.combobox.pack()
 
+    def add_items(self, items):
+        """Convenience function"""
+        values = self.combobox['values']
+        new_values = []
+        if values != '': # either empty string or tuple
+            for val in values:
+                new_values.append(val) # if tuple, need to add back to list
+        for item in items:
+            new_values.append(item)
+        self.combobox['values'] = new_values
+
 class RadioBoxFrame(Frame):
     def __init__(self, parent=None, choices=None, labeltext=None):
         Frame.__init__(self, parent)

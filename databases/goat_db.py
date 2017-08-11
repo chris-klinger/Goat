@@ -24,6 +24,14 @@ class GoatDB:
             db = DB(self.storage)
             connection = db.open()
             self.root = connection.root()
+            try:
+                self.misc = self.root['misc_queries']
+            except:
+                self.root['misc_queries'] = OOBTree()
+            try:
+                self.squeries = self.root['search_queries']
+            except:
+                self.root['search_queries'] = OOBTree()
         else: # first time accessing
             self.storage = FileStorage.FileStorage(filepath)
             db = DB(self.storage)

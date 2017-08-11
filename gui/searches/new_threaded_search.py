@@ -97,7 +97,7 @@ class ProgressFrame(Frame):
         else:
             if done:
                 if self.callback:
-                    print('calling callback function')
+                    #print('calling callback function')
                     self.callback()
             self.parent.destroy()
 

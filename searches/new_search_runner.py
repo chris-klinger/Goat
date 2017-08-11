@@ -15,8 +15,6 @@ from searches.blast import blast_setup
 from searches.hmmer import hmmer_setup, hmmer_parser
 from results import result_obj
 
-from gui.searches import threaded_search
-
 # Placeholder - should be through settings eventually
 blast_path = '/usr/local/ncbi/blast/bin'
 hmmer_path = '/Users/cklinger/src/hmmer-3.1b1-macosx-intel/src'
@@ -27,6 +25,7 @@ class SearchRunner:
     def __init__(self, sobj, mode='new', other_widget=None):
         # dbs are global
         self.qdb = configs['query_db']
+        self.mqdb = configs['misc_queries']
         self.rdb = configs['record_db']
         self.udb = configs['result_db']
         self.sdb = configs['search_db']
@@ -65,7 +64,10 @@ class SearchRunner:
                         if query == qid:
                             qobj = uobj.fetch_entry(query)
             elif self.mode == 'racc': # search for raccs
-                qobj = self.qdb[qid] # qobj should already be in the query db
+                try:
+                    qobj = self.qdb[qid] # qobj should already be in the query db
+                except KeyError: # not in regular qdb
+                    qobj = self.mqdb[qid]
             # Second half of code determines how to call the run
             if qobj.target_db: # i.e. is not None
                 if not qobj.target_db in self.sobj.databases: # don't add duplicates
