@@ -7,7 +7,7 @@ changes that can either be committed to the underlying db (or not).
 """
 
 from tkinter import *
-from tkinter import ttk
+from tkinter import ttk, messagebox
 
 from bin.initialize_goat import configs
 
@@ -29,9 +29,9 @@ class SetFrame(Frame):
         self.toolbar.pack(side=BOTTOM, expand=YES, fill=X)
         self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT}),
-                        ('Add Query(ies)', self.onAdd, {'side': LEFT}),
-                        ('Modify Query', self.onModify, {'side': LEFT}),
-                        ('Remove Query(ies)', self.onRemove, {'side': LEFT})]
+                        ('Add Query Set', self.onAdd, {'side': LEFT}),
+                        ('Modify Query Set', self.onModify, {'side': LEFT}),
+                        ('Remove Query Set', self.onRemove, {'side': LEFT})]
         for (label, action, where) in self.buttons:
             Button(self.toolbar, text=label, command=action).pack(where)
 
@@ -65,13 +65,27 @@ class SetFrame(Frame):
         try:
             if item['tags'][0] == 'set': # set, not query
                 set_obj = self.qsdb[item['text']]
+                qtype = set_obj.qtype
                 window = Toplevel()
-                ModifySetFrame(window, set_obj)
+                ModifySetFrame(window, self, qtype, set_obj)
         except KeyError:
             pass
 
     def onRemove(self):
-        pass
+        """
+        Determines which window is selected in the associated notebook widget and
+        then checks for confirmation before removing a set. If a query is selected,
+        does nothing (query removal must be through query interface).
+        """
+        item = self.paned_window.notebook_item()
+        qtype = self.paned_window.notebook_tab()
+        if item['tags'][0] == 'set':
+            set_id = item['text']
+            if messagebox.askyesno(
+                    message = "Delete set {}?".format(set_id),
+                    icon='question', title='Remove set'):
+                self.qsdb.remove_entry(set_id)
+                self.paned_window.redraw_tree(qtype)
 
 class SplitSetWindow(ttk.Panedwindow):
     def __init__(self, parent=None):
@@ -93,6 +107,15 @@ class SplitSetWindow(ttk.Panedwindow):
     def redraw_tree(self, qtype):
         """Signals to notebook to re-draw tree for selected widget"""
         self.notebook.redraw_tree(qtype)
+
+    def remove_item(self, item):
+        """
+        Signals to notebook to remove the chosen item and then also re-draw
+        the tree following item removal.
+        """
+        curr_tab = self.notebook.selected_tab()
+        self.notebook.remove_item(curr_tab, item)
+        self.notebook.redraw_tree(curr_tab)
 
 class SetNotebook(ttk.Notebook):
     def __init__(self, parent=None, other_widget=None):
@@ -144,7 +167,7 @@ class SetTree(ttk.Treeview):
         ttk.Treeview.__init__(self, parent)
         self.qdb = configs['query_db']
         self.qsdb = configs['query_sets']
-        self.info = other_widget
+        self.other = other_widget
         self.config(selectmode = 'browse') # one item at a time
         self.tag_bind('set', '<Double-1>', # single click does not register properly
                 callback=lambda x:self.itemClicked('set'))
@@ -186,14 +209,26 @@ class SeqTree(SetTree):
         """Builds info based on the item clicked and send to display widget"""
         item_id = self.focus()
         item = self.item(item_id)
-        display_list = []
+        to_display = []
         if item_type == 'set':
             set_obj = self.qsdb[item['text']]
-            display_list.extend([
+            to_display.extend([
                 ('Sequence Query Set Information' + '\n'),
-                ('Set Name: ' + set_obj.name)]) # add more stuff later
+                ('Set Name: ' + set_obj.name),
+                ('Number of Queries: ' + str(set_obj.num_queries))])
         else: # item_type == 'query'
-            pass
+            qobj = self.qdb[item['text']]
+            to_display.extend([
+                ('Sequence Query Information' + '\n'),
+                ('Query Identity: ' + str(qobj.identity)),
+                ('Query Name: ' + str(qobj.name)),
+                ('Query Alphabet: ' + str(qobj.alphabet)),
+                ('Associated Record: ' + str(qobj.record))])
+            if len(qobj.raccs) > 0:
+                to_display.append('Redundant Accessions:')
+                for racc in qobj.raccs: # raccs is a list of lists
+                    to_display.append(str(racc[0]) + ' ' + str(racc[1]))
+        self.other.update_info(to_display)
 
 class HMMTree(SetTree):
     """Subclass specific for HMM-based queries"""
@@ -202,7 +237,31 @@ class HMMTree(SetTree):
         super(HMMTree,self).make_tree('hmm')
 
     def itemClicked(self, item_type):
-        pass
+        """Builds info based on the item clicked and send to display widget"""
+        item_id = self.focus()
+        item = self.item(item_id)
+        to_display = []
+        if item_type == 'set':
+            set_obj = self.qsdb[item['text']]
+            to_display.extend([
+                ('HMM Query Set Information' + '\n'),
+                ('Set Name: ' + set_obj.name),
+                ('Number of Queries: ' + str(set_obj.num_queries))])
+        else: # item_type == 'query'
+            qobj = self.qdb[item['text']]
+            to_display.extend([
+                ('HMM Query Information' + '\n'),
+                ('Query Identity: ' + str(qobj.identity)),
+                ('Query Name: ' + str(qobj.name)),
+                ('Query Alphabet: ' + str(qobj.alphabet))])
+            if qobj.num_seqs != 0:
+                to_display.append(
+                    ('Number of Sequences: ' + str(qobj.num_seqs)))
+            if len(qobj.associated_queries) > 0:
+                to_display.append('Associated Queries:')
+                for qid in qobj.associated_queries:
+                    to_display.append(qid)
+        self.other.update_info(to_display)
 
 class MSATree(SetTree):
     """Subclass specific for MSA-based queries"""
@@ -262,5 +321,51 @@ class AddSetFrame(Frame):
         self.parent.destroy()
 
 class ModifySetFrame(Frame):
-    def __init__(self, parent, set_obj):
+    def __init__(self, parent, other_widget, qtype, set_obj):
         Frame.__init__(self, parent)
+        self.parent = parent
+        self.other = other_widget
+        self.qtype = qtype
+        self.set_obj = set_obj
+        self.qdb = configs['query_db']
+        self.pack(expand=YES, fill=BOTH)
+        # input for set name
+        self.name = input_form.DefaultValueForm(
+                [('Name',set_obj.name)],self)
+        # use GUI from main query implementation
+        self.columns = main_query_gui.QueryColumns(self)
+        # add a toolbar
+        self.toolbar = Frame(self)
+        self.toolbar.pack(side=BOTTOM, expand=YES, fill=X)
+        self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
+                        ('Cancel', self.onCancel, {'side':RIGHT})]
+        for (label, action, where) in self.buttons:
+            Button(self.toolbar, text=label, command=action).pack(where)
+
+        # add query possibilities
+        present = list(set_obj.qids)
+        query_list = []
+        added_list = []
+        for qid in self.qdb.list_entries():
+            qobj = self.qdb[qid]
+            if qid in present:
+                added_list.append([qid,qobj])
+            elif qobj.search_type == self.qtype:
+                query_list.append([qid,qobj])
+        self.columns.add_queries(added_list)
+        self.columns.add_possibilities(query_list)
+
+    def onSubmit(self):
+        """Adds a query set object"""
+        self.set_obj.name = self.name.get('Name')
+        qids = []
+        qdict = self.columns.get_to_add()
+        for qid in qdict.keys():
+            qids.append(qid)
+        self.set_obj.add_qids(qids)
+        self.other.paned_window.redraw_tree(self.qtype)
+        self.parent.destroy()
+
+    def onCancel(self):
+        self.parent.destroy()
+
