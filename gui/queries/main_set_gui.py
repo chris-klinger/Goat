@@ -49,7 +49,7 @@ class QuerySetFrame(Frame):
         """
         qtype = self.paned_window.notebook_tab()
         window = Toplevel()
-        AddSetFrame(window, self, qtype)
+        ModifySetFrame(window, self, qtype)
 
     def add_query_set(self, set_name, qtype, set_obj):
         """Adds set_obj to db and then re-draws the relevant tree"""
@@ -276,62 +276,20 @@ class SetInfo(gui_util.InfoPanel):
     def __init__(self, parent=None):
         gui_util.InfoPanel.__init__(self, parent)
 
-class AddSetFrame(Frame):
-    def __init__(self, parent, other_widget, qtype):
-        Frame.__init__(self, parent)
-        self.parent = parent
-        self.other = other_widget
-        self.qtype = qtype
-        self.qdb = configs['query_db']
-        self.pack(expand=YES, fill=BOTH)
-        # input for set name
-        self.name = input_form.DefaultValueForm(
-                [('Name','')],self)
-        # use GUI from main query implementation
-        self.columns = main_query_gui.QueryColumns(self)
-        # add a toolbar
-        self.toolbar = Frame(self)
-        self.toolbar.pack(side=BOTTOM, expand=YES, fill=X)
-        self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
-                        ('Cancel', self.onCancel, {'side':RIGHT})]
-        for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
-
-        # add query possibilities
-        query_list = []
-        for qid in self.qdb.list_entries():
-            qobj = self.qdb[qid]
-            if qobj.search_type == self.qtype:
-                query_list.append([qid,qobj])
-        self.columns.add_possibilities(query_list)
-
-    def onSubmit(self):
-        """Adds a query set object"""
-        sname = self.name.get('Name')
-        qids = []
-        qdict = self.columns.get_to_add()
-        for qid in qdict.keys():
-            qids.append(qid)
-        query_set = sets.QuerySet(sname, self.qtype)
-        query_set.add_entries(qids)
-        self.other.add_query_set(sname, self.qtype, query_set)
-        self.parent.destroy()
-
-    def onCancel(self):
-        self.parent.destroy()
-
 class ModifySetFrame(Frame):
-    def __init__(self, parent, other_widget, qtype, set_obj):
+    def __init__(self, parent, other_widget, qtype, set_obj=None):
         Frame.__init__(self, parent)
+        self.pack(expand=YES, fill=BOTH)
         self.parent = parent
         self.other = other_widget
         self.qtype = qtype
         self.set_obj = set_obj
         self.qdb = configs['query_db']
-        self.pack(expand=YES, fill=BOTH)
+        self.qsdb = configs['query_sets']
         # input for set name
+        sname = self.set_obj.name if set_obj else ''
         self.name = input_form.DefaultValueForm(
-                [('Name',set_obj.name)],self)
+                [('Name',sname)],self)
         # use GUI from main query implementation
         self.columns = main_query_gui.QueryColumns(self)
         # add a toolbar
@@ -343,7 +301,7 @@ class ModifySetFrame(Frame):
             Button(self.toolbar, text=label, command=action).pack(where)
 
         # add query possibilities
-        present = list(set_obj.qids)
+        present = list(set_obj.entries) if set_obj else []
         query_list = []
         added_list = []
         for qid in self.qdb.list_entries():
@@ -357,15 +315,24 @@ class ModifySetFrame(Frame):
 
     def onSubmit(self):
         """Adds a query set object"""
-        self.set_obj.name = self.name.get('Name')
+        add_new = False
+        sname = self.name.get('Name')
+        if not self.set_obj:
+            self.set_obj = sets.QuerySet(sname)
+            add_new = True
+        else:
+            self.set_obj.name = sname
         qids = []
-        qdict = self.columns.get_to_add()
-        for qid in qdict.keys():
-            qids.append(qid)
+        for entry in (self.columns.get_to_add()).keys():
+            qids.append(entry)
         self.set_obj.add_entries(qids)
-        self.other.paned_window.redraw_tree(self.qtype)
+        if add_new: # also re-draws
+            self.other.add_query_set(sname, self.qtype, self.set_obj)
+        else: # still re-draw
+            self.other.paned_window.redraw_tree()
         self.parent.destroy()
 
     def onCancel(self):
         self.parent.destroy()
+
 
