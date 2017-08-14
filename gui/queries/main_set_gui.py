@@ -16,7 +16,7 @@ from databases import sets
 from gui.queries import main_query_gui
 from gui.util import gui_util, input_form
 
-class SetFrame(Frame):
+class QuerySetFrame(Frame):
     def __init__(self, parent=None):
         Frame.__init__(self, parent)
         self.parent = parent

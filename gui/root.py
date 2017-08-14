@@ -9,7 +9,7 @@ from bin.initialize_goat import configs
 
 from settings import settings_config
 from gui.settings import settings_form
-from gui.database import database_gui
+from gui.database import database_gui, db_set_gui
 from gui.searches import search_gui
 from gui.results import result_gui
 from gui.queries import main_query_gui, main_set_gui
@@ -104,6 +104,8 @@ class RootFrame(Frame):
         db_menu = Menu(top, tearoff=False)
         db_menu.add_command(label='modify databases',
                 command=self.database_popup, underline=0)
+        db_menu.add_command(label='modify database sets',
+                command=self.dbset_popup, underline=0)
         db_menu.add_command(label='database table',
                 command=self.database_table, underline=0)
         top.add_cascade(label='Databases', menu=db_menu, underline=0)
@@ -168,11 +170,15 @@ class RootFrame(Frame):
 
     def qset_popup(self):
         window = Toplevel()
-        main_set_gui.SetFrame(window)
+        main_set_gui.QuerySetFrame(window)
 
     def database_popup(self):
         window = Toplevel()
         database_gui.DatabaseFrame(window)
+
+    def dbset_popup(self):
+        window = Toplevel()
+        db_set_gui.RecordSetFrame(window)
 
     def database_table(self):
         """Obtain csv-style file with information for one or more databases"""

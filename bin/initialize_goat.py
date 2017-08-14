@@ -61,6 +61,7 @@ def get_specific_dbs(db_obj):
     configs['search_queries'] = dbs.SearchQDB()
     configs['query_sets'] = dbs.QSetDB()
     configs['record_db'] = dbs.RecordDB()
+    configs['record_sets'] = dbs.RSetDB()
     configs['result_db'] = dbs.ResultDB()
     configs['search_db'] = dbs.SearchDB()
     configs['summary_db'] = dbs.SummaryDB()

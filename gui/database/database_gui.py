@@ -137,9 +137,11 @@ class DatabaseViewer(ttk.Treeview):
                 self.insert(uniq_r,'end',uniq_f,text=fid,tags=('file'))
 
     def itemClicked(self, tag):
-        """Triggered when either records or files are clicked. Builds a list of
+        """
+        Triggered when either records or files are clicked. Builds a list of
         information for display by associated info panel and delegates display
-        to that widget"""
+        to that widget
+        """
         item_id = self.focus()
         parent_list = self.get_ancestors(item_id,[])
         db_obj = self.get_item_from_db(parent_list, self.rdb)

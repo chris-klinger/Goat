@@ -438,11 +438,11 @@ class QuerySubmission:
         qobj.add_all_accs(lines)
 
 class QueryColumns(ttk.Panedwindow):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, p_text='Possible Queries', a_text='To be Added'):
         ttk.Panedwindow.__init__(self, parent, orient=HORIZONTAL)
         self.pack(expand=YES, fill=BOTH)
-        self.query_list = QueryListFrame(self, 'Possible Queries')
-        self.added_list = AddedListFrame(self, 'To be Added')
+        self.query_list = QueryListFrame(self, p_text)
+        self.added_list = AddedListFrame(self, a_text)
         self.add(self.query_list)
         self.add(self.added_list)
         # to avoid AttributeError, link widgets after each is assigned
