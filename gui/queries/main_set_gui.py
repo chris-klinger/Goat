@@ -12,7 +12,7 @@ from tkinter import ttk, messagebox
 from bin.initialize_goat import configs
 
 from util import util
-from queries import query_sets
+from databases import sets
 from gui.queries import main_query_gui
 from gui.util import gui_util, input_form
 
@@ -190,7 +190,7 @@ class SetTree(ttk.Treeview):
             if set_obj.qtype == qtype:
                 uniq_s = str(counter.get_new_id())
                 self.insert('','end',uniq_s,text=qset,tags=('set'))
-                for qid in set_obj.list_queries():
+                for qid in set_obj.list_entries():
                     uniq_q = str(counter.get_new_id())
                     self.insert(uniq_s,'end',uniq_q,text=qid,tags=('query'))
 
@@ -312,8 +312,8 @@ class AddSetFrame(Frame):
         qdict = self.columns.get_to_add()
         for qid in qdict.keys():
             qids.append(qid)
-        query_set = query_sets.QuerySet(sname, self.qtype)
-        query_set.add_qids(qids)
+        query_set = sets.QuerySet(sname, self.qtype)
+        query_set.add_entries(qids)
         self.other.add_query_set(sname, self.qtype, query_set)
         self.parent.destroy()
 
@@ -362,7 +362,7 @@ class ModifySetFrame(Frame):
         qdict = self.columns.get_to_add()
         for qid in qdict.keys():
             qids.append(qid)
-        self.set_obj.add_qids(qids)
+        self.set_obj.add_entries(qids)
         self.other.paned_window.redraw_tree(self.qtype)
         self.parent.destroy()
 
