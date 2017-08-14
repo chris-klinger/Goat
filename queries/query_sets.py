@@ -26,3 +26,5 @@ class QuerySet(Persistent):
     def calc_num_queries(self):
         """Called each time query list is updated to change attribute"""
         self.num_queries = len(self.qids)
+
+

@@ -22,6 +22,7 @@ class QueryFrame(Frame):
         self.parent = parent
         self.qdb = configs['query_db']
         self.mqdb = configs['misc_queries']
+        self.qsdb = configs['query_sets']
         self.pack(expand=YES, fill=BOTH)
         self.paned_window = SplitQueryWindow(self)
         # Add the toolbar and buttons
@@ -99,6 +100,7 @@ class QueryFrame(Frame):
             for index in to_remove:
                 qid = self.paned_window.notebook_item(index)
                 self.qdb.remove_entry(qid)
+                self.qsdb.remove_from_all(qid)
             # remove from listbox and internal data structures
             self.paned_window.remove_items(to_remove)
 

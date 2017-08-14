@@ -89,7 +89,7 @@ class EntryRow(Frame):
 class FileValueForm(DefaultValueForm):
     """Single-entry form frame for choosing filepaths"""
     def __init__(self, parent=None, entrysize=40):
-        entry_list = [('Filename','')]
+        entry_list = [('Filepath','')]
         DefaultValueForm.__init__(self, entry_list, parent)
         Button(self, text='Choose File', command=self.onChoose).pack(side=RIGHT)
 
@@ -97,7 +97,7 @@ class FileValueForm(DefaultValueForm):
         """Pops up file choice dialogue"""
         filepath = filedialog.askopenfilename()
         for entry_row in self.row_list:
-            if entry_row.label_text == 'Filename':
+            if entry_row.label_text == 'Filepath':
                 entry_row.entry.insert(0,filepath) # update choice in window
 
 class DynamicForm(Form):

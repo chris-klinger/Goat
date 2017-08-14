@@ -31,6 +31,10 @@ class ComboBoxFrame(Frame):
         """Convenience function"""
         return self.combobox.get()
 
+    def set(self, value):
+        """Sets value of combobox"""
+        self.combobox.set(value)
+
     def onSelect(self):
         """Triggers built-in function"""
         self.select_function()

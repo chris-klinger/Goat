@@ -318,9 +318,9 @@ class SummaryTree(ttk.Treeview):
     def itemClicked(self, tag):
         """Builds a list of information for display by ResultInfo panel for
         either searches or results; delegates formatting/display to panel"""
-        item_name = self.focus() # here item should be the object itself?
-        item = self.item(item_name)
-        parent_list = self.get_ancestors(item_name,[])
+        item_id = self.focus() # here item should be the object itself?
+        item = self.item(item_id)
+        parent_list = self.get_ancestors(item_id,[])
         db_obj = self.get_item_from_db(parent_list, self.mdb)
         if tag == 'summary':
             #print(db_obj)
