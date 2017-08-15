@@ -88,7 +88,7 @@ class SearchGui(ttk.Panedwindow):
         self.parent = parent
         self.query_frame = QuerySummaryFrame(self)
         self.param_frame = ParamFrame(self, self.query_frame)
-        self.db_frame = DatabaseSummaryFrame(record_db, self)
+        self.db_frame = DatabaseSummaryFrame(self)
         self.add(self.param_frame)
         self.add(self.query_frame)
         self.add(self.db_frame)
@@ -105,9 +105,6 @@ class ParamFrame(Frame):
                 [('Name',''), ('Location',self.curdir)],
                 self,
                 [('Choose Directory', self.onChoose, {'side':RIGHT})])
-        #self.algorithm = gui_util.RadioBoxFrame(self,
-        #        [('Blast','blast'), ('HMMer','hmmer')],
-        #        labeltext='Algorithm')
         self.algorithm = gui_util.ComboBoxFrame(self,
                 choices=valid_algorithms,
                 labeltext='Algorithm',
@@ -188,8 +185,8 @@ class QuerySummaryFrame(Frame):
 
     def onRemove(self):
         """Removes select entry(ies)"""
-        selected = self.querybox.listbox.curselection() # 0, 1, or more items
-        self.querybox.remove_items(*selected) # object itself handles removal
+        selected = self.querybox.selection() # 0, 1, or more items
+        self.querybox.remove_items(selected) # object itself handles removal
 
     def onAdd(self):
         """Add queries"""
@@ -218,6 +215,7 @@ class QueryWindow(Frame):
         Frame.__init__(self, parent)
         self.pack(expand=YES, fill=BOTH)
         self.qdb = configs['query_db']
+        self.qsdb = configs['query_sets']
         self.other = other_widget # ref to send back updates
         # ensure other widget knows it is closed
         self.parent = parent
@@ -244,27 +242,39 @@ class QueryWindow(Frame):
         notebook = self.notebook
         to_add = [] # common list to add to main widget from
         if notebook.select() == str(notebook.qset):
+            if messagebox.askyesno(
+                    message='Add by whole sets?',
+                    icon='question', title='Add Sets'):
+                add_sets = True
+            else:
+                add_sets = False
             seen = set() # must account for possible multiple instances
-            for item_name in notebook.qset.selection(): # one or more items, unlike focus
-                item = notebook.qset.item(item_name)
-                if item['tags'][0] == 'query': # simple case
-                    if not item_name in seen:
-                        to_add.append([item_name,'']) # '' because need a value as well
-                        seen.add(item_name)
-                else: # set
-                    set_list = self.qdb.sets.qdict[item_name]
-                    for qid in set_list:
-                        if qid not in seen:
+            for item_id in notebook.qset.selection(): # one or more items, unlike focus
+                item = notebook.qset.item(item_id)
+                if item['tags'][0] == 'set':
+                    set_obj = self.qsdb[item['text']]
+                    for qid in set_obj.list_entries():
+                        if not qid in seen:
                             to_add.append([qid,''])
-                            seen.add(qid)
+                elif item['tags'][0] == 'query':
+                    if add_sets:
+                        set_name = notebook.qset.get_ancestors(item_id,[])[0]
+                        set_obj = self.qsdb[set_name]
+                        for qid in set_obj.list_entries():
+                            if not qid in seen:
+                                to_add.append([qid,''])
+                    else:
+                        item_name = item['text']
+                        if not item_name in seen:
+                            to_add.append([item_name,''])
         elif notebook.select() == str(notebook.qlist):
-            selected = notebook.qlist.listbox.curselection()
+            selected = notebook.qlist.selection()
             if len(selected) > 0:
                 # no chance for duplicate entries, '' is the 'value'
-                to_add.extend([(notebook.qlist.listbox.get(index),'') for index in selected])
+                to_add.extend([(notebook.qlist.get(index),'') for index in selected])
         # now try adding
         if len(to_add) > 0:
-            self.owidget.querybox.add_items(to_add)
+            self.other.querybox.add_items(to_add)
         self.other.query_window_closed() # signal back to parent that child is gone
         self.parent.destroy() # either way, close window
 
@@ -343,6 +353,17 @@ class QSearchSetViewer(ttk.Treeview):
                     uniq_q = str(counter.get_new_id())
                     self.insert(uniq_s,'end',uniq_q,text=qid,tags=('query'))
 
+    def get_ancestors(self, item_id, item_list=[]):
+        """Recurs until root node to return a list of ancestors"""
+        parent = self.parent(item_id)
+        item = self.item(item_id)
+        item_name = item['text']
+        if item_id == '': # hit root node
+            return item_list[::-1]
+        else:
+            item_list.append(item_name)
+            return self.get_ancestors(parent, item_list) # recur
+
 class QSearchListViewer(gui_util.ScrollBoxFrame):
     def __init__(self, parent=None, algorithm=None):
         gui_util.ScrollBoxFrame.__init__(self, parent)
@@ -375,9 +396,8 @@ class QSearchListViewer(gui_util.ScrollBoxFrame):
         self.add_items(to_display)
 
 class DatabaseSummaryFrame(Frame):
-    def __init__(self, record_db, parent=None, text='Database', items=None):
+    def __init__(self, parent=None, text='Database', items=None):
         Frame.__init__(self, parent)
-        self.rdb = record_db
         self.db_box = gui_util.ScrollBoxFrame(self, text, items)
         self.toolbar = Frame(self)
         self.toolbar.pack(side=BOTTOM, fill=X)
@@ -388,23 +408,23 @@ class DatabaseSummaryFrame(Frame):
 
     def onRemove(self):
         """Removes select entry(ies)"""
-        selected = self.db_box.listbox.curselection()
-        self.db_box.remove_items(*selected)
+        selected = self.db_box.selection()
+        self.db_box.remove_items(selected)
 
     def onAdd(self):
         """Adds databases"""
         window = Toplevel()
-        DatabaseWindow(self.rdb, self, window)
+        DatabaseWindow(self, window)
 
 class DatabaseWindow(Frame):
-    def __init__(self, record_db, other_widget, parent=None):
+    def __init__(self, other_widget, parent=None):
         Frame.__init__(self, parent)
-        self.owidget = other_widget # ref to send back updates
+        self.other = other_widget # ref to send back updates
         self.parent = parent
+        self.rdb = configs['record_db']
+        self.rsdb = configs['record_sets']
         Label(self, text='Available Databases').pack(expand=YES, fill=X, side=TOP)
-        self.rlist = gui_util.ScrollBoxFrame(self,
-                items=[(key,'') for key in record_db.list_records()],
-                mode='multiple')
+        self.notebook = DBSearchNotebook(self)
         self.toolbar = Frame(self)
         self.toolbar.pack(side=BOTTOM, expand=YES, fill=X)
         self.pack(expand=YES, fill=BOTH)
@@ -416,17 +436,94 @@ class DatabaseWindow(Frame):
 
     def onSubmit(self):
         """Adds selected records to the database list in parent widget"""
-        to_add = []
-        selected = self.rlist.listbox.curselection()
-        if len(selected) > 0:
-            # '' because requires a value as well
-            to_add.extend([(self.rlist.listbox.get(index),'') for index in selected])
-            self.owidget.db_box.add_items(to_add)
+        notebook = self.notebook
+        to_add = [] # common list to add to main widget frame
+        if notebook.select() == str(notebook.rset):
+            if messagebox.askyesno(
+                    message='Add by whole sets?',
+                    icon='question', title='Add Sets'):
+                add_sets = True
+            else:
+                add_sets = False
+            seen = set()
+            for item_id in notebook.rset.selection():
+                item = notebook.rset.item(item_id)
+                if item['tags'][0] == 'set':
+                    set_obj = self.rsdb[item['text']]
+                    for rid in set_obj.list_entries():
+                        if not rid in seen:
+                            to_add.append([rid,'']) # need a tuple
+                elif item['tags'][0] == 'record':
+                    if add_sets:
+                        set_name = notebook.rset.get_ancestors(item_id,[])[0] # first item
+                        set_obj = self.rsdb[set_name]
+                        for rid in set_obj.list_entries():
+                            if not rid in seen:
+                                to_add.append([rid,''])
+                    else: # adding by individual queries
+                        item_name = item['text'] # rid
+                        if not item_name in seen:
+                            to_add.append([item_name,''])
+        elif notebook.select() == str(notebook.rlist):
+            selected = notebook.rlist.selection()
+            if len(selected) > 0:
+                to_add.extend([(notebook.rlist.get(index),'') for index in selected])
+        # now try adding
+        if len(to_add) > 0:
+            self.other.db_box.add_items(to_add)
         self.parent.destroy()
 
     def onCancel(self):
         """Quits without adding any records"""
         self.parent.destroy()
+
+class DBSearchNotebook(ttk.Notebook):
+    def __init__(self, parent):
+        ttk.Notebook.__init__(self, parent)
+        self.rset = DBSearchSetViewer(self)
+        self.rlist = DBSearchListViewer(self)
+        self.add(self.rset, text='Record Sets')
+        self.add(self.rlist, text='All Records')
+        self.pack(expand=YES, fill=BOTH)
+
+class DBSearchSetViewer(ttk.Treeview):
+    def __init__(self, parent):
+        ttk.Treeview.__init__(self, parent)
+        self.pack(expand=YES, fill=BOTH)
+        self.rdb = configs['record_db']
+        self.rsdb = configs['record_sets']
+        self.config(selectmode='extended')
+        self.make_tree()
+
+    def make_tree(self):
+        """Builds a treeview display of sets/records"""
+        counter = util.IDCounter()
+        for set_id in self.rsdb.list_entries():
+            set_obj = self.rsdb[set_id]
+            uniq_s = str(counter.get_new_id())
+            self.insert('','end',uniq_s,text=set_id,tags=('set'))
+            for rid in set_obj.list_entries():
+                uniq_r = str(counter.get_new_id())
+                self.insert(uniq_s,'end',uniq_r,text=rid,tags=('record'))
+
+    def get_ancestors(self, item_id, item_list=[]):
+        """Recurs until root node to return a list of ancestors"""
+        parent = self.parent(item_id)
+        item = self.item(item_id)
+        item_name = item['text']
+        if item_id == '': # hit root node
+            return item_list[::-1]
+        else:
+            item_list.append(item_name)
+            return self.get_ancestors(parent, item_list) # recur
+
+class DBSearchListViewer(gui_util.ScrollBoxFrame):
+    def __init__(self, parent):
+        rdb = configs['record_db']
+        to_add = []
+        for rid in rdb.list_entries():
+            to_add.append([rid,''])
+        gui_util.ScrollBoxFrame.__init__(self, parent, items=to_add)
 
 ##########################################
 # Interface for running reverse searches #

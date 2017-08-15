@@ -63,6 +63,10 @@ class RadioBoxFrame(Frame):
                             value=var).pack(side=LEFT)
         self.selected.set(var) # set to last value
 
+    def get(self):
+        """Convenience function"""
+        return self.selected.get()
+
 class CheckBoxFrame(Frame):
     def __init__(self, parent=None, labeltext=None):
         Frame.__init__(self, parent)
@@ -72,6 +76,13 @@ class CheckBoxFrame(Frame):
         self.checked = IntVar()
         self.checkbutton = ttk.Checkbutton(self, text='Yes',
                         variable=self.checked).pack()
+
+    def checked(self):
+        """Returns True if checked, False otherwise"""
+        if self.checked.get() == 1:
+            return True
+        else:
+            return False
 
 class ScrollBoxFrame(Frame):
     def __init__(self, parent=None, text=None, items=None,
