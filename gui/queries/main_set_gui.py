@@ -318,7 +318,7 @@ class ModifySetFrame(Frame):
         add_new = False
         sname = self.name.get('Name')
         if not self.set_obj:
-            self.set_obj = sets.QuerySet(sname)
+            self.set_obj = sets.QuerySet(sname, self.qtype)
             add_new = True
         else:
             self.set_obj.name = sname
