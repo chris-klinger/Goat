@@ -4,14 +4,19 @@ This module contains code for a GUI frontend for searches
 
 import os
 from tkinter import *
-from tkinter import ttk, filedialog #, messagebox
+from tkinter import ttk, filedialog, messagebox
 
 from bin.initialize_goat import configs
 
+from util import util
 from searches import search_obj, search_runner
 from results import intermediate
 from gui.util import input_form, gui_util
+from databases import sets
 #from gui.database import database_gui
+
+# temporary, this should be in the settings eventually
+valid_algorithms = ['BLAST','HMMer']
 
 class SearchFrame(Frame):
     def __init__(self, parent=None): #query_db, record_db, search_db, result_db, parent=None):
@@ -81,8 +86,8 @@ class SearchGui(ttk.Panedwindow):
     def __init__(self, query_db, record_db, parent=None):
         ttk.Panedwindow.__init__(self, parent, orient=HORIZONTAL)
         self.parent = parent
-        self.param_frame = ParamFrame(self)
-        self.query_frame = QuerySummaryFrame(query_db, self)
+        self.query_frame = QuerySummaryFrame(self)
+        self.param_frame = ParamFrame(self, self.query_frame)
         self.db_frame = DatabaseSummaryFrame(record_db, self)
         self.add(self.param_frame)
         self.add(self.query_frame)
@@ -90,18 +95,28 @@ class SearchGui(ttk.Panedwindow):
         self.pack(expand=YES, fill=BOTH)
 
 class ParamFrame(Frame):
-    def __init__(self, parent=None):
+    def __init__(self, parent=None, other_widget=None):
         Frame.__init__(self, parent)
         #self.pack(expand=YES, fill=BOTH)
         self.pack()
+        self.other = other_widget
         self.curdir = os.getcwd()
-        self.entries = input_form.DefaultValueForm([('Name',''), ('Location',self.curdir)],
-                self, [('Choose Directory', self.onChoose, {'side':RIGHT})])
-        self.algorithm = gui_util.RadioBoxFrame(self, [('Blast','blast'), ('HMMer','hmmer')],
-                labeltext='Algorithm')
-        self.q_type = gui_util.RadioBoxFrame(self, [('Protein','protein'), ('Genomic','genomic')],
+        self.entries = input_form.DefaultValueForm(
+                [('Name',''), ('Location',self.curdir)],
+                self,
+                [('Choose Directory', self.onChoose, {'side':RIGHT})])
+        #self.algorithm = gui_util.RadioBoxFrame(self,
+        #        [('Blast','blast'), ('HMMer','hmmer')],
+        #        labeltext='Algorithm')
+        self.algorithm = gui_util.ComboBoxFrame(self,
+                choices=valid_algorithms,
+                labeltext='Algorithm',
+                select_function=self.onSelectAlgorithm)
+        self.q_type = gui_util.RadioBoxFrame(self,
+                [('Protein','protein'), ('Genomic','genomic')],
                 labeltext='Query data type')
-        self.db_type = gui_util.RadioBoxFrame(self, [('Protein','protein'), ('Genomic','genomic')],
+        self.db_type = gui_util.RadioBoxFrame(self,
+                [('Protein','protein'), ('Genomic','genomic')],
                 labeltext='Target data type')
         self.keep_output = gui_util.CheckBoxFrame(self, 'Keep output files?')
 
@@ -113,17 +128,63 @@ class ParamFrame(Frame):
                 entry_row.entry.delete(0,'end') # delete previous entry first
                 entry_row.entry.insert(0,dirpath)
 
+    def onSelectAlgorithm(self):
+        """
+        Called when the value of the combobox frame selection changes. Signals to
+        the QuerySummaryFrame to change the query selection, and, if one is open,
+        to also change the values of the query choosing window.
+        """
+        new_algorithm = self.algorithm.get()
+        self.other.change_algorithm(new_algorithm)
+        self.other.update()
+
 class QuerySummaryFrame(Frame):
-    def __init__(self, query_db, parent=None, text='Queries', items=None):
+    def __init__(self, parent=None, text='Queries', items=None):
         Frame.__init__(self, parent)
-        self.qdb = query_db
+        self.qdb = configs['query_db']
         self.querybox = gui_util.ScrollBoxFrame(self, text, items)
+        # instance variables for use with listbox and query chooser
+        self.prev_algorithm = None
+        self.algorithm = None
+        self.qdict = {}
+        self.query_window = None # store an instance variable
+        # toolbar and buttons
         self.toolbar = Frame(self)
         self.toolbar.pack(side=BOTTOM, fill=X)
         self.buttons=[('Remove Query(ies)', self.onRemove, {'side':RIGHT}),
                     ('Add Query(ies)', self.onAdd, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
             Button(self.toolbar, text=label, command=action).pack(where)
+
+    def change_algorithm(self, algorithm):
+        """Called from parent window"""
+        if self.algorithm:
+            self.prev_algorithm = self.algorithm # store old value before changing
+        self.algorithm = algorithm
+
+    def update(self):
+        """
+        Called whenever the algorithm selection changes; grabs current value of
+        queries in window for storage in an internal dict and then clears the
+        window, calling populate to fill it with new values (if present)
+        """
+        if self.prev_algorithm:
+            to_stash = []
+            for item in self.querybox.item_list:
+                to_stash.append([item,'']) # need a tuple, don't care about value
+            self.qdict[self.prev_algorithm] = to_stash # store old value
+        self.populate()
+        #print(self.query_window)
+        if self.query_window:
+            self.query_window.update(self.algorithm)
+
+    def populate(self):
+        """
+        Re-populates the window from internal dict based on algorithm selection.
+        Note, may not put any values.
+        """
+        if self.algorithm in self.qdict.keys():
+            self.querybox.add_items(self.qdict[self.algorithm])
 
     def onRemove(self):
         """Removes select entry(ies)"""
@@ -132,21 +193,43 @@ class QuerySummaryFrame(Frame):
 
     def onAdd(self):
         """Add queries"""
-        window = Toplevel()
-        QueryWindow(self.qdb, self, window)
+        if self.query_window: # one is already open
+            """
+            Issue here with trying to lift window on re-click; quick perusal online
+            suggests this is different for both mac and windows, and might be
+            complicated on mac - need to look into this later.
+            """
+            self.query_window.lift() # should bring to front?
+        else:
+            if self.algorithm:
+                window = Toplevel()
+                qwindow = QueryWindow(self, window, self.algorithm)
+                self.query_window = qwindow
+            else:
+                messagebox.showwarning('Query Choice Window',
+                        'Please choose an algorithm before choosing queries')
+
+    def query_window_closed(self):
+        """Called from query window before close"""
+        self.query_window = None
 
 class QueryWindow(Frame):
-    def __init__(self, query_db, other_widget, parent=None):
+    def __init__(self, other_widget, parent=None, algorithm=None):
         Frame.__init__(self, parent)
-        self.qdb = query_db
-        self.owidget = other_widget # ref to send back updates
+        self.pack(expand=YES, fill=BOTH)
+        self.qdb = configs['query_db']
+        self.other = other_widget # ref to send back updates
+        # ensure other widget knows it is closed
         self.parent = parent
-        Label(self, text='Available Queries').pack(expand=YES, fill=X, side=TOP)
-        self.notebook = QuerySearchNotebook(query_db, self)
+        self.parent.protocol("WM_DELETE_WINDOW", self.onCancel)
+
+        self.algorithm = algorithm
+        self.label = Label(self, text='Available {} Queries'.format(self.algorithm))
+        self.label.pack(expand=YES, fill=X, side=TOP)
+        self.notebook = QuerySearchNotebook(self, self.algorithm)
+        # toolbar and buttons
         self.toolbar = Frame(self)
         self.toolbar.pack(side=BOTTOM, expand=YES, fill=X)
-        self.pack(expand=YES, fill=BOTH)
-
         self.buttons = [('Submit', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
@@ -182,46 +265,114 @@ class QueryWindow(Frame):
         # now try adding
         if len(to_add) > 0:
             self.owidget.querybox.add_items(to_add)
+        self.other.query_window_closed() # signal back to parent that child is gone
         self.parent.destroy() # either way, close window
 
     def onCancel(self):
         """Quits without adding any queries"""
+        self.other.query_window_closed()
         self.parent.destroy()
 
+    def update(self, algorithm):
+        """
+        Called whenever the chosen algorithm in the main GUI window changes.
+        Forces label update on window and also calls to child widgets to update
+        query list based on the chosen algorithm type.
+        """
+        self.algorithm = algorithm
+        self.label['text'] = 'Available {} Queries'.format(self.algorithm)
+        self.notebook.update(self.algorithm)
+
 class QuerySearchNotebook(ttk.Notebook):
-    def __init__(self, query_db, parent=None):
+    def __init__(self, parent=None, algorithm=None):
         ttk.Notebook.__init__(self, parent)
-        self.qset = QSearchSetViewer(query_db, self)
-        self.qlist = QSearchListViewer(query_db, self)
+        self.qdb = configs['query_db']
+        self.algorithm = algorithm
+        self.qset = QSearchSetViewer(self, self.algorithm)
+        self.qlist = QSearchListViewer(self, self.algorithm)
         self.add(self.qset, text='Query Sets')
         self.add(self.qlist, text='All Queries')
         self.pack(expand=YES, fill=BOTH)
 
+    def update(self, algorithm):
+        """Calls change_algorithm and update on child widgets"""
+        self.algorithm = algorithm
+        for widget in (self.qset,self.qlist):
+            widget.change_algorithm(self.algorithm)
+            widget.update()
+
 class QSearchSetViewer(ttk.Treeview):
-    def __init__(self, query_db, parent=None):
+    def __init__(self, parent=None, algorithm=None):
         ttk.Treeview.__init__(self, parent)
-        self.qdb = query_db
+        self.pack(expand=YES, fill=BOTH)
+        self.algorithm = None
+        self.qtype = None
+        self.qdb = configs['query_db']
+        self.qsdb = configs['query_sets']
+        # set starting algorithm and qtype
+        self.change_algorithm(algorithm)
+        # configure and build tree
         self.config(selectmode='extended') # want multiple selection here
         self.make_tree()
-        self.pack(expand=YES, fill=BOTH)
+
+    def change_algorithm(self, new_algorithm):
+        """Called to change value of algorithm and qtype"""
+        self.algorithm = new_algorithm
+        if self.algorithm == 'BLAST':
+            self.qtype = 'seq'
+        elif self.algorithm == 'HMMer':
+            self.qtype = 'hmm'
+        else:
+            self.qtype = 'msa'
+
+    def update(self):
+        """Clear and redraw tree"""
+        for item in self.get_children():
+            self.delete(item)
+        self.make_tree()
 
     def make_tree(self):
         """Builds a treeview display of sets/queries"""
-        for key in self.qdb.sets.list_query_sets():
-            if key == '_ALL':
-                self.insert('','end',key,text='All queries',tags=('set'))
-            else:
-                self.insert('','end',key,text=key,tags=('set'))
-            for qid in self.qdb.sets.qdict[key]: # iterate over list of qids
-                self.insert(key,'end',qid,text=qid,tags=('query'))
+        counter = util.IDCounter()
+        for set_id in self.qsdb.list_entries():
+            set_obj = self.qsdb[set_id]
+            if set_obj.qtype == self.qtype: # only list sets we care about
+                uniq_s = str(counter.get_new_id())
+                self.insert('','end',uniq_s,text=set_id,tags=('set'))
+                for qid in set_obj.list_entries():
+                    uniq_q = str(counter.get_new_id())
+                    self.insert(uniq_s,'end',uniq_q,text=qid,tags=('query'))
 
 class QSearchListViewer(gui_util.ScrollBoxFrame):
-    def __init__(self, query_db, parent=None):
+    def __init__(self, parent=None, algorithm=None):
+        gui_util.ScrollBoxFrame.__init__(self, parent)
+        self.qdb = configs['query_db']
+        self.algorithm = None
+        self.qtype = None
+        # set starting algorithm and qtype
+        self.change_algorithm(algorithm)
+        # search through query db to add options
+        self.update()
+
+    def change_algorithm(self, new_algorithm):
+        """Called to change value of algorithm and qtype"""
+        self.algorithm = new_algorithm
+        if self.algorithm == 'BLAST':
+            self.qtype = 'seq'
+        elif self.algorithm == 'HMMer':
+            self.qtype = 'hmm'
+        else:
+            self.qtype = 'msa'
+
+    def update(self):
+        """Clear and re-populate listbox"""
+        self.clear()
         to_display = [] # init with queries in db
-        for key in query_db.list_entries():
-            to_display.append([key,'']) # here, '' is 'value' as we don't need the obj
-        gui_util.ScrollBoxFrame.__init__(self, parent, items=to_display)
-        self.qdb = query_db
+        for qid in self.qdb.list_entries():
+            qobj = self.qdb[qid]
+            if qobj.search_type == self.qtype:
+                to_display.append([qid,'']) # here, '' is 'value' as we don't need the obj
+        self.add_items(to_display)
 
 class DatabaseSummaryFrame(Frame):
     def __init__(self, record_db, parent=None, text='Database', items=None):
