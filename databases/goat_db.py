@@ -54,6 +54,7 @@ class GoatDB:
         self._lock = Lock()
 
     def _commit(self):
+        print('commiting changes')
         import transaction
         with self._lock:
             transaction.commit()

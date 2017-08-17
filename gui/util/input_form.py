@@ -100,6 +100,9 @@ class FileValueForm(DefaultValueForm):
             if entry_row.label_text == 'Filepath':
                 entry_row.entry.insert(0,filepath) # update choice in window
 
+    def get(self):
+        return super(FileValueForm,self).get('Filepath')
+
 class DynamicForm(Form):
     def __init__(self, labels=None):
         labels = input('Enter field names: ').split()

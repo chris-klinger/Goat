@@ -26,6 +26,7 @@ class SearchRunner:
         # dbs are global
         self.qdb = configs['query_db']
         self.mqdb = configs['misc_queries']
+        self.sqdb = configs['search_queries']
         self.rdb = configs['record_db']
         self.udb = configs['result_db']
         self.sdb = configs['search_db']
@@ -38,8 +39,10 @@ class SearchRunner:
         """Returns an outpath for a given query and database"""
         out_string = sep.join([query, db, 'out.txt'])
         if self.sobj.output_location: # not None
+            #print(self.sobj.output_location)
             return os.path.join(self.sobj.output_location, out_string)
         else:
+            #print('using default location')
             return os.path.join(tmp_dir, out_string)
 
     def get_result_id(self, search_name, query, db, sep='-'):
@@ -52,17 +55,8 @@ class SearchRunner:
             # First half of code determines how to get qobj
             if self.mode == 'new': # new search from user input
                 qobj = self.qdb[qid] # fetch associated object from db
-            elif self.mode == 'old': # search from previous search
-                # This loop is kind of gross... maybe don't nest objects within search results?
-                # Alternatively, find a more direct way of getting query without so much looping?
-                qsobj = self.qdb.fetch_search(self.fobj.name)
-                for uid in qsobj.list_entries():
-                    #print(uid)
-                    uobj = qsobj.fetch_entry(uid)
-                    for query in uobj.list_entries():
-                        #print(query)
-                        if query == qid:
-                            qobj = uobj.fetch_entry(query)
+            elif self.mode == 'rev': # search from previous search
+                qobj = self.sqdb[qid] # fetch from other query db
             elif self.mode == 'racc': # search for raccs
                 try:
                     qobj = self.qdb[qid] # qobj should already be in the query db
@@ -93,20 +87,22 @@ class SearchRunner:
                     dbf = v.filepath
             elif v.filetype == self.sobj.db_type:
                 dbf = v.filepath # worry about more than one possible file?
-                db_type == self.sobj.db_type
-            self.run_one(qid, db, qobj, dbf, db_type, uniq_out, self.udb, result_id)
+                db_type = self.sobj.db_type
+        self.run_one(qid, db, qobj, dbf, db_type, uniq_out, self.udb, result_id)
 
     def run_one(self, qid, db, qobj, dbf, db_type, outpath, result_db, result_id):
         """Runs each individual search"""
+        # query type can be specified on individual queries or globally on sobj
+        q_type = qobj.alphabet if qobj.alphabet else self.sobj.q_type
         if self.sobj.algorithm == 'blast':
-            if qobj.alphabet == 'protein' and db_type == 'protein':
+            if q_type == 'protein' and db_type == 'protein':
                 blast_search = blast_setup.BLASTp(blast_path, qobj,
                         dbf, outpath)
             else:
                 pass # sort out eventually
             blast_search.run_from_stdin()
         elif self.sobj.algorithm == 'hmmer':
-            if qobj.alphabet == 'protein' and db_type == 'protein':
+            if q_type == 'protein' and db_type == 'protein':
                 hmmer_search = hmmer_setup.ProtHMMer(hmmer_path, qobj,
                         dbf, outpath)
             else:
@@ -128,6 +124,7 @@ class SearchRunner:
         """Parse an individual result object result"""
         # Parse result first
         if robj.algorithm == 'blast':
+            #print("adding result object for BLAST")
             blast_result = NCBIXML.read(open(robj.outpath))
             robj.parsed_result = blast_result
         elif robj.algorithm == 'hmmer':
@@ -137,49 +134,6 @@ class SearchRunner:
         # Set parsed flag and check for object removal
         robj.parsed = True
         if not self.sobj.keep_output: #and robj.parsed:
+            #print("removing output")
             os.remove(robj.outpath)
 
-    def threaded_callback(self, *robjs):
-        """Takes care of doing things with the completed searches"""
-        # remove thread from global first
-        configs['threads'].remove_thread()
-        try:
-            for robj in robjs:
-                rid = robj.name
-                self.sobj.add_result(rid)
-                self.udb[rid] = robj
-            print('parsing output')
-            self.parse()
-        finally: # commit no matter what?
-            # now ensure dbs are updated
-            configs['search_db'].commit()
-            configs['result_db'].commit()
-            # signal to finish searches
-            if self.owidget:
-                self.owidget._cont()
-
-    def racc_callback(self, sobj, *robjs):
-        """Parses output files, adds accs to qobjs, and then removes all db entries"""
-        configs['threads'].remove_thread()
-        try:
-            for robj in robjs:
-                qid = robj.query # actually qid
-                qobj = self.qdb[qid]
-                self.parse_one(robj)
-                self.add_raccs(qobj, robj.parsed_result)
-        finally:
-            # don't want to keep these in the db
-            for rid in self.sobj.results:
-                self.udb.remove_entry(rid)
-            self.sdb.remove_entry(self.sobj.name)
-
-    def add_self_blast(self, qobj, blast_result):
-        """Adds hits to qobj attribute before removal"""
-        lines = []
-        seen = set()
-        for hit in blast_result.descriptions:
-            new_title = search_util.remove_blast_header(hit.title)
-            if not new_title in seen:
-                lines.append([new_title, hit.e])
-                seen.add(new_title)
-        self.all_accs = lines

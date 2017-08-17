@@ -41,7 +41,7 @@ class DatabaseFrame(Frame):
 
     def onSubmit(self):
         """Commits changes to database before closing"""
-        self.db.commit()
+        self.rdb.commit()
         self.onClose()
 
     def onCancel(self):
@@ -221,18 +221,19 @@ class RecordFrame(Frame):
     def onSubmit(self):
         """Adds new or modified record to the database"""
         attrs = self.record_gui.return_attrs()
-        record_id = attrs['record identity'].get()
+        print(attrs)
+        record_id = attrs['record identity']
         remaining = {}
         for k in attrs.keys():
             if not (k == 'record identity'):
-                remaining[k] = attrs[k].get()
+                remaining[k] = attrs[k]
         #if record_id in self.db.keys(): # record is already present
-        if record_id in self.db.list_entries():
+        if record_id in self.rdb.list_entries():
             #self.db.update_record(record_id, **remaining)
-            db_obj = self.db[record_id]
+            db_obj = self.rdb[record_id]
         else:
             db_obj = record_obj.Record(record_id)
-            self.db[record_id] = db_obj
+            self.rdb[record_id] = db_obj
         # either way, update record object with new info
         db_obj.update(**remaining)
         try:
@@ -265,7 +266,7 @@ class RecordGui(ttk.Panedwindow):
 
     def return_attrs(self):
         """Convenience function to fetch attrs"""
-        return self.attr_form.content
+        return self.attr_form.return_attrs()
 
     def return_new_files(self):
         """Convenience function"""
@@ -313,6 +314,15 @@ class AttributeFrame(Frame):
         """Removes a record attribute"""
         window = Toplevel()
         RemovalFrame([row.label_text for row in self.form.row_list],self,window)
+
+    def return_attrs(self):
+        """Returns all attributes"""
+        attr_dict = {}
+        for row in self.form.row_list:
+            label = row.label_text
+            attr_dict[label] = row.entry.get()
+        attr_dict['supergroup'] = self.sgroup.get()
+        return attr_dict
 
 class NewAttrForm(input_form.Form):
     def onSubmit(self):
@@ -383,18 +393,17 @@ class FileFrame(Frame):
                 ('Number of Bases: ' + str(db_obj.num_bases))])
         self.file_panel.update_info(to_display)
 
-    def _add(self,value):
-        """Adds a file to the Combobox
-        Because 'values' is represented as a tuple cannot call methods to
-        modify it in place; instead update internal list and change tuple
-        to represent new contents"""
-        self.values.append(value)
-        self.file_box['values'] = self.values
+    def _add(self, values):
+        """
+        Adds a file to the Combobox; Because 'values' is represented as a tuple
+        cannot call methods to modify it in place; instead update internal list
+        and change tuple to represent new contents
+        """
+        self.file_box.add_items(values)
 
-    def _remove(self,value):
+    def _remove(self, values):
         """Same as _add but removes the file instead"""
-        self.values.remove(value)
-        self.file_box['values'] = self.values
+        self.file_box.remove_items(values)
 
     def onReFile(self):
         """Removes a file from a record"""
@@ -405,7 +414,7 @@ class FileFrame(Frame):
             message = "Are you sure you want to remove {}".format(curfile),
             icon='question', title='Remove File'):
             del self.file_dict[curfile] # remove from the dictionary
-            self._remove(curfile) # remove from list box
+            self._remove((curfile,)) # remove from list box
             # Need to check whether the removed file is new or old
             num_new_files_before = len(self.new_files)
             self.new_files = [l for l in nf if l[0] != curfile] # remove from new_files list
@@ -424,7 +433,7 @@ class FileFrame(Frame):
         ff = record_file.FastaFile(new_file, filepath, filetype)
         ff.update_file()
         self.file_dict[new_file] = ff
-        self._add(new_file) # add to temporary selection
+        self._add((new_file,)) # add to temporary selection
         self.new_files.append([new_file, filepath, filetype]) # for permanent addition later
 
 class NewFileFrame(Frame):
@@ -450,18 +459,18 @@ class NewFileFrame(Frame):
         self.parent.destroy()
 
     def onSubmit(self):
-        try:
-            fname = self.name.get('Filename')
-            fpath = self.cfile.get('Filepath')
-            ftype = self.ftype.get()
-            for val in (fname,fpath,ftype):
-                if val == '':
-                    raise AttributeError
-            self.other.add_file(new_file, filepath, filetype)
-            self.parent.destroy()
-        except(AttributeError):
-            # do not allow submission and warn user if values are blank
-            messagebox.showwarning('Add File Warning', 'Cannot leave blank entries')
+        #try:
+        fname = self.name.get('Filename')
+        fpath = self.cfile.get()
+        ftype = self.ftype.get()
+        for val in (fname,fpath,ftype):
+            if val == '':
+                raise AttributeError
+        self.other.add_file(fname, fpath, ftype)
+        self.parent.destroy()
+        #except(AttributeError):
+        #    # do not allow submission and warn user if values are blank
+        #    messagebox.showwarning('Add File Warning', 'Cannot leave blank entries')
 
 class FilePanel(gui_util.InfoPanel):
     def __init__(self, parent=None):

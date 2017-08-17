@@ -9,14 +9,14 @@ from tkinter import ttk, filedialog, messagebox
 from bin.initialize_goat import configs
 
 from util import util
-from searches import search_obj, search_runner
+from searches import search_obj
 from results import intermediate
 from gui.util import input_form, gui_util
-from databases import sets
+from gui.searches import new_threaded_search
 #from gui.database import database_gui
 
 # temporary, this should be in the settings eventually
-valid_algorithms = ['BLAST','HMMer']
+valid_algorithms = ['blast','hmmer'] # lowercase like in instance attrs - change eventually?
 
 class SearchFrame(Frame):
     def __init__(self, parent=None): #query_db, record_db, search_db, result_db, parent=None):
@@ -48,39 +48,38 @@ class SearchFrame(Frame):
     def onRun(self):
         """Runs the search and populates the necessary files/databases"""
         params = self.search.param_frame
+        sname,location,algorithm,qtype,db_type,ko = params.get_current_values()
+        print(location)
         queries = self.search.query_frame.querybox
         dbs = self.search.db_frame.db_box
-        for row in params.entries.row_list:
-            if row.label_text == 'Name':
-                sname = row.entry.get()
-            elif row.label_text == 'Location':
-                location = row.entry.get()
-        if params.keep_output.checked.get() == 0:
-            ko = False
-        else:
-            ko = True
         sobj = search_obj.Search( # be explicit for clarity here
             name = sname,
-            algorithm = params.algorithm.selected.get(),
-            q_type = params.q_type.selected.get(),
-            db_type = params.db_type.selected.get(),
+            algorithm = algorithm,
+            q_type = qtype,
+            db_type = db_type,
             queries = queries.item_list, # equivalent to all queries
             databases = dbs.item_list, # equivalent to all dbs
             keep_output = ko,
             output_location = location)
-        # store search object in database
-        #self.sdb[sname] = sobj # should eventually make a check that we did actually select something!
-        # now run the search and parse the output
-        #runner = search_runner.SearchRunner(sobj, self.qdb, self.rdb, self.udb)
-        runner = search_runner.SearchRunner(name, sobj, self.qdb, self.rdb, self.udb, self.sdb,
-                threaded=False, gui=self)
-        print("calling threaded runner.run() from forward search")
-        runner.run()
-        # Can destroy once run starts
-        print("calling runner.parse() from forward search")
-        runner.parse()
-        print("calling self.onSaveQuit() from forward search")
+        self.sdb.add_entry(sobj.name, sobj) # add to DB
+        if algorithm == 'blast':
+            window = Toplevel()
+            prog_frame = new_threaded_search.ProgressFrame(
+                sobj, 'new', window, other_widget=self,
+                callback=self.fwd_search_callback)
+            prog_frame.run()
         self.onClose()
+
+    def fwd_search_callback(self):
+        """
+        Run after search completes successfully; only needs to ensure changes
+        are committed; parsing and removal of output files controlled by search
+        runner code and dictated by the search object itself
+        """
+        print("running callback")
+        configs['threads'].remove_thread() # technically should be only if threaded...
+        self.sdb.commit()
+        self.udb.commit()
 
 class SearchGui(ttk.Panedwindow):
     def __init__(self, query_db, record_db, parent=None):
@@ -135,6 +134,18 @@ class ParamFrame(Frame):
         self.other.change_algorithm(new_algorithm)
         self.other.update()
 
+    def get_current_values(self):
+        """
+        Called from main window before a search; returns a tuple containing all of
+        the attributes in the order in which they appear in the window (top-down)
+        """
+        return (self.entries.get('Name'), #name
+                self.entries.get('Location'), # location
+                self.algorithm.get(), # algorithm
+                self.q_type.get(), # query type
+                self.db_type.get(), # db type
+                self.keep_output.button_checked()) # whether to keep output
+
 class QuerySummaryFrame(Frame):
     def __init__(self, parent=None, text='Queries', items=None):
         Frame.__init__(self, parent)
@@ -180,6 +191,7 @@ class QuerySummaryFrame(Frame):
         Re-populates the window from internal dict based on algorithm selection.
         Note, may not put any values.
         """
+        self.querybox.clear()
         if self.algorithm in self.qdict.keys():
             self.querybox.add_items(self.qdict[self.algorithm])
 
@@ -328,9 +340,9 @@ class QSearchSetViewer(ttk.Treeview):
     def change_algorithm(self, new_algorithm):
         """Called to change value of algorithm and qtype"""
         self.algorithm = new_algorithm
-        if self.algorithm == 'BLAST':
+        if self.algorithm == 'blast':
             self.qtype = 'seq'
-        elif self.algorithm == 'HMMer':
+        elif self.algorithm == 'hmmer':
             self.qtype = 'hmm'
         else:
             self.qtype = 'msa'
@@ -378,9 +390,9 @@ class QSearchListViewer(gui_util.ScrollBoxFrame):
     def change_algorithm(self, new_algorithm):
         """Called to change value of algorithm and qtype"""
         self.algorithm = new_algorithm
-        if self.algorithm == 'BLAST':
+        if self.algorithm == 'blast':
             self.qtype = 'seq'
-        elif self.algorithm == 'HMMer':
+        elif self.algorithm == 'hmmer':
             self.qtype = 'hmm'
         else:
             self.qtype = 'msa'
@@ -558,19 +570,12 @@ class ReverseSearchFrame(Frame):
         """Close without actually running the search"""
         self.parent.destroy()
 
-    def onSaveQuit(self):
-        """Commits changes to dbs after a search"""
-        for db in self._dbs:
-            db.commit()
-        self.onClose()
-
     def onRun(self):
         """Runs the search and populates the necessary files/databases"""
         fwd_search = self.search_name.selected.get()
         fwd_sobj = self.sdb[fwd_search]
         # Next function call adds search result queries to query database
-        intermediate.Search2Queries(
-            fwd_sobj, self.udb, self.qdb, self.rdb).populate_search_queries()
+        intermediate.Search2Queries(fwd_sobj).populate_search_queries()
         # Now get all needed queries
         queries = []
         for uid in fwd_sobj.list_results(): # result ids
@@ -579,40 +584,34 @@ class ReverseSearchFrame(Frame):
             for qid in uobj.list_queries():
                 #print('\t' + str(qid))
                 queries.append(qid)
-        params = self.params
-        for row in params.entries.row_list:
-            if row.label_text == 'Name':
-                sname = row.entry.get()
-            elif row.label_text == 'Location':
-                location = row.entry.get()
-        if params.keep_output.checked.get() == 0:
-            ko = False
-        else:
-            ko = True
+        sname,location,algorithm,ko = self.params.get_current_values()
         rev_sobj = search_obj.Search( # be explicit for clarity here
             name = sname,
-            algorithm = params.algorithm.selected.get(),
+            algorithm = algorithm,
             q_type = fwd_sobj.db_type, # queries here are the same as the forward db type
             db_type = fwd_sobj.q_type, # conversely, db is the original query type
             queries = queries, # equivalent to all queries
             databases = [], # reverse search, so target_db is on each query!
             keep_output = ko,
             output_location = location)
-        # store search object in database
-        #self.sdb[sname] = rev_sobj # should eventually make a check that we did actually select something!
-        # now run the search and parse the output
-        #runner = search_runner.SearchRunner(rev_sobj, self.qdb, self.rdb, self.udb,
-                #mode='old', fwd_search=fwd_sobj)
-        #print("calling runner.run() from reverse search")
-        #runner.run()
-        runner = search_runner.SearchRunner(name, rev_sobj, self.qdb, self.rdb, self.udb, self.sdb,
-                mode='old', fwd_search=fwd_sobj, threaded=True, gui=self)
-        print("calling threaded runner.run() from reverse search")
-        runner.run()
-        #print("calling runner.parse() from reverse search")
-        #runner.parse()
-        #print("calling self.onSaveQuit() from reverse search")
-        #self.onSaveQuit()
+        self.sdb.add_entry(rev_sobj.name, rev_sobj) # add to DB
+        if algorithm == 'blast':
+            window = Toplevel()
+            prog_frame = new_threaded_search.ProgressFrame(
+                rev_sobj, 'rev', window, other_widget=self,
+                callback=self.rev_search_callback)
+            prog_frame.run()
+        self.onClose()
+
+    def rev_search_callback(self):
+        """
+        Run after search completes successfully; only needs to ensure changes
+        are committed; parsing and removal of output files controlled by search
+        runner code and dictated by the search object itself
+        """
+        configs['threads'].remove_thread() # technically should be only if threaded...
+        self.sdb.commit()
+        self.udb.commit()
 
 class ReverseParamFrame(Frame):
     """Like ParamFrame, but without query and db type options"""
@@ -620,9 +619,11 @@ class ReverseParamFrame(Frame):
         Frame.__init__(self, parent)
         self.pack()
         self.curdir = os.getcwd()
-        self.entries = input_form.DefaultValueForm([('Name',''), ('Location',self.curdir)],
-                self, [('Choose Directory', self.onChoose, {'side':RIGHT})])
-        self.algorithm = gui_util.RadioBoxFrame(self, [('Blast','blast'), ('HMMer','hmmer')],
+        self.entries = input_form.DefaultValueForm([
+                ('Name',''), ('Location',self.curdir)], self,
+                [('Choose Directory', self.onChoose, {'side':RIGHT})])
+        self.algorithm = gui_util.RadioBoxFrame(self,
+                [('Blast','blast'), ('HMMer','hmmer')],
                 labeltext='Algorithm')
         self.keep_output = gui_util.CheckBoxFrame(self, 'Keep output files?')
 
@@ -634,3 +635,12 @@ class ReverseParamFrame(Frame):
                 entry_row.entry.delete(0,'end') # delete previous entry first
                 entry_row.entry.insert(0,dirpath)
 
+    def get_current_values(self):
+        """
+        Called from main window before a search; returns a tuple containing all of
+        the attributes in the order in which they appear in the window (top-down)
+        """
+        return (self.entries.get('Name'), #name
+                self.entries.get('Location'), # location
+                self.algorithm.get(), # algorithm
+                self.keep_output.button_checked()) # whether to keep output

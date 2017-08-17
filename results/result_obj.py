@@ -25,7 +25,7 @@ class Result(Persistent):
         """Convenience function"""
         return list(self.int_queries)
 
-    def add_query(self, qid):
+    def add_int_query(self, qid):
         """Adds qid to internal list; ensures object is marked for update"""
         self.int_queries.append(qid)
         self._p_changed = 1

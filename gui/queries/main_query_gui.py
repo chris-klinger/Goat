@@ -555,7 +555,7 @@ class AddSeqFileFrame(Frame):
 
     def onSubmit(self):
         """Get queries from file and add them to the columns widget"""
-        queries = query_file.FastaFile(self.sel_file.content['Filename'].get(),
+        queries = query_file.FastaFile(self.sel_file.get(),
             self.alphabet.selected.get(), self.record.selected.get(),
             self.add_raccs.selected.get()).get_queries()
         self.other.add_queries(queries)

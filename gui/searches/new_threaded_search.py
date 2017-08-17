@@ -64,8 +64,10 @@ class ProgressFrame(Frame):
             self.queue = queue.Queue()
             if self.mode == 'racc':
                 threading.Thread(target=self._run_racc_blast).start()
-            if self.mode == 'fwd_blast':
-                threading.Thread(target=self._run_fwd_blast).start()
+            elif self.mode == 'new':
+                threading.Thread(target=self._run_fwd_search).start()
+            elif self.mode == 'rev':
+                threading.Thread(target=self._run_rev_search).start()
             # always start the thread consumer function
             self.thread_consumer()
         else:
@@ -80,9 +82,23 @@ class ProgressFrame(Frame):
         if self.threaded:
             self.queue.put('Done') # signal completion
 
-    def _run_fwd_blast(self):
+    def _run_fwd_search(self):
         """Function called by the thread, runs each BLAST search"""
-        pass
+        runner = new_search_runner.SearchRunner(self.start_sobj, mode='new',
+                other_widget=self)
+        runner.run()
+        runner.parse()
+        if self.threaded:
+            self.queue.put('Done')
+
+    def _run_rev_search(self):
+        """Calls Search Runner for reverse searches"""
+        runner = new_search_runner.SearchRunner(self.start_sobj, mode='rev',
+                other_widget=self)
+        runner.run()
+        runner.parse()
+        if self.threaded:
+            self.queue.put('Done')
 
     def thread_consumer(self):
         """Checks the queue regularly for new results"""
@@ -106,10 +122,14 @@ class ProgressFrame(Frame):
 
     def increment_search_count(self):
         """Increments counter after each search finishes"""
+        #print("incrementing counter")
         self.num_finished += 1
 
     def determine_max_searches(self, sobj, mode):
         """Determines the number of searches to run"""
         if mode == 'racc':
             return len(sobj.queries)
-
+        elif mode == 'new':
+            return (len(sobj.queries) * len(sobj.databases))
+        elif mode == 'rev':
+            return len(sobj.queries)

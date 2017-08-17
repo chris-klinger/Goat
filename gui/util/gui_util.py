@@ -50,6 +50,15 @@ class ComboBoxFrame(Frame):
             new_values.append(item)
         self.combobox['values'] = new_values
 
+    def remove_items(self, items):
+        """Convenience function"""
+        values = self.combobox['values']
+        new_values = []
+        for item in values:
+            if not item in items:
+                new_values.append(item)
+        self.combobox['values'] = new_values
+
 class RadioBoxFrame(Frame):
     def __init__(self, parent=None, choices=None, labeltext=None):
         Frame.__init__(self, parent)
@@ -77,7 +86,7 @@ class CheckBoxFrame(Frame):
         self.checkbutton = ttk.Checkbutton(self, text='Yes',
                         variable=self.checked).pack()
 
-    def checked(self):
+    def button_checked(self):
         """Returns True if checked, False otherwise"""
         if self.checked.get() == 1:
             return True

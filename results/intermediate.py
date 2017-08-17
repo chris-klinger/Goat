@@ -5,16 +5,20 @@ results, including creating new or reverse searches from them.
 
 from Bio import SeqIO
 
+from bin.initialize_goat import configs
+
 from searches import search_util
-from queries import query_obj, search_query
+from queries import query_objects
 
 class Search2Queries:
-    def __init__(self, search_obj, result_db, query_db, record_db, mode='reverse'):
+    def __init__(self, search_obj, mode='reverse'):
         self.sobj = search_obj
-        self.udb = result_db
-        self.qdb = query_db
-        self.rdb = record_db
         self.mode = mode
+        # get dbs from global variables
+        self.sqdb = configs['search_queries']
+        self.udb = configs['result_db']
+        self.qdb = configs['query_db']
+        self.rdb = configs['record_db']
 
     def get_result_objs(self):
         """Goes through and fetches the robj for each rid"""
@@ -24,19 +28,18 @@ class Search2Queries:
 
     def populate_search_queries(self):
         """Populates queries for each result"""
-        search_result = search_query.SearchResult()
         for robj in self.get_result_objs():
-            r2q = Result2Queries(robj, self.qdb, self.rdb, self.mode)
-            rqobj = r2q.get_queries() # returns a sub-object populated with queries for each result
-            search_result.add_entry(robj.name, rqobj)
-        self.qdb.add_search(self.sobj.name, search_result)
+            r2q = Result2Queries(robj, self.mode)
+            r2q.add_queries() # adds queries to search queries db
 
 class Result2Queries:
-    def __init__(self, result_obj, query_db, record_db, mode='reverse'):
+    def __init__(self, result_obj, mode='reverse'):
         self.uobj = result_obj
-        self.qdb = query_db
-        self.rdb = record_db
         self.smode = mode
+        # dbs are global
+        self.qdb = configs['query_db']
+        self.rdb = configs['record_db']
+        self.sqdb = configs['search_queries']
 
     def get_titles(self):
         """Return a list of hit names"""
@@ -56,19 +59,24 @@ class Result2Queries:
             if v.filetype == self.uobj.db_type:
                 return v.filepath
 
-    def get_queries(self):
-        """Adds new query objects; these are present both as a list of qids in
-        the result_obj and as query objects in the search node of the QueryDB"""
-        result = search_query.SearchResult() # same object for searches and search results
+    def add_queries(self):
+        """
+        Adds new query objects; these are present both as a list of qids in
+        the result_obj and as query objects in the search_queries DB
+        """
         if self.smode == 'reverse':
             qobj = self.qdb[self.uobj.query]
             tdb = qobj.record # target defined if reverse search
         else:
             tdb = None
         for record in self.get_titles():
-            qobj = query_obj.Query(record.id, record.name,
-                record.description, sequence=record.seq, record=self.uobj.database,
-                target_db=tdb, original_query=self.uobj.query)
-            self.uobj.add_query(record.id)
-            result.add_entry(record.id, qobj)
-        return result
+            qobj = query_objects.SeqQuery(
+                    identity=record.id,
+                    name=record.name,
+                    description=record.description,
+                    sequence=record.seq,
+                    record=self.uobj.database,
+                    target_db=tdb,
+                    original_query=self.uobj.query)
+            self.uobj.add_int_query(record.id)
+            self.sqdb.add_entry(record.id, qobj) # adds the qobj to the int database
