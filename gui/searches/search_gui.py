@@ -49,7 +49,7 @@ class SearchFrame(Frame):
         """Runs the search and populates the necessary files/databases"""
         params = self.search.param_frame
         sname,location,algorithm,qtype,db_type,ko = params.get_current_values()
-        print(location)
+        #print(location)
         queries = self.search.query_frame.querybox
         dbs = self.search.db_frame.db_box
         sobj = search_obj.Search( # be explicit for clarity here
@@ -147,13 +147,14 @@ class ParamFrame(Frame):
                 self.keep_output.button_checked()) # whether to keep output
 
 class QuerySummaryFrame(Frame):
-    def __init__(self, parent=None, text='Queries', items=None):
+    def __init__(self, parent=None, text='Queries', items=None,
+            algorithm=None):
         Frame.__init__(self, parent)
         self.qdb = configs['query_db']
         self.querybox = gui_util.ScrollBoxFrame(self, text, items)
         # instance variables for use with listbox and query chooser
         self.prev_algorithm = None
-        self.algorithm = None
+        self.algorithm = algorithm
         self.qdict = {}
         self.query_window = None # store an instance variable
         # toolbar and buttons
@@ -584,6 +585,7 @@ class ReverseSearchFrame(Frame):
             for qid in uobj.list_queries():
                 #print('\t' + str(qid))
                 queries.append(qid)
+        print(queries)
         sname,location,algorithm,ko = self.params.get_current_values()
         rev_sobj = search_obj.Search( # be explicit for clarity here
             name = sname,
@@ -644,3 +646,7 @@ class ReverseParamFrame(Frame):
                 self.entries.get('Location'), # location
                 self.algorithm.get(), # algorithm
                 self.keep_output.button_checked()) # whether to keep output
+
+##############################################
+# Code for running reciprocal BLAST searches #
+##############################################
