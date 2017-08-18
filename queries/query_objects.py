@@ -35,7 +35,7 @@ class SeqQuery(Query):
         self.racc_mode = racc_mode
         self.search_ran = False # to begin
         self.all_accs = []
-        self.raccs = [] # redundant_accessions
+        self.raccs = [] # redundant_accessions; description/evalue tuple
 
     def add_all_accs(self, hit_list):
         """Adds results after self-BLAST"""

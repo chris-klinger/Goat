@@ -6,13 +6,14 @@ depending on this choice to fill in different forms for relevant information.
 
 import os
 from tkinter import *
-from tkinter import ttk
+from tkinter import ttk, messagebox, filedialog
 
 from bin.initialize_goat import configs
 
 from gui.util import gui_util, input_form
 from summaries import summary_obj, summarizer, summary_writer
 from util import util
+from util.sequences import seqs_from_summary
 
 ################################
 # Code for summarizing results #
@@ -149,7 +150,7 @@ class TwoSearchFrame(Frame):
     def onClose(self):
         """Close dbs and destroy window"""
         for db in self._dbs:
-            db.close()
+            db.commit()
         self.parent.destroy()
 
     def onCancel(self):
@@ -182,8 +183,7 @@ class TwoSearchFrame(Frame):
                 fwd_sobj.db_type, fwd_sobj.algorithm, fwd_evalue,
                 fwd_max_hits, rev_search, rev_sobj.q_type, rev_sobj.db_type,
                 rev_sobj.algorithm, rev_evalue, rev_max_hits, next_evalue)
-        summer = summarizer.SearchSummarizer(sum_obj,
-                self.qdb, self.sdb, self.udb)
+        summer = summarizer.SearchSummarizer(sum_obj)
         summer.summarize_two_results()
         #print()
         #print()
@@ -512,3 +512,122 @@ class TableFrame(Frame):
         writer = summary_writer.ResultSummaryWriter(sobj, fobj)
         writer.write()
         self.onClose()
+
+#############################################
+# Code for getting sequences from summaries #
+#############################################
+
+class SummarySeqFrame(Frame):
+    def __init__(self, parent):
+        Frame.__init__(self, parent)
+        self.pack(expand=YES, fill=BOTH)
+        self.parent = parent
+        self.mdb = configs['summary_db']
+        self.params = SummSeqParamFrame(self)
+        # toolbar and buttons
+        self.toolbar = Frame(self)
+        self.toolbar.pack(side=BOTTOM, expand=YES, fill=X)
+        self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
+                        ('Cancel', self.onCancel, {'side':RIGHT})]
+        for (label, action, where) in self.buttons:
+            Button(self.toolbar, text=label, command=action).pack(where)
+
+    def onCancel(self):
+        self.parent.destroy()
+
+    def onSubmit(self):
+        """Calls to get sequences and closes window"""
+        name,location,summ_name,hit_types,modes,extras = self.params.get_params()
+        sum_writer = seqs_from_summary.SummarySeqWriter(
+                basename = name,
+                summary_obj = self.mdb[summ_name],
+                target_dir = location,
+                hit_type = hit_types,
+                mode = modes,
+                extra_groups = extras)
+        sum_writer.run()
+        self.parent.destroy()
+
+class SummSeqParamFrame(Frame):
+    def __init__(self, parent):
+        Frame.__init__(self, parent)
+        self.pack()
+        self.mdb = configs['summary_db']
+        self.curdir = os.getcwd()
+        self.entries = input_form.DefaultValueForm(
+                [('Basename',''),('Location',self.curdir)],
+                self,
+                [('Choose Directory', self.onChoose, {'side':RIGHT})])
+        self.summ_name = gui_util.ComboBoxFrame(self,
+                choices = list(self.mdb.list_entries()),
+                labeltext='Summary to use')
+        self.hit_type = gui_util.ComboBoxFrame(self,
+            choices = ['All','Positive only','Tentative only','Unlikely only',\
+            'Positive and Tentative','Positive and Unlikely','Tentative and Unlikely'],
+            labeltext='Type of sequences to write')
+        self.mode = gui_util.ComboBoxFrame(self,
+            choices = ['Both','Combine all DBs','By DB only'],
+            labeltext='Main grouping of sequences')
+        self.extra_groups = gui_util.CheckBoxGroup(self,
+            labels = ['By Supergroup','By Strain'],
+            labeltext='Additional groups of sequences')
+
+    def onChoose(self):
+        """Pops up a directory choice"""
+        dirpath = filedialog.askdirectory()
+        for entry_row in self.entries.row_list:
+            if entry_row.label_text == 'Location':
+                entry_row.entry.delete(0,'end') # clear first
+                entry_row.entry.insert(0,dirpath)
+
+    def get_params(self):
+        """Returns three lists of params to parent widget"""
+        hit_types = []
+        modes = []
+        extras = []
+        try:
+            name = self.entries.get('Basename')
+            location = self.entries.get('Location')
+            sname = self.summ_name.get()
+            for val in (name,location,sname):
+                if val == '' or val is None:
+                    raise ValueError
+            # deal with hit_types first
+            hit_type = self.hit_type.get()
+            if hit_type == '': # nothing was selected
+                raise ValueError
+            if hit_type == 'All':
+                hit_types.extend(['positive','tentative','unlikely'])
+            elif hit_type == 'Positive only':
+                hit_types.append('positive')
+            elif hit_type == 'Tentative only':
+                hit_types.append('tentative')
+            elif hit_type == 'Unlikely only':
+                hit_types.append('unlikely')
+            elif hit_type == 'Positive and Tentative':
+                hit_types.extend(['positive','tentative'])
+            elif hit_type == 'Positive and Unlikely':
+                hit_types.extend(['positive','unlikely'])
+            elif hit_type == 'Tentative and Unlikely':
+                hit_types.extend(['tentative','unlikely'])
+            # now deal with mode
+            mode = self.mode.get()
+            if mode == '': # nothing was selected
+                raise ValueError
+            if mode == 'Both':
+                modes.extend(['all','db'])
+            elif mode == 'Combine all DBs':
+                modes.append('all')
+            elif mode == 'By DB only':
+                modes.append('db')
+            # finally, deal with any extras
+            extra_dict = self.extra_groups.get()
+            for k,v in extra_dict.items():
+                if k == 'By Supergroup' and v:
+                    extras.append('supergroup')
+                elif k == 'By Strain' and v:
+                    extras.append('strain')
+            return name,location,sname,hit_types,modes,extras
+        except ValueError:
+            messagebox.showwarning('Summary Seq Window',
+                    'Missing one or more required options')

@@ -153,7 +153,8 @@ class RootFrame(Frame):
 
     def summary_sequences(self):
         """Obtain sequence file(s) from a summary"""
-        pass
+        window = Toplevel()
+        summary_gui.SummarySeqFrame(window)
 
     def summary_graphic(self):
         """Obtain a graphical view of a summary"""

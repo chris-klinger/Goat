@@ -8,17 +8,20 @@ depending on which search modes/cutoff criteria are used.
 
 import math
 
+from bin.initialize_goat import configs
+
 from summaries import summary_obj
 from searches import search_util
 
 class SearchSummarizer:
-    def __init__(self, summary, query_db, search_db, result_db): #, fwd_search,
+    def __init__(self, summary): #, fwd_search,
             #rev_search=None, fwd_max_hits=None, rev_max_hits=None,
             #fwd_evalue_cutoff=None, rev_evalue_cutoff=None, next_hit_evalue_cutoff=None):
         self.summary = summary # actual summary object
-        self.qdb = query_db
-        self.sdb = search_db
-        self.udb = result_db
+        self.qdb = configs['query_db']
+        self.sdb = configs['search_db']
+        self.udb = configs['result_db']
+        self.sqdb = configs['search_queries']
         self.fwd_search = summary.fwd #fwd_search # name only
         self.rev_search = summary.rev #rev_search # name only
         self.fwd_max_hits = summary.fwd_max_hits #fwd_max_hits
@@ -84,7 +87,7 @@ class SearchSummarizer:
         based on multiple evalue criteria."""
         #print('SEARCH: ' + self.fwd_search)
         fwd_sobj = self.sdb[self.fwd_search]
-        qsobj = self.qdb.fetch_search(self.fwd_search) # Query search object for intermediate results
+        #qsobj = self.qdb.fetch_search(self.fwd_search) # Query search object for intermediate results
         rev_sobj = self.sdb[self.rev_search]
         #print(str(rev_sobj.databases))
         for fwd_uid in fwd_sobj.list_results():
@@ -93,7 +96,7 @@ class SearchSummarizer:
             #print('forward result queries are : ' + str(fwd_uobj.int_queries))
             fwd_qid = fwd_uobj.query
             #print('forward query id: ' + fwd_qid)
-            db = fwd_uobj.database
+            fwd_db = fwd_uobj.database
             fwd_qobj = self.qdb[fwd_qid]
             #print(fwd_qobj.identity)
             #print(fwd_qobj.redundant_accs)
@@ -103,28 +106,28 @@ class SearchSummarizer:
                 query_sum = summary_obj.QuerySummary(fwd_qid)
             #for rev_uid in rev_sobj.list_results():
             for acc in fwd_uobj.int_queries:
-                for db in rev_sobj.databases:
-                    rev_uid = rev_sobj.name + '-' + acc + '-' + db
+                for rev_db in rev_sobj.databases:
+                    rev_uid = rev_sobj.name + '-' + acc + '-' + rev_db
                     #print('reverse result id: ' + rev_uid)
                     rev_uobj = self.udb[rev_uid]
                     #print('reverse result name is: ' + rev_uobj.name)
                     #print(rev_uobj.int_queries)
-                    rev_qobj = qsobj.fetch_query_obj(rev_uobj.query)
+                    rev_qobj = self.sqdb[rev_uobj.query]
                     # confirms rev search object stems from original query
                     if (fwd_qobj.identity == rev_qobj.original_query) and \
                         (rev_uid.split('-')[1] in fwd_uobj.int_queries):
                         #print('reverse result originates from original query')
-                        self.add_reverse_result_summary(fwd_qobj, fwd_uobj, rev_uobj, db, query_sum)
+                        self.add_reverse_result_summary(fwd_qobj, fwd_uobj, rev_uobj, fwd_db, query_sum)
                         #print()
                 #print()
             self.summary.add_query_summary(fwd_qid, query_sum)
 
-    def add_reverse_result_summary(self, fwd_qobj, fwd_uobj, rev_uobj, db, query_sum):
+    def add_reverse_result_summary(self, fwd_qobj, fwd_uobj, rev_uobj, fwd_db, query_sum):
         """Returns hits for reverse search"""
-        if query_sum.check_db_summary(db):
-            result_sum = query_sum.fetch_db_summary(db)
+        if query_sum.check_db_summary(fwd_db):
+            result_sum = query_sum.fetch_db_summary(fwd_db)
         else:
-            result_sum = summary_obj.ResultSummary(db)
+            result_sum = summary_obj.ResultSummary(fwd_db)
         if not (self.check_parsed_output(fwd_uobj)) or (self.check_parsed_output(rev_uobj)):
             pass # freak out
         fwd_hits = fwd_uobj.parsed_result.descriptions
@@ -138,7 +141,7 @@ class SearchSummarizer:
                 result_sum.determined('tentative')
             elif len(result_sum.unlikely_hit_list) > 0:
                 result_sum.determined('unlikely')
-        query_sum.add_db_summary(db, result_sum)
+        query_sum.add_db_summary(fwd_db, result_sum)
 
     def add_reverse_hits(self, fwd_qobj, fwd_hit_list, rev_uobj, result_sum):
         """Returns hits for reverse search"""
@@ -196,7 +199,7 @@ class SearchSummarizer:
                 rev_hit.e = 1e-179 # this is purportedly the threshold at which E-values default to 0
             if (self.rev_evalue is None) or (rev_hit.e < self.rev_evalue):
                 new_title = search_util.remove_blast_header(rev_hit.title).split(' ',1)[0]
-                if (new_title == fwd_qobj.identity) or (self.check_raccs(new_title,fwd_qobj.redundant_accs)):
+                if (new_title == fwd_qobj.identity) or (self.check_raccs(new_title,fwd_qobj.raccs)):
                     #print("match")
                     if first_negative_hit: # this is the first positive hit
                         #print('checking an unlikely hit')
@@ -208,6 +211,7 @@ class SearchSummarizer:
                         if (self.next_evalue is None) or e_diff < self.next_evalue:
                             #print('hit is unlikely')
                             status = 'unlikely'
+                            first_positive_hit = rev_hit
                         else:
                             #print('hit is negative')
                             status = 'negative'
@@ -240,6 +244,9 @@ class SearchSummarizer:
                         break # status determined
             #print()
             rev_hit_index += 1
+        #print()
+        #print(status)
+        #print(first_positive_hit)
         return (status, first_positive_hit, first_negative_hit, e_diff)
 
     def check_parsed_output(self, uobj):
@@ -255,7 +262,7 @@ class SearchSummarizer:
 
     def check_raccs(self, acc, racc_list):
         """Returns true if accession in list of redundant accessions"""
-        for racc in racc_list:
+        for racc,evalue in racc_list:
             if acc in racc:
                 return True
         return False

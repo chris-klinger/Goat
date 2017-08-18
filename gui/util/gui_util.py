@@ -77,14 +77,22 @@ class RadioBoxFrame(Frame):
         return self.selected.get()
 
 class CheckBoxFrame(Frame):
-    def __init__(self, parent=None, labeltext=None):
+    def __init__(self, parent=None, labeltext=None, place=None,
+            button_text='Yes'):
         Frame.__init__(self, parent)
-        self.pack()
+        if place == 'LEFT':
+            self.pack(side=LEFT)
+        else:
+            self.pack()
         if labeltext:
             Label(self, text=labeltext).pack()
         self.checked = IntVar()
-        self.checkbutton = ttk.Checkbutton(self, text='Yes',
-                        variable=self.checked).pack()
+        if button_text:
+            self.checkbutton = ttk.Checkbutton(self, text=button_text,
+                    variable=self.checked).pack()
+        else:
+            self.checkbutton = ttk.Checkbutton(self,
+                    variable=self.checked).pack()
 
     def button_checked(self):
         """Returns True if checked, False otherwise"""
@@ -92,6 +100,37 @@ class CheckBoxFrame(Frame):
             return True
         else:
             return False
+
+class CheckBoxGroup(Frame):
+    def __init__(self, parent, labels=None, labeltext=None):
+        """
+        Utility widget to group numerous check boxes together into a single frame
+        arrayed across like a RadioBox. Main difference is that any number of
+        these may be checked.
+        """
+        Frame.__init__(self, parent)
+        self.pack()
+        if labeltext:
+            Label(self, text=labeltext).pack()
+        self.buttons = []
+        self.button_frame = Frame(self)
+        self.button_frame.pack()
+        if labels:
+            self.add_buttons(labels)
+
+    def add_buttons(self, labels):
+        """Adds buttons"""
+        for label in labels:
+            button = CheckBoxFrame(self.button_frame, labeltext=label,
+                    place='LEFT', button_text=None)
+            self.buttons.append([label,button]) # keep track of instance variables
+
+    def get(self):
+        """Returns a dict with button label/checked pairs"""
+        bdict = {}
+        for label,button in self.buttons:
+            bdict[label] = button.button_checked() # True/False
+        return bdict
 
 class ScrollBoxFrame(Frame):
     def __init__(self, parent=None, text=None, items=None,
