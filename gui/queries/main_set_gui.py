@@ -215,7 +215,7 @@ class SeqTree(SetTree):
             to_display.extend([
                 ('Sequence Query Set Information' + '\n'),
                 ('Set Name: ' + set_obj.name),
-                ('Number of Queries: ' + str(set_obj.num_queries))])
+                ('Number of Queries: ' + str(set_obj.num_entries))])
         else: # item_type == 'query'
             qobj = self.qdb[item['text']]
             to_display.extend([
@@ -246,7 +246,7 @@ class HMMTree(SetTree):
             to_display.extend([
                 ('HMM Query Set Information' + '\n'),
                 ('Set Name: ' + set_obj.name),
-                ('Number of Queries: ' + str(set_obj.num_queries))])
+                ('Number of Queries: ' + str(set_obj.num_entries))])
         else: # item_type == 'query'
             qobj = self.qdb[item['text']]
             to_display.extend([

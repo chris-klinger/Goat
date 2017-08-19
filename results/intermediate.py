@@ -29,11 +29,12 @@ class Search2Queries:
     def populate_search_queries(self):
         """Populates queries for each result"""
         for robj in self.get_result_objs():
-            r2q = Result2Queries(robj, self.mode)
+            r2q = Result2Queries(self.sobj, robj, self.mode)
             r2q.add_queries() # adds queries to search queries db
 
 class Result2Queries:
-    def __init__(self, result_obj, mode='reverse'):
+    def __init__(self, search_obj, result_obj, mode='reverse'):
+        self.sobj = search_obj
         self.uobj = result_obj
         self.smode = mode
         # dbs are global
@@ -45,8 +46,13 @@ class Result2Queries:
         """Return a list of hit names"""
         desired_seqs = []
         seq_records = []
-        desired_seqs.extend([search_util.remove_blast_header(hit.title)
-            for hit in self.uobj.parsed_result.descriptions])
+        if self.sobj.algorithm == 'blast':
+            desired_seqs.extend([search_util.remove_blast_header(hit.title)
+                for hit in self.uobj.parsed_result.descriptions])
+        elif self.sobj.algorithm == 'hmmer':
+            desired_seqs.extend([(hit.target_name + ' ' + hit.desc) # should recapitulate description
+                for hit in self.uobj.parsed_result.descriptions])
+        #print(desired_seqs)
         for record in SeqIO.parse(self.get_record_file(), "fasta"):
             if record.description in desired_seqs:
                 seq_records.append(record)
@@ -66,7 +72,18 @@ class Result2Queries:
         """
         if self.smode == 'reverse':
             qobj = self.qdb[self.uobj.query]
-            tdb = qobj.record # target defined if reverse search
+            if self.sobj.algorithm == 'blast':
+                tdb = qobj.record # target defined if reverse search
+            elif self.sobj.algorithm == 'hmmer':
+                if self.sobj.rev_record:
+                    tdb = self.sobj.rev_record # defined by user
+                else: # if not, take the first viable option
+                    mqdb = configs['misc_queries']
+                    for qid in qobj.associated_queries:
+                        assoc_qobj = mqdb[qid]
+                        if assoc_qobj.record:
+                            tdb = assoc_qobj.record
+                            break
         else:
             tdb = None
         for record in self.get_titles():

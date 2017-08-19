@@ -601,11 +601,11 @@ class AddHMMFileFrame(Frame):
     def onSubmit(self):
         """Get queries from file and add them to the columns widget"""
         queries = []
-        name,hmm_obj = query_file.HMMFile(self.sel_file.content['Filename'].get(),
+        name,hmm_obj = query_file.HMMFile(self.sel_file.get(),
             self.alphabet.selected.get()).get_query()
-        hmm_obj.msa_file = self.msa_file.content['Filename'].get()
+        hmm_obj.msa_file = self.msa_file.get()
         hmm_obj.add_msa()
-        hmm_obj.seq_file = self.seq_file.content['Filename'].get()
+        hmm_obj.seq_file = self.seq_file.get()
         hmm_obj.add_seqs()
         if len(self.queries) > 0:
             for qid in self.queries:

@@ -7,6 +7,8 @@ representative manner.
 
 from persistent import Persistent
 
+from bin.initialize_goat import configs
+
 class Query(Persistent):
     """Generic Query class"""
     def __init__(self, identity, name=None, description=None, location=None,
@@ -59,6 +61,7 @@ class HMMQuery(Query):
         Query.__init__(self, *args, **kwargs)
         self.search_type = 'hmm'
         self.associated_queries = [] # associated qids only!
+        self.records = [] # record options for rBLAST
         self.seq_file = None
         if self.seq_file:
             self.add_seqs()
@@ -71,6 +74,12 @@ class HMMQuery(Query):
     def add_query(self, qid):
         """Convenience function"""
         self.associated_queries.append(qid)
+        try:
+            mqdb = configs['misc_queries']
+            qobj = mqdb[qid]
+            self.records.append(qobj.record)
+        except:
+            pass
 
     def add_seqs(self):
         """Adds sequences from supplied file"""
