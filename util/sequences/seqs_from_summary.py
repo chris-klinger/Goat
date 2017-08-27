@@ -21,15 +21,18 @@ from Bio import SeqIO
 
 from bin.initialize_goat import configs
 
+from util import util
+
 class SummarySeqWriter:
     def __init__(self, basename, summary_obj, target_dir, hit_type,
-            mode, extra_groups=None):
+            mode, extra_groups=None, add_query_to_file=False):
         self.bname = str(basename)
         self.mobj = summary_obj
         self.target_dir = target_dir
         self.htype = hit_type
         self.mode = mode
         self.extra = extra_groups
+        self.add_query = add_query_to_file
         # dbs are global objects
         self.rdb = configs['record_db']
         # internal data structure to track record objects
@@ -133,8 +136,25 @@ class SummarySeqWriter:
                         else:
                             o = open(tfile,'w')
                         try:
+                            if self.add_query:
+                                self.write_query_seq(query, o)
                             for record in to_write:
                                 SeqIO.write(record, o, "fasta")
                         finally:
                             o.close() # always close file
+
+    def write_query_seq(self, qid, outfile):
+        """
+        Write the query sequence associated with a given query ID to the output
+        file as the first entry. Does not discriminate by hit_type (but could
+        in the future?). Useful for intermediate alignments.
+        """
+        qdb = configs['query_db']
+        qobj = qdb[qid]
+        if qobj.search_type == 'seq':
+            outfile.write('>' + str(qobj.description) + '\n')
+            for chunk in util.split_input(qobj.sequence):
+                outfile.write(chunk + '\n')
+        elif qobj.search_type == 'hmm':
+            pass # do we want to write for other query types?
 
