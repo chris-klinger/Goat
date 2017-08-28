@@ -44,7 +44,8 @@ class AnalysisPicker(Frame):
             HMMerBLASTFrame(window)
             self.parent.destroy()
         elif choice == 'Full BLAST and HMMer':
-            pass
+            window = Toplevel()
+            FullBLASTHMMerFrame(window)
         elif choice == 'Iterative HMMer':
             pass
         else: # nothing chosen
@@ -276,6 +277,125 @@ class HMMerBLASTParams(Frame):
                 self.rev_record.get(),
                 self.q_type.get(),
                 self.db_type.get(),
+                self.fwd_ko.button_checked(),
+                self.rev_ko.button_checked())
+
+#############################################################
+# Code for setting up and running full BLAST/HMMer analysis #
+#############################################################
+
+class FullBLASTHMMerFrame(Frame):
+    def __init__(self, parent):
+        Frame.__init__(self, parent)
+        self.parent = parent
+        self.search = FullBLASTGui(self)
+        self.sdb = configs['search_db']
+        self.pack(expand=YES, fill=BOTH)
+        self.toolbar = Frame(self)
+        self.toolbar.pack(side=BOTTOM, expand=YES, fill=X)
+
+        self.buttons = [('Run', self.onRun, {'side':RIGHT}),
+                        ('Cancel', self.onCancel, {'side':RIGHT})]
+        for (label, action, where) in self.buttons:
+            Button(self.toolbar, text=label, command=action).pack(where)
+
+    def onRun(self):
+        """
+        Sets up and runs a complete BLAST analysis. Summarizes the results based
+        on e-value cutoff criteria and then uses all positive hits together with
+        the original queries to create a new sequence file from which to build
+        an MSA and subsequent HMM. This HMM is then used to search the query dbs
+        again, and finally, a reverse BLAST is performed.
+        """
+        params = self.search.param_frame
+        (fwd_name,rev_name,location,fwd_qtype,\
+            fwd_dbtype,fwd_ko,rev_ko) = params.get_current_values()
+        queries = self.search.query_frame.querybox
+        dbs = self.search.db_frame.db_box
+        # gather intermediate information into a dict
+        keys = ('fwd_name','rev_name','summ_name','fwd_evalue','rev_evalue',
+                'next_evalue','fwd_hits','rev_hits','fwd_ko','rev_ko')
+        values = self.search.intermediate_frame.get_current_values()
+        int_args = {}
+        for k,v in zip(keys,values):
+            int_args[k] = v
+        fwd_sobj = search_obj.Search( # be explicit for clarity here
+            name = fwd_name,
+            algorithm = 'blast',
+            q_type = fwd_qtype,
+            db_type = fwd_dbtype,
+            queries = queries.item_list, # equivalent to all queries
+            databases = dbs.item_list, # equivalent to all dbs
+            keep_output = fwd_ko,
+            output_location = location,
+            rev_record = rev_record)
+        # store fwd search object in database
+        # should eventually make a check that we did actually select something!
+        self.sdb.add_entry(fwd_name, fwd_sobj)
+        # now run the search and parse the output
+        window = Toplevel()
+        prog_frame = new_threaded_search.ProgressFrame(
+                fwd_sobj, 'full_blast_hmmer', window, other_widget=self,
+                callback=self.hmmer_blast_callback,
+                rev_search_name=rev_name, keep_rev_output=rev_ko,
+                **int_args) # use these as kwargs
+        prog_frame.run()
+        # Can destroy once run starts
+        self.onCancel()
+
+    def onCancel(self):
+        """Close without doing anything"""
+        self.parent.destroy()
+
+    def full_blast_hmmer_callback(self):
+        """Commit changes in multiple databases"""
+        configs['threads'].remove_thread()
+        configs['search_queries'].commit()
+        configs['search_db'].commit()
+        configs['result_db'].commit()
+
+class FullBLASTGui(ttk.Panedwindow):
+    def __init__(self, parent=None):
+        ttk.Panedwindow.__init__(self, parent, orient=HORIZONTAL)
+        self.parent = parent
+        self.param_frame = ReciprocalBLASTParams(self)
+        self.intermediate_frame = IntBLASTHMMerParams(self)
+        self.query_frame = search_gui.QuerySummaryFrame(self,
+                algorithm='blast') # must set algorithm or interface blocks
+        self.db_frame = search_gui.DatabaseSummaryFrame(self)
+        self.add(self.param_frame)
+        self.add(self.query_frame)
+        self.add(self.db_frame)
+        self.pack(expand=YES, fill=BOTH)
+
+class IntBLASTHMMerParams(Frame):
+    def __init__(self, parent):
+        Frame.__init__(self, parent)
+        self.parent = parent
+        self.pack()
+        Label(self, text='Intermediate HMMer/BLAST search',
+                anchor='center', justify='center')
+        self.entries = input_form.DefaultValueForm(
+                [('HMMer search name',''),('Reverse search name','')],self)
+        self.cutoffs = input_form.DefaultValueform(
+                [('Summary name',''),('Minimum forward evalue',''),
+                ('Minimum reverse evalue',''),('Next hit evalue',''),
+                ('Max forward hits',''),('Max reverse hits','')], self)
+        self.fwd_ko = gui_util.CheckBoxFrame(
+                self, 'Keep forward search output files?')
+        self.rev_ko = gui_util.CheckBoxFrame(
+                self, 'Keep reverse search output files?')
+
+    def get_current_values(self):
+        """Returns all current values"""
+        return (self.entries.get('HMMer search name'),
+                self.entries.get('Reverse search name'),
+                self.cutoffs.get('Summary name'),
+                self.cutoffs.get('Minimum forward evalue'),
+                self.cutoffs.get('Minimum reverse evalue'),
+                self.cutoffs.get('Next hit evalue'),
+                self.cutoffs.get('Max forward hits'),
+                self.cutoffs.get('Max reverse hits'),
                 self.fwd_ko.button_checked(),
                 self.rev_ko.button_checked())
 

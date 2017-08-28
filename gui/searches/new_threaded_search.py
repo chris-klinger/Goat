@@ -6,23 +6,25 @@ provide a better way to feed back the callback from a search to the main GUI
 regardless of whether or not threading is used.
 """
 
-import threading, queue
+import threading, queue, os
 
 from tkinter import *
 from tkinter import ttk
 
 from bin.initialize_goat import configs
 
-from searches import new_search_runner, search_obj
+from searches import new_search_runner, search_obj, hmmer_build
 from results import intermediate
+from summaries import summary_obj, summarizer
 
 blast_path = '/usr/local/ncbi/blast/bin'
+hmmer_path = '/Users/cklinger/src/hmmer-3.1b1-macosx-intel/src'
 tmp_dir = '/Users/cklinger/git/Goat/tmp'
 
 class ProgressFrame(Frame):
     def __init__(self, starting_sobj, mode, parent=None, threaded=True,
             other_widget=None, callback=None, callback_args=None,
-            rev_search_name=None, keep_rev_output=None):
+            rev_search_name=None, keep_rev_output=None, **kwargs):
         Frame.__init__(self, parent)
         self.pack(expand=YES, fill=BOTH)
         self.start_sobj = starting_sobj
@@ -34,6 +36,10 @@ class ProgressFrame(Frame):
         # Some attributes are only applicable for analyses
         self.rev_name = rev_search_name
         self.rev_ko = keep_rev_output
+        if kwargs:
+            self.kwargs = {}
+            for k,v in kwargs.items():
+                self.kwargs[k] = v # store for later access
         # Some search modes require access to dbs
         self.udb = configs['result_db']
         self.sdb = configs['search_db']
@@ -80,6 +86,8 @@ class ProgressFrame(Frame):
                 threading.Thread(target=self._run_recip_blast).start()
             elif self.mode == 'hmmer_blast':
                 threading.Thread(target=self._run_hmmer_blast).start()
+            elif self.mode == 'full_blast_hmmer':
+                threading.Thread(target=self._run_full_blast_hmmer).start()
             # always start the thread consumer function
             self.thread_consumer()
         else:
@@ -228,10 +236,94 @@ class ProgressFrame(Frame):
         self.num_todo = self.determine_max_searches(rev_sobj, 'rev')
         self.p['maximum'] = self.num_todo
         self.num_finished = 1
-        fwd_runner = new_search_runner.SearchRunner(rev_sobj, mode='rev',
+        rev_runner = new_search_runner.SearchRunner(rev_sobj, mode='rev',
+                other_widget=self)
+        rev_runner.run()
+        rev_runner.parse()
+        if self.threaded:
+            self.queue.put('Done')
+
+    def _run_full_blast_hmmer(self):
+        """
+        Populates and runs a SearchRunner object for the forward BLAST, runs a
+        subsequent reverse BLAST, summarizes based on user input and then uses
+        all "positive" hits to build a new MSA and subsequent HMM before running
+        another forward HMMer/reverse BLAST combo.
+        """
+        # Run the forward search, parse output
+        fwd_runner = new_search_runner.SearchRunner(self.start_sobj, mode='new',
                 other_widget=self)
         fwd_runner.run()
         fwd_runner.parse()
+        # Populate DBs with intermediate search queries
+        intermediate.Search2Queries(self.start_sobj).populate_search_queries()
+        # Get the relvant qids
+        rev_queries = []
+        for uid in self.start_sobj.list_results():
+            uobj = self.udb[uid]
+            for qid in uobj.list_queries():
+                rev_queries.append(qid)
+        rev_sobj = search_obj.Search(
+                name = self.rev_name,
+                algorithm = 'blast',
+                q_type = self.start_sobj.db_type,
+                db_type = self.start_sobj.q_type,
+                queries = rev_queries,
+                databases = [], # rev search
+                keep_output = self.rev_ko,
+                output_location = self.start_sobj.output_location)
+        self.sdb.add_entry(rev_sobj.name, rev_sobj)
+        # Reset label and counter
+        self.search_info['text'] = 'Performing reverse search using blast'
+        self.num_todo = self.determine_max_searches(rev_sobj, 'rev')
+        self.p['maximum'] = self.num_todo
+        self.num_finished = 1
+        # Run reverse search, parse output
+        rev_runner = new_search_runner.SearchRunner(rev_sobj, mode='rev',
+                other_widget=self)
+        rev_runner.run()
+        rev_runner.parse()
+        # Summarize fwd and rev search using cutoff criteria
+        int_summary = summary_obj.Summary(
+            fwd_search = self.start_sobj.name,
+            fwd_qtype = self.start_sobj.q_type,
+            fwd_dbtype = self.start_sobj.db_type,
+            fwd_algorithm = self.start_sobj.fwd_algorithm,
+            fwd_evalue_cutoff = self.kwargs['fwd_evalue'],
+            fwd_max_hits = self.kwargs['fwd_hits'],
+            rev_search = self.rev_name,
+            rev_qtype = self.start_sobj.db_type,
+            rev_dbtype = self.start_sobj.q_type,
+            rev_algorithm = 'blast',
+            rev_evalue_cutoff = self.kwargs['rev_evalue'],
+            rev_max_hits = self.kwargs['rev_hits'],
+            next_hit_evalue_cutoff = self.kwargs['next_evalue'])
+        int_summarizer = summarizer.SearchSummarizer(int_summary)
+        int_summarizer.summarize_two_results()
+        # Get sequences from summarized results - positive only!
+        seq_writer = seqs_from_summary.SummarySeqWriter(
+                basename = self.start_sobj.name,
+                summary_obj = int_summary,
+                target_dir = self.start_sobj.output_location,
+                hit_type = 'positive',
+                mode = 'all',
+                add_query_to_file = True) # last one adds the query object seq as well
+        seq_writer.run()
+        # Now create MSAs and HMMs for all files
+        msa_files = []
+        for filename in seq_writer.files:
+            msa_file = filename.rsplit(',',1)[0] + '.mfa'
+            msa_files.append(msa_file)
+            mafft.MAFFT(filename,msa_file).run('file')
+        hmm_files = []
+        for msafile in msa_files:
+            hmm_file = msafile.rsplit(',',1)[0] + '.hmm'
+            hmm_files.append(hmm_file)
+            hmmer_build.HMMBuild(
+                    hmmbuild_path = hmmer_path,
+                    msa_filepath = msafile,
+                    hmmout = hmm_file).run_from_file()
+        # Create new intermediate queries for forward HMMer search and run
         if self.threaded:
             self.queue.put('Done')
 

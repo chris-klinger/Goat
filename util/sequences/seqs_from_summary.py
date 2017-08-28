@@ -37,6 +37,8 @@ class SummarySeqWriter:
         self.rdb = configs['record_db']
         # internal data structure to track record objects
         self.hdict = {}
+        # internal data structure for file names; used in some contexts
+        self.files = []
 
     def run(self):
         """Calls all internal functions"""
@@ -135,6 +137,7 @@ class SummarySeqWriter:
                             o = open(tfile,'a')
                         else:
                             o = open(tfile,'w')
+                            self.files.append(tfile) # first time, add to list
                         try:
                             if self.add_query:
                                 self.write_query_seq(query, o)
