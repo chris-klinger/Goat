@@ -37,6 +37,7 @@ class MAFFT:
         try:
             # cannot use shell redirects, instead set stdout as target file
             o_file = open(self.msa_file,'wb')
+            print("Running mafft for {}".format(self.seq_file))
             subprocess.run(args, stdout=o_file)
         except(Exception):
             print("Could not run MAFFT for {}".format(

@@ -7,7 +7,8 @@ from persistent import Persistent
 class Result(Persistent):
     """Generic Result class"""
     def __init__(self, name, algorithm, q_type, db_type, query, database,
-            search_name, outpath=None, original_query=None):
+            search_name, outpath=None, original_query=None, spec_qid=None,
+            spec_record=None):
         self.name = name
         self.algorithm = algorithm
         self.q_type = q_type # e.g. protein
@@ -20,6 +21,9 @@ class Result(Persistent):
         self.parsed_result = None # parsed output file object
         self.parsed = False # not parsed to begin with
         self.int_queries = [] # possibly empty; populated on first subsequent search
+        # Specify qid/record for rBLAST and summary; HMMer results only
+        self.spec_qid = spec_qid
+        self.spec_record = spec_record
 
     def list_queries(self):
         """Convenience function"""

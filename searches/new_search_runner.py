@@ -111,6 +111,15 @@ class SearchRunner:
         robj = result_obj.Result(result_id, self.sobj.algorithm,
                 self.sobj.q_type, self.sobj.db_type, qid, db, self.sobj.name,
                 outpath)
+        # Add specified query/record info, if available
+        try:
+            if qobj.spec_qid:
+                robj.spec_qid = qobj.spec_qid
+            if qobj.spec_record:
+                robj.spec_record = qobj.spec_record
+        except(AttributeError):
+            pass # not applicable
+        # Add result object to search object and result database
         self.sobj.add_result(result_id) # function ensures persistent object updated
         self.udb[result_id] = robj # add to result db
 

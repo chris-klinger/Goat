@@ -93,6 +93,13 @@ class SearchSummarizer:
         for fwd_uid in fwd_sobj.list_results():
             #print('forward result id: ' + fwd_uid)
             fwd_uobj = self.udb[fwd_uid]
+            # Check to see if algorithm is 'hmmer'; if so, check to see if spec_qid
+            spec_qid = None
+            if fwd_uobj.algorithm == 'hmmer':
+                if not fwd_uobj.spec_qid:
+                    pass # need to warn user and skip result eventually
+                else:
+                    spec_qid = fwd_uobj.spec_qid
             #print('forward result queries are : ' + str(fwd_uobj.int_queries))
             fwd_qid = fwd_uobj.query
             #print('forward query id: ' + fwd_qid)
@@ -117,12 +124,14 @@ class SearchSummarizer:
                     if (fwd_qobj.identity == rev_qobj.original_query) and \
                         (rev_uid.split('-')[1] in fwd_uobj.int_queries):
                         #print('reverse result originates from original query')
-                        self.add_reverse_result_summary(fwd_qobj, fwd_uobj, rev_uobj, fwd_db, query_sum)
+                        self.add_reverse_result_summary(fwd_qobj, fwd_uobj, rev_uobj,
+                                fwd_db, query_sum, spec_qid)
                         #print()
                 #print()
             self.summary.add_query_summary(fwd_qid, query_sum)
 
-    def add_reverse_result_summary(self, fwd_qobj, fwd_uobj, rev_uobj, fwd_db, query_sum):
+    def add_reverse_result_summary(self, fwd_qobj, fwd_uobj, rev_uobj, fwd_db,
+            query_sum, spec_qid):
         """Returns hits for reverse search"""
         if query_sum.check_db_summary(fwd_db):
             result_sum = query_sum.fetch_db_summary(fwd_db)
@@ -131,7 +140,7 @@ class SearchSummarizer:
         if not (self.check_parsed_output(fwd_uobj)) or (self.check_parsed_output(rev_uobj)):
             pass # freak out
         fwd_hits = fwd_uobj.parsed_result.descriptions
-        self.add_reverse_hits(fwd_qobj, fwd_hits, rev_uobj, result_sum)
+        self.add_reverse_hits(fwd_qobj, fwd_hits, rev_uobj, result_sum, spec_qid)
         if not result_sum.determined():
             #print(result_sum.db)
             #print(result_sum.positive_hit_list)
@@ -143,7 +152,7 @@ class SearchSummarizer:
                 result_sum.determined('unlikely')
         query_sum.add_db_summary(fwd_db, result_sum)
 
-    def add_reverse_hits(self, fwd_qobj, fwd_hit_list, rev_uobj, result_sum):
+    def add_reverse_hits(self, fwd_qobj, fwd_hit_list, rev_uobj, result_sum, spec_qid):
         """Returns hits for reverse search"""
         #print(fwd_qobj.identity)
         if not self.fwd_max_hits:
@@ -162,7 +171,8 @@ class SearchSummarizer:
                     #print("matching reverse object for " + rev_uobj.name)
                     #print(fwd_hit.title)
                     rev_hits = rev_uobj.parsed_result.descriptions
-                    status,pos_hit,neg_hit,e_diff = self.reverse_hit_status(fwd_qobj, rev_hits)
+                    status,pos_hit,neg_hit,e_diff = self.reverse_hit_status(
+                            fwd_qobj, rev_hits, spec_qid)
                     #print(status)
                     #print(pos_hit)
                     #print(neg_hit)
@@ -178,7 +188,7 @@ class SearchSummarizer:
                         result_sum.add_hit(fwd_id, hit, status)
             fwd_hit_index += 1
 
-    def reverse_hit_status(self, fwd_qobj, rev_hit_list):
+    def reverse_hit_status(self, fwd_qobj, rev_hit_list, spec_qid):
         """Determines the status of a forward hit based on reverse search"""
         status = 'negative'
         first_positive_hit = None
@@ -199,7 +209,17 @@ class SearchSummarizer:
                 rev_hit.e = 1e-179 # this is purportedly the threshold at which E-values default to 0
             if (self.rev_evalue is None) or (rev_hit.e < self.rev_evalue):
                 new_title = search_util.remove_blast_header(rev_hit.title).split(' ',1)[0]
-                if (new_title == fwd_qobj.identity) or (self.check_raccs(new_title,fwd_qobj.raccs)):
+                match = False
+                if fwd_qobj.search_type == 'seq':
+                    if (new_title == fwd_qobj.identity) or\
+                        (self.check_raccs(new_title,fwd_qobj.raccs)):
+                        match = True
+                elif fwd_qobj.search_type == 'hmm':
+                    assoc_qobj = self.mqdb[spec_qid] # use spec_qid from result; not qobj
+                    if (new_title == spec_qid) or\
+                        (self.check_raccs(new_title,assoc_qobj.raccs)):
+                        match = True
+                if match:
                     #print("match")
                     if first_negative_hit: # this is the first positive hit
                         #print('checking an unlikely hit')

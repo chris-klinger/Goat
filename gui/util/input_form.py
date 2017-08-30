@@ -36,7 +36,7 @@ class Form:
 
 class DefaultValueForm(Frame):
     """Like Form, but each entry has a default value"""
-    def __init__(self, entry_list, parent=None, buttons=None, entrysize=40):
+    def __init__(self, entry_list, parent=None, buttons=None, entrysize=25):
         Frame.__init__(self, parent)
         self.labelsize = max(len(x) for x,y in entry_list) + 2
         self.entrysize = entrysize

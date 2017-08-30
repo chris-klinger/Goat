@@ -36,7 +36,7 @@ class Result2Queries:
     def __init__(self, search_obj, result_obj, mode='reverse'):
         self.sobj = search_obj
         self.uobj = result_obj
-        self.smode = mode
+        self.mode = mode
         # dbs are global
         self.qdb = configs['query_db']
         self.rdb = configs['record_db']
@@ -70,22 +70,18 @@ class Result2Queries:
         Adds new query objects; these are present both as a list of qids in
         the result_obj and as query objects in the search_queries DB
         """
-        if self.smode == 'reverse':
-            qobj = self.qdb[self.uobj.query]
+        o_qid = None # original query
+        tdb = None # target db
+        if self.mode == 'reverse':
             if self.sobj.algorithm == 'blast':
+                o_qid = self.uobj.query
+                qobj = self.qdb[self.uobj.query]
                 tdb = qobj.record # target defined if reverse search
             elif self.sobj.algorithm == 'hmmer':
-                if self.sobj.rev_record:
-                    tdb = self.sobj.rev_record # defined by user
-                else: # if not, take the first viable option
-                    mqdb = configs['misc_queries']
-                    for qid in qobj.associated_queries:
-                        assoc_qobj = mqdb[qid]
-                        if assoc_qobj.record:
-                            tdb = assoc_qobj.record
-                            break
-        else:
-            tdb = None
+                if self.uobj.spec_qid:
+                    o_qid = self.uobj.spec_qid
+                if self.uobj.spec_record:
+                    tdb = self.uobj.spec_record
         for record in self.get_titles():
             qobj = query_objects.SeqQuery(
                     identity=record.id,
@@ -94,6 +90,6 @@ class Result2Queries:
                     sequence=record.seq,
                     record=self.uobj.database,
                     target_db=tdb,
-                    original_query=self.uobj.query)
+                    original_query=o_qid)
             self.uobj.add_int_query(record.id)
             self.sqdb.add_entry(record.id, qobj) # adds the qobj to the int database

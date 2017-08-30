@@ -46,6 +46,7 @@ class AnalysisPicker(Frame):
         elif choice == 'Full BLAST and HMMer':
             window = Toplevel()
             FullBLASTHMMerFrame(window)
+            self.parent.destroy()
         elif choice == 'Iterative HMMer':
             pass
         else: # nothing chosen
@@ -133,7 +134,7 @@ class ReciprocalBLASTParams(Frame):
         self.pack()
         self.curdir = os.getcwd()
         self.entries = input_form.DefaultValueForm(
-                [('Forward search name',''),('Reverse search name',''), ('Location',self.curdir)],
+                [('Forward search name','fwd1'),('Reverse search name','rev1'), ('Location',self.curdir)],
                 self, [('Choose Directory', self.onChoose, {'side':RIGHT})])
         self.q_type = gui_util.RadioBoxFrame(self,
                 [('Protein','protein'), ('Genomic','genomic')],
@@ -327,8 +328,7 @@ class FullBLASTHMMerFrame(Frame):
             queries = queries.item_list, # equivalent to all queries
             databases = dbs.item_list, # equivalent to all dbs
             keep_output = fwd_ko,
-            output_location = location,
-            rev_record = rev_record)
+            output_location = location)
         # store fwd search object in database
         # should eventually make a check that we did actually select something!
         self.sdb.add_entry(fwd_name, fwd_sobj)
@@ -336,7 +336,7 @@ class FullBLASTHMMerFrame(Frame):
         window = Toplevel()
         prog_frame = new_threaded_search.ProgressFrame(
                 fwd_sobj, 'full_blast_hmmer', window, other_widget=self,
-                callback=self.hmmer_blast_callback,
+                callback=self.full_blast_hmmer_callback,
                 rev_search_name=rev_name, keep_rev_output=rev_ko,
                 **int_args) # use these as kwargs
         prog_frame.run()
@@ -353,6 +353,7 @@ class FullBLASTHMMerFrame(Frame):
         configs['search_queries'].commit()
         configs['search_db'].commit()
         configs['result_db'].commit()
+        configs['summary_db'].commit()
 
 class FullBLASTGui(ttk.Panedwindow):
     def __init__(self, parent=None):
@@ -364,6 +365,7 @@ class FullBLASTGui(ttk.Panedwindow):
                 algorithm='blast') # must set algorithm or interface blocks
         self.db_frame = search_gui.DatabaseSummaryFrame(self)
         self.add(self.param_frame)
+        self.add(self.intermediate_frame)
         self.add(self.query_frame)
         self.add(self.db_frame)
         self.pack(expand=YES, fill=BOTH)
@@ -374,13 +376,13 @@ class IntBLASTHMMerParams(Frame):
         self.parent = parent
         self.pack()
         Label(self, text='Intermediate HMMer/BLAST search',
-                anchor='center', justify='center')
+                anchor='center', justify='center').pack()
         self.entries = input_form.DefaultValueForm(
-                [('HMMer search name',''),('Reverse search name','')],self)
-        self.cutoffs = input_form.DefaultValueform(
-                [('Summary name',''),('Minimum forward evalue',''),
-                ('Minimum reverse evalue',''),('Next hit evalue',''),
-                ('Max forward hits',''),('Max reverse hits','')], self)
+                [('HMMer search name','hmmer'),('Reverse search name','rev2')],self)
+        self.cutoffs = input_form.DefaultValueForm(
+                [('Summary name','fullsumm'),('Minimum forward evalue','0.05'),
+                ('Minimum reverse evalue','0.05'),('Next hit evalue','0.05'),
+                ('Max forward hits','10'),('Max reverse hits','10')], self)
         self.fwd_ko = gui_util.CheckBoxFrame(
                 self, 'Keep forward search output files?')
         self.rev_ko = gui_util.CheckBoxFrame(
@@ -391,11 +393,11 @@ class IntBLASTHMMerParams(Frame):
         return (self.entries.get('HMMer search name'),
                 self.entries.get('Reverse search name'),
                 self.cutoffs.get('Summary name'),
-                self.cutoffs.get('Minimum forward evalue'),
-                self.cutoffs.get('Minimum reverse evalue'),
-                self.cutoffs.get('Next hit evalue'),
-                self.cutoffs.get('Max forward hits'),
-                self.cutoffs.get('Max reverse hits'),
+                float(self.cutoffs.get('Minimum forward evalue')),
+                float(self.cutoffs.get('Minimum reverse evalue')),
+                float(self.cutoffs.get('Next hit evalue')),
+                int(self.cutoffs.get('Max forward hits')),
+                int(self.cutoffs.get('Max reverse hits')),
                 self.fwd_ko.button_checked(),
                 self.rev_ko.button_checked())
 

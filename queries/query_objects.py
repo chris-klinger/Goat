@@ -62,6 +62,10 @@ class HMMQuery(Query):
         self.search_type = 'hmm'
         self.associated_queries = [] # associated qids only!
         self.records = [] # record options for rBLAST
+        # Specified query/record, if applicable
+        self.spec_qid = None
+        self.spec_record = None
+        # Associated files, if applicable
         self.seq_file = None
         if self.seq_file:
             self.add_seqs()
@@ -71,12 +75,15 @@ class HMMQuery(Query):
         self.num_seqs = 0
         self.num_determined = False
 
-    def add_query(self, qid):
+    def add_query(self, qid, qobj=None):
         """Convenience function"""
         self.associated_queries.append(qid)
         try:
             mqdb = configs['misc_queries']
-            qobj = mqdb[qid]
+            if qobj:
+                mqdb[qid] = qobj # not present already, add to db
+            else:
+                qobj = mqdb[qid] # present already, fetch to get record
             self.records.append(qobj.record)
         except:
             pass

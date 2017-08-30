@@ -38,7 +38,7 @@ class SummarySeqWriter:
         # internal data structure to track record objects
         self.hdict = {}
         # internal data structure for file names; used in some contexts
-        self.files = []
+        self.file_dict = {}
 
     def run(self):
         """Calls all internal functions"""
@@ -137,7 +137,7 @@ class SummarySeqWriter:
                             o = open(tfile,'a')
                         else:
                             o = open(tfile,'w')
-                            self.files.append(tfile) # first time, add to list
+                            self.file_dict[query] = tfile # first time, add
                         try:
                             if self.add_query:
                                 self.write_query_seq(query, o)
@@ -156,7 +156,8 @@ class SummarySeqWriter:
         qobj = qdb[qid]
         if qobj.search_type == 'seq':
             outfile.write('>' + str(qobj.description) + '\n')
-            for chunk in util.split_input(qobj.sequence):
+            for chunk in util.split_input(str(qobj.sequence)):
+                print(chunk)
                 outfile.write(chunk + '\n')
         elif qobj.search_type == 'hmm':
             pass # do we want to write for other query types?
