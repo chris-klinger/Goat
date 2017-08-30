@@ -22,6 +22,7 @@ class SearchSummarizer:
         self.sdb = configs['search_db']
         self.udb = configs['result_db']
         self.sqdb = configs['search_queries']
+        self.mqdb = configs['misc_queries']
         self.fwd_search = summary.fwd #fwd_search # name only
         self.rev_search = summary.rev #rev_search # name only
         self.fwd_max_hits = summary.fwd_max_hits #fwd_max_hits
@@ -113,15 +114,17 @@ class SearchSummarizer:
                 query_sum = summary_obj.QuerySummary(fwd_qid)
             #for rev_uid in rev_sobj.list_results():
             for acc in fwd_uobj.int_queries:
+                #print("forward acc is " + str(acc))
                 for rev_db in rev_sobj.databases:
                     rev_uid = rev_sobj.name + '-' + acc + '-' + rev_db
                     #print('reverse result id: ' + rev_uid)
                     rev_uobj = self.udb[rev_uid]
                     #print('reverse result name is: ' + rev_uobj.name)
-                    #print(rev_uobj.int_queries)
                     rev_qobj = self.sqdb[rev_uobj.query]
+                    #print(rev_qobj.original_query)
                     # confirms rev search object stems from original query
-                    if (fwd_qobj.identity == rev_qobj.original_query) and \
+                    if ((fwd_qobj.identity == rev_qobj.original_query) or\
+                        (rev_qobj.original_query in fwd_qobj.identity)) and \
                         (rev_uid.split('-')[1] in fwd_uobj.int_queries):
                         #print('reverse result originates from original query')
                         self.add_reverse_result_summary(fwd_qobj, fwd_uobj, rev_uobj,

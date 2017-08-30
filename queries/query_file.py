@@ -66,7 +66,7 @@ class HMMFile(QueryFile):
         """Just returns a single query object"""
         hmm_obj = self.parse()
         import re
-        m = re.search(r'NAME\s+(\w+)', hmm_obj) # matches NAME field of header
+        m = re.search(r'NAME\s+([\w.]+)', hmm_obj) # matches NAME field of header
         name = m.group(1)
         qobj = query_objects.HMMQuery(
                     identity=name,

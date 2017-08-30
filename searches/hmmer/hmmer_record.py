@@ -21,21 +21,22 @@ class ProtDescr:
         self.target_accession = target_accession
         self.query_name = query_name
         self.query_accession = query_accession
-        self.evalue = evalue
-        self.score = score
-        self.bias = bias
-        self.dom_evalue = dom_evalue
-        self.dom_score = dom_score
-        self.dom_bias = dom_bias
-        self.exp = exp
-        self.reg = reg
-        self.clu = clu
-        self.ov = ov
-        self.env = env
-        self.dom = dom
-        self.rep = rep
-        self.inc = inc
+        self.e = float(evalue)
+        self.score = float(score)
+        self.bias = float(bias)
+        self.dom_evalue = float(dom_evalue)
+        self.dom_score = float(dom_score)
+        self.dom_bias = float(dom_bias)
+        self.exp = float(exp)
+        self.reg = int(reg)
+        self.clu = int(clu)
+        self.ov = int(ov)
+        self.env = int(env)
+        self.dom = int(dom)
+        self.rep = int(rep)
+        self.inc = int(inc)
         self.desc = desc
+        self.title = (self.target_name + ' ' + self.desc) # stay consistent with BLAST
 
 class NuclDescr:
     def __init__(self, target_name, target_accession, query_name, query_accession,
