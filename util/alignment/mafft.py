@@ -5,6 +5,9 @@ single class that handles both files and stdin.
 
 import os,subprocess
 
+# Should eventually go through settings
+tmp_dir = '/Users/cklinger/git/Goat/tmp'
+
 class MAFFT:
     def __init__(self, seq_file, msa_file=None, *kwargs):
         self.seq_file = seq_file
@@ -37,8 +40,10 @@ class MAFFT:
         try:
             # cannot use shell redirects, instead set stdout as target file
             o_file = open(self.msa_file,'wb')
+            e_file = open(self.get_tmp_output(),'wb')
             print("Running mafft for {}".format(self.seq_file))
-            subprocess.run(args, stdout=o_file)
+            subprocess.run(args, stdout=o_file,
+                    stderr=e_file) # prevents clogging terminal window
         except(Exception):
             print("Could not run MAFFT for {}".format(
                 self.seq_file))
@@ -46,3 +51,13 @@ class MAFFT:
     def run_from_stdin(self):
         """Calls mafft using sequences from input stream"""
         pass # to be implemented
+
+    def get_tmp_output(self):
+        """
+        Unsure, but trying - eventual idea would be to redirect stderr to a log
+        file but for now just want to dump it somewhere that is not the terminal
+        window (annoying for debugging purposes).
+        """
+        if not self.msa_file:
+            self.msa_file = self.seq_file.rsplit('.',1)[0] + '.mfa'
+        return os.path.join(tmp_dir,self.msa_file)

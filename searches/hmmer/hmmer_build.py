@@ -6,6 +6,9 @@ input.
 
 import os, subprocess
 
+# Should eventually go through settings
+tmp_dir = '/Users/cklinger/git/Goat/tmp'
+
 class HMMBuild():
     """
     A class to interface between Goat and the underlying HMMer program. Since
@@ -40,6 +43,17 @@ class HMMBuild():
                     args.append(str(v))
         args.extend([self.hmm_out, self.msapath])
         try:
-            subprocess.run(args)
+            e_file = open(self.get_tmp_output(),'wb')
+            # Redirect both stdout and stderr to a file
+            # Args send stdout to self.hmm_out but the process stdout still
+            # Prints to the terminal despite this
+            subprocess.run(args, stdout=e_file,
+                    stderr=e_file)
         except(Exception): # all but sys exits
             pass # freak out
+
+    def get_tmp_output(self):
+        """File for stderr redirection"""
+        basename = os.path.basename(self.msapath)
+        outname = basename + '.txt'
+        return os.path.join(tmp_dir,outname)

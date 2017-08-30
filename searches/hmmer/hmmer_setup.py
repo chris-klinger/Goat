@@ -7,6 +7,9 @@ programs within the HMMer package.
 
 import os, subprocess
 
+# Should eventually go through settings
+tmp_dir = '/Users/cklinger/git/Goat/tmp'
+
 class HMMer():
     """
     Parental HMMer class from which all (HMM-based and non-iterative) HMMer
@@ -46,7 +49,9 @@ class HMMer():
                     args.append(str(v))
         args.extend([self.query.location, self.db])
         try:
-            subprocess.run(args)
+            e_file = open(self.get_tmp_output(),'wb')
+            subprocess.run(args, stdout=e_file,
+                    stderr=e_file)
         except(Exception): # all but sys exits
             pass # freak out
 
@@ -68,13 +73,23 @@ class HMMer():
                     args.append(str(v))
         args.extend(['-', self.db]) # '-' signals hmmer to expect input from stdin
         try:
-            hmmer = subprocess.Popen(args, stdin=subprocess.PIPE)
+            #e_file = open(self.get_tmp_output(),'wb')
+            # Re-write stdout and stderr to PIPEs to prevent cluttering terminal
+            # Tried to use open file descriptor as for hmmbuild but caused no output instead?
+            # Could try to use os.devnull instead if don't want output at all?
+            hmmer = subprocess.Popen(args, stdin=subprocess.PIPE,
+                    stderr=subprocess.PIPE, stdout=subprocess.PIPE)
             # send file as stdin
             hmmer.stdin.write(self.query.sequence.encode('utf-8')) # sequence here is the entire parsed file
             hmmer.communicate() # actually run the search
         except(Exception):
             pass # freak out
 
+    #def get_tmp_output(self, sep):
+    #    """File for both stdout and stderr redirection"""
+    #    db_name = os.path.basename(self.db)
+    #    out_string = str(self.query.identity + sep + db_name + sep + 'out.txt')
+    #    return os.path.join(tmp_dir, out_string)
 
 class ProtHMMer(HMMer):
     """Subclass for searching protein queries with HMMer"""

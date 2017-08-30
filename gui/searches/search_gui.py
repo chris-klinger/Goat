@@ -62,7 +62,7 @@ class SearchFrame(Frame):
             keep_output = ko,
             output_location = location)
         self.sdb.add_entry(sobj.name, sobj) # add to DB
-        if algorithm == 'blast':
+        if algorithm == 'blast' or algorithm == 'hmmer':
             window = Toplevel()
             prog_frame = new_threaded_search.ProgressFrame(
                 sobj, 'new', window, other_widget=self,

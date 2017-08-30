@@ -157,7 +157,7 @@ class SummarySeqWriter:
         if qobj.search_type == 'seq':
             outfile.write('>' + str(qobj.description) + '\n')
             for chunk in util.split_input(str(qobj.sequence)):
-                print(chunk)
+                #print(chunk)
                 outfile.write(chunk + '\n')
         elif qobj.search_type == 'hmm':
             pass # do we want to write for other query types?
