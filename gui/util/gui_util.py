@@ -142,6 +142,7 @@ class ScrollBoxFrame(Frame):
             Label(self, text=text).pack(side=TOP)
         self.item_list = [] # internal list mapping to listbox list
         self.item_dict = {} # hashtable for listbox items
+        self.item_index = {} # hashtable for item index in other widget
         self.listbox = Listbox(self, height=20, selectmode=mode)
         self.listbox.bind('<<ListboxSelect>>', self.onSelect)
         self.listbox.pack(side=LEFT, expand=YES, fill=BOTH)
@@ -154,7 +155,7 @@ class ScrollBoxFrame(Frame):
     def onSelect(self, *args):
         pass # implement in other subclasses?
 
-    def add_items(self, items, mode='end'):#item_dict):
+    def add_items(self, items, mode='end'): #, index_dict=None):
         """General case addition of items"""
         if mode == 'end': # add each item to end of list
             for item,value in items: #item_dict.items():
@@ -165,9 +166,26 @@ class ScrollBoxFrame(Frame):
         elif mode == 'index': # add back into old place in list
             for item,value,index in items:
                 if not item in self.item_list:
-                    self.listbox.insert(index, item)
-                    self.item_list.insert(index,item) # keep inherent index in list
+                    #print('index before: ' + str(index))
+                    new_index = self.get_new_index(item,index) #,index_dict)
+                    #print('index after: ' + str(index))
+                    self.listbox.insert(new_index,item)
+                    self.item_list.insert(new_index,item) # keep inherent index in list
                     self.item_dict[item] = value
+
+    def get_new_index(self, item, index): #, index_dict):
+        """Subtracts from index for every value missing before it"""
+        new_index = index
+        for sitem,sindex in sorted(self.item_index.items(), key=lambda x: x[1]):
+            #print(sitem)
+            #print(sindex)
+            if sindex > index:
+                return new_index
+            else:
+                if not item == sitem:
+                    if sitem not in self.item_list:
+                        #print('decrementing index')
+                        new_index -= 1
 
     def remove_items(self, indices):
         """General case removal of items - note that removal is by index so

@@ -821,12 +821,14 @@ class ModSeqWindow(ttk.Panedwindow):
         raccs = []
         for index,item in enumerate(self.qobj.all_accs): # item is a tuple
             display_string = str(item[0]) + '  ' + str(item[1])
+            self.blast_list.lbox_frame.item_index[display_string] = index # track index
+            self.added_list.lbox_frame.item_index[display_string] = index
             if item in self.qobj.raccs:
-                raccs.append([display_string,item,index])
+                raccs.append([display_string,item]) #,index])
             else:
                 all_accs.append([display_string,item])
-        self.blast_list.lbox_frame.add_items(all_accs)
-        self.added_list.lbox_frame.add_items(raccs, mode='index')
+        self.blast_list.lbox_frame.add_items(all_accs) # add all by 'end' first
+        self.added_list.lbox_frame.add_items(raccs) #, mode='index')
 
 class SeqQueryInfo(Frame):
     def __init__(self, parent=None):
@@ -867,10 +869,12 @@ class BlastListFrame(Frame):
         selected = self.lbox_frame.listbox.curselection()
         items = [self.lbox_frame.listbox.get(index) for index in selected]
         to_add = []
-        for item,index in zip(items,selected):
+        for item in items:
+            index = self.lbox_frame.item_index[item]
             value = self.lbox_frame.item_dict[item]
-            to_add.append([item, value, index])
+            to_add.append([item, value, index]) # always add by 'end'
         self.other.lbox_frame.add_items(to_add, 'index')
+        #self.other.lbox_frame.add_by_index(to_add)
         self.lbox_frame.remove_items(selected)
 
 class BlastAddedFrame(Frame):
@@ -894,10 +898,12 @@ class BlastAddedFrame(Frame):
         selected = self.lbox_frame.listbox.curselection()
         items = [self.lbox_frame.listbox.get(index) for index in selected]
         to_remove = []
-        for item,index in zip(items,selected):
+        for item in items:
+            index = self.other.lbox_frame.item_index[item]
             value = self.lbox_frame.item_dict[item]
             to_remove.append([item, value, index])
         self.other.lbox_frame.add_items(to_remove, 'index')
+        #self.other.lbox_frame.add_by_index(to_remove)
         self.lbox_frame.remove_items(selected)
 
 class ModifyHMMQuery(Frame):
