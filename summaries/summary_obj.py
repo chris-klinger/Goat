@@ -25,7 +25,7 @@ class Summary(Persistent):
             fwd_evalue_cutoff=None, fwd_max_hits=None,
             rev_search=None, rev_qtype=None, rev_dbtype=None, rev_algorithm=None,
             rev_evalue_cutoff=None, rev_max_hits=None,
-            next_hit_evalue_cutoff=None):
+            next_hit_evalue_cutoff=None, mode='result'):
         self.query_list = [] # list maintains order
         self.queries = OOBTree()
         self.fwd = fwd_search
@@ -41,6 +41,7 @@ class Summary(Persistent):
         self.rev_evalue = rev_evalue_cutoff # should be a float!
         self.rev_max_hits = rev_max_hits
         self.next_evalue = next_hit_evalue_cutoff # should be a whole value, e.g. 2, but convert to float
+        self.mode = mode # either 'result' or 'summary'
 
     def check_query_summary(self, qid):
         """Checks whether a QuerySummary object for a given qid already exists"""
@@ -142,3 +143,102 @@ class Hit(Persistent):
         self.rev_evalue_diff = rev_hit_evalue_difference
         self.status = status
 
+#######################################################
+# Additional class for summarizing multiple summaries #
+#######################################################
+
+class ResultfromSummaries(Persistent):
+    """
+    Replaces other classes when summarizing multiple summaries; Instead of going
+    by hits for each status, holds a separate object for each hit ID. This then
+    tracks the status of the hit from each summary (without associated detailed
+    info). The overall status of the result is still tracked based on the boolean
+    value of the associated hit(s) status.
+    """
+    def __init__(self, database):
+        self.db = database
+        self.status = 'negative'
+        self.hit_list = []
+        self.hits = OOBTree()
+        self._determined = False # whether or not the status has been determined
+
+    def determined(self, status=None):
+        """Called with no args to check the value of self._determined, called with
+        one arg to set that value"""
+        if not status:
+            return self._determined
+        else:
+            self.status = status
+            self._determined = True
+
+    def get_hit(self, hit_id):
+        """
+        Checks to see if hit_id is already present and returns the object if so;
+        else creates hit and returns the object.
+        """
+        if hit_id in self.hits.keys():
+            return self.hits[hit_id]
+        else:
+            self.hit_list.append(hit_id)
+            self._p_changed = 1
+            hit = HitfromSummaries()
+            self.hits[hit_id] = hit
+            return hit
+
+    def determine_status(self):
+        """Checks status of all hits"""
+        for hit_id in self.hit_list:
+            hit_obj = self.hits[hit_id]
+            if hit_obj.status == 'positive':
+                self.status = 'positive'
+                break # stop as soon as it is positive
+            elif hit_obj.status == 'tentative':
+                self.status = 'tentative' # always the next best option
+            elif hit_obj.status == 'unlikely':
+                if not self.status == 'tentative': # only set if not already better
+                    self.status = 'unlikely'
+
+class HitfromSummaries(Persistent):
+    """
+    Class to model the resulting status of each hit based on multiples summaries.
+    For each, add the summary name to the status for which the hit falls into for
+    that summary.
+    """
+    def __init__(self):
+        self.status = 'negative'
+        self.positive_hit_list = []
+        self.tentative_hit_list = []
+        self.unlikely_hit_list = []
+        self.lists = ['positive_hit_list','tentative_hit_list','unlikely_hit_list']
+        self._determined = False # whether or not the status has been determined
+
+    def determined(self, status=None):
+        """Called with no args to check the value of self._determined, called with
+        one arg to set that value"""
+        if not status:
+            return self._determined
+        else:
+            self.status = status
+            self._determined = True
+
+    def add_summary(self, summ_id, status='positive'):
+        """Adds a summary to the relevant list for the hit."""
+        if status == 'positive':
+            self.positive_hit_list.append(summ_id)
+        elif status == 'tentative':
+            self.tentative_hit_list.append(summ_id)
+        else:
+            self.unlikely_hit_list.append(summ_id)
+        self._p_changed = 1
+
+    def determine_status(self):
+        """
+        Called each time through the summarizer loop, checks the length of each
+        list and changes the status to match.
+        """
+        if len(self.positive_hit_list) > 0:
+            self.status = 'positive'
+        elif len(self.tentative_hit_list) > 0:
+            self.status = 'tentative'
+        elif len(self.unlikely_hit_list) > 0:
+            self.status = 'unlikely'

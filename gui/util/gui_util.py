@@ -186,6 +186,7 @@ class ScrollBoxFrame(Frame):
                     if sitem not in self.item_list:
                         #print('decrementing index')
                         new_index -= 1
+        return new_index # last element
 
     def remove_items(self, indices):
         """General case removal of items - note that removal is by index so

@@ -306,7 +306,7 @@ class ProgressFrame(Frame):
         int_summarizer = summarizer.SearchSummarizer(int_summary)
         int_summarizer.summarize_two_results()
         mdb = configs['summary_db']
-        mdb.add_entry(self.start_sobj.name, int_summary) # should we make it nameable?
+        mdb.add_entry(self.kwargs['summ_name'], int_summary) # should we make it nameable?
         # Get sequences from summarized results - positive only!
         seq_writer = seqs_from_summary.SummarySeqWriter(
                 basename = self.start_sobj.name,

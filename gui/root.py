@@ -84,6 +84,8 @@ class RootFrame(Frame):
         summary_menu = Menu(top, tearoff=False)
         summary_menu.add_command(label='summarize result(s)',
                 command=self.summarize_results, underline=0)
+        summary_menu.add_command(label='summarize summaries',
+                command=self.summarize_summaries, underline=0)
         summary_menu.add_command(label='view summaries',
                 command=self.summary_viewer, underline=0)
         summary_menu.add_command(label='sequences from summary',
@@ -146,10 +148,15 @@ class RootFrame(Frame):
         window = Toplevel()
         summary_gui.SearchSummaryFrame(window)
 
+    def summarize_summaries(self):
+        """Obtain a summary for multiple summaries"""
+        window = Toplevel()
+        summary_gui.SummSummaryFrame(window)
+
     def summary_viewer(self):
         """View information for summaries"""
         window = Toplevel()
-        summary_gui.SummaryFrame(window)
+        summary_gui.SummaryViewer(window)
 
     def summary_sequences(self):
         """Obtain sequence file(s) from a summary"""

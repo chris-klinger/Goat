@@ -123,8 +123,9 @@ class SearchSummarizer:
                     rev_qobj = self.sqdb[rev_uobj.query]
                     #print(rev_qobj.original_query)
                     # confirms rev search object stems from original query
+                    # second line covers profile-based queries
                     if ((fwd_qobj.identity == rev_qobj.original_query) or\
-                        (rev_qobj.original_query in fwd_qobj.identity)) and \
+                        (fwd_uobj.spec_qid == rev_qobj.original_query)) and \
                         (rev_uid.split('-')[1] in fwd_uobj.int_queries):
                         #print('reverse result originates from original query')
                         self.add_reverse_result_summary(fwd_qobj, fwd_uobj, rev_uobj,
@@ -289,3 +290,86 @@ class SearchSummarizer:
             if acc in racc:
                 return True
         return False
+
+###########################################
+# Code for summarizing multiple summaries #
+###########################################
+
+class SummSummarizer:
+    def __init__(self, summ_obj, summ_list):
+        self.mobj = summ_obj # actual summary object
+        self.summ_list = summ_list # list of other summary objects to summarize
+        self.qdb = configs['query_db']
+        self.sdb = configs['search_db']
+        self.udb = configs['result_db']
+        self.mdb = configs['summary_db']
+        self.sqdb = configs['search_queries']
+        self.mqdb = configs['misc_queries']
+
+    def add_summaries(self):
+        """For each summary in the summ_list, add the results"""
+        print('adding summaries')
+        for summ_id in self.summ_list:
+            self.add_summary(summ_id)
+        print('updating statuses')
+        self.update_statuses()
+
+    def add_summary(self, summ_id):
+        """
+        Fetches the relevant summary object from the summary database based on
+        'summ_id'; traverses the object and populates the new summary_obj.
+        """
+        to_add = self.mdb[summ_id]
+        for qid in to_add.query_list:
+            ta_qobj = to_add.queries[qid]
+            ta_qid = self.filter_qid(qid, to_add)
+            qobj = self.get_qobj(ta_qid, self.mobj)
+            for db in ta_qobj.db_list:
+                ta_dbobj = ta_qobj.dbs[db]
+                db_obj = self.get_dbobj(db, qobj)
+                for hit_list in ta_dbobj.lists:
+                    hlist = getattr(ta_dbobj,hit_list)
+                    for hit_id in hlist:
+                        hobj = db_obj.get_hit(hit_id)
+                        if hit_list == 'positive_hit_list':
+                            hobj.add_summary(summ_id)
+                        elif hit_list == 'tentative_hit_list':
+                            hobj.add_summary(summ_id, 'tentative')
+                        else:
+                            hobj.add_summary(summ_id, 'unlikely')
+
+    def update_statuses(self):
+        """Called after all summaries added; determines status of all hits/dbs"""
+        for qid in self.mobj.query_list:
+            qobj = self.mobj.queries[qid]
+            for db in qobj.db_list:
+                db_obj = qobj.dbs[db]
+                for hit_id in db_obj.hit_list:
+                    hobj = db_obj.hits[hit_id]
+                    hobj.determine_status()
+                db_obj.determine_status()
+
+    def filter_qid(self, qid, mobj):
+        """Filters a qid to return spec_qid if hmmer search"""
+        if mobj.fwd_algorithm == 'hmmer':
+            qobj = self.qdb[qid]
+            return qobj.spec_qid
+        return qid
+
+    def get_qobj(self, qid, mobj):
+        """Returns qobj if exists, else makes one"""
+        if mobj.check_query_summary(qid):
+            return mobj.queries[qid]
+        else:
+            qobj = summary_obj.QuerySummary(qid)
+            mobj.add_query_summary(qid, qobj)
+            return qobj
+
+    def get_dbobj(self, db, qobj):
+        """Returns dbobj if exists, else makes one"""
+        if qobj.check_db_summary(db):
+            return qobj.dbs[db]
+        else:
+            db_obj = summary_obj.ResultfromSummaries(db)
+            qobj.add_db_summary(db, db_obj)
+            return db_obj

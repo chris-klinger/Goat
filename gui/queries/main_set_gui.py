@@ -108,14 +108,14 @@ class SplitSetWindow(ttk.Panedwindow):
         """Signals to notebook to re-draw tree for selected widget"""
         self.notebook.redraw_tree(qtype)
 
-    def remove_item(self, item):
-        """
-        Signals to notebook to remove the chosen item and then also re-draw
-        the tree following item removal.
-        """
-        curr_tab = self.notebook.selected_tab()
-        self.notebook.remove_item(curr_tab, item)
-        self.notebook.redraw_tree(curr_tab)
+    #def remove_item(self, item):
+    #    """
+    #    Signals to notebook to remove the chosen item and then also re-draw
+    #    the tree following item removal.
+    #    """
+    #    curr_tab = self.notebook.selected_tab()
+    #    self.notebook.remove_item(curr_tab, item)
+    #    self.notebook.redraw_tree(curr_tab)
 
 class SetNotebook(ttk.Notebook):
     def __init__(self, parent=None, other_widget=None):
