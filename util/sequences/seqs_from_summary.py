@@ -138,9 +138,9 @@ class SummarySeqWriter:
                         else:
                             o = open(tfile,'w')
                             self.file_dict[query] = tfile # first time, add
-                        try:
                             if self.add_query:
-                                self.write_query_seq(query, o)
+                                self.write_query_seq(query,o)
+                        try:
                             for record in to_write:
                                 SeqIO.write(record, o, "fasta")
                         finally:

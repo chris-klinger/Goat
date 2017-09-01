@@ -111,7 +111,9 @@ class SearchSummarizer:
             if self.summary.check_query_summary(fwd_qid): # is present already
                 query_sum = self.summary.fetch_query_summary(fwd_qid)
             else:
-                query_sum = summary_obj.QuerySummary(fwd_qid)
+                #print("creating query {}".format(fwd_qid))
+                #print(str(spec_qid))
+                query_sum = summary_obj.QuerySummary(fwd_qid, spec_qid)
             #for rev_uid in rev_sobj.list_results():
             for acc in fwd_uobj.int_queries:
                 #print("forward acc is " + str(acc))
@@ -308,10 +310,10 @@ class SummSummarizer:
 
     def add_summaries(self):
         """For each summary in the summ_list, add the results"""
-        print('adding summaries')
+        #print('adding summaries')
         for summ_id in self.summ_list:
             self.add_summary(summ_id)
-        print('updating statuses')
+        #print('updating statuses')
         self.update_statuses()
 
     def add_summary(self, summ_id):
@@ -319,10 +321,13 @@ class SummSummarizer:
         Fetches the relevant summary object from the summary database based on
         'summ_id'; traverses the object and populates the new summary_obj.
         """
+        #print(summ_id)
         to_add = self.mdb[summ_id]
         for qid in to_add.query_list:
             ta_qobj = to_add.queries[qid]
-            ta_qid = self.filter_qid(qid, to_add)
+            #for k,v in ta_qobj.__dict__.items():
+            #    print(str(k) + ' : ' + str(v))
+            ta_qid = self.filter_qid(qid, ta_qobj)
             qobj = self.get_qobj(ta_qid, self.mobj)
             for db in ta_qobj.db_list:
                 ta_dbobj = ta_qobj.dbs[db]
@@ -349,10 +354,11 @@ class SummSummarizer:
                     hobj.determine_status()
                 db_obj.determine_status()
 
-    def filter_qid(self, qid, mobj):
+    def filter_qid(self, qid, qobj):
         """Filters a qid to return spec_qid if hmmer search"""
-        if mobj.fwd_algorithm == 'hmmer':
-            qobj = self.qdb[qid]
+        #print("filtering " + str(qid))
+        if qobj.spec_qid:
+            #print("qobj has a spec_qid")
             return qobj.spec_qid
         return qid
 
@@ -361,7 +367,7 @@ class SummSummarizer:
         if mobj.check_query_summary(qid):
             return mobj.queries[qid]
         else:
-            qobj = summary_obj.QuerySummary(qid)
+            qobj = summary_obj.QuerySummary(qid, None)
             mobj.add_query_summary(qid, qobj)
             return qobj
 

@@ -66,10 +66,11 @@ class QuerySummary(Persistent):
     searched in, a separate nested object will hold information on whether or
     not homologues were found, and each individual hit.
     """
-    def __init__(self, qid):
+    def __init__(self, qid, spec_qid):
         self.db_list = []
         self.dbs = OOBTree()
         self.qid = qid
+        self.spec_qid = spec_qid
 
     def check_db_summary(self, db):
         """Checks whether a ResultSummary for the given db already exists"""
