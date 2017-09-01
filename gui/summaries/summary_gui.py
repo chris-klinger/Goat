@@ -237,11 +237,20 @@ class SummSummaryFrame(Frame):
         """
         summ_list = self.columns.get_to_add()
         #print(summ_list)
+        # Check valididty first
+        fwd_dbtype = None
+        for summ_id in summ_list:
+            summ_obj = self.mdb[summ_id]
+            if not fwd_dbtype:
+                fwd_dbtype = summ_obj.fwd_dbtype
+            elif summ_obj.fwd_dbtype != fwd_dbtype:
+                pass # freak out and warn user!
+        # Passes check, continue from here
         summ_name = self.name.get('Summary name')
         summ_obj = summary_obj.Summary(
                 fwd_search=None, # otherwise required values are None here
                 fwd_qtype=None,
-                fwd_dbtype=None,
+                fwd_dbtype=fwd_dbtype, # necessary to write sequences later!!!
                 fwd_algorithm=None,
                 mode='summary') # make sure to specify type of summary
         #print(summ_obj)
@@ -843,8 +852,9 @@ class SummSeqParamFrame(Frame):
                 hit_types.extend(['tentative','unlikely'])
             # now deal with mode
             mode = self.mode.get()
-            if mode == '': # nothing was selected
-                raise ValueError
+            # Actually, might not care about this - what if we want only by SG?
+            #if mode == '': # nothing was selected
+            #    raise ValueError
             if mode == 'Both':
                 modes.extend(['all','db'])
             elif mode == 'Combine all DBs':

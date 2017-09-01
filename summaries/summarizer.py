@@ -310,10 +310,8 @@ class SummSummarizer:
 
     def add_summaries(self):
         """For each summary in the summ_list, add the results"""
-        #print('adding summaries')
         for summ_id in self.summ_list:
             self.add_summary(summ_id)
-        #print('updating statuses')
         self.update_statuses()
 
     def add_summary(self, summ_id):

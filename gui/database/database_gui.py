@@ -42,7 +42,7 @@ class DatabaseFrame(Frame):
     def onSubmit(self):
         """Commits changes to database before closing"""
         self.rdb.commit()
-        self.onClose()
+        self.onCancel()
 
     def onCancel(self):
         self.parent.destroy()
@@ -221,7 +221,7 @@ class RecordFrame(Frame):
     def onSubmit(self):
         """Adds new or modified record to the database"""
         attrs = self.record_gui.return_attrs()
-        print(attrs)
+        #print(attrs)
         record_id = attrs['record identity']
         remaining = {}
         for k in attrs.keys():

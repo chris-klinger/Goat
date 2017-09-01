@@ -15,6 +15,7 @@ from gui.results import result_gui
 from gui.queries import main_query_gui, main_set_gui
 from gui.summaries import summary_gui
 from gui.analyses import analysis_gui
+from gui.miscellaneous import scrollsaw_gui
 
 help_msg="""
 Goat: an integrated platform for bioinformatic sequence analysis
@@ -112,6 +113,11 @@ class RootFrame(Frame):
                 command=self.database_table, underline=0)
         top.add_cascade(label='Databases', menu=db_menu, underline=0)
 
+        util_menu = Menu(top, tearoff=False)
+        util_menu.add_command(label='scrollsaw',
+                command=self.scrollsaw_popup, underline=0)
+        top.add_cascade(label='Utilities', menu=util_menu, underline=0)
+
     def settings_popup(self):
         window = Toplevel()
         settings_form.SettingsForm(settings_config.list_settings(),window)
@@ -191,3 +197,7 @@ class RootFrame(Frame):
     def database_table(self):
         """Obtain csv-style file with information for one or more databases"""
         pass
+
+    def scrollsaw_popup(self):
+        window = Toplevel()
+        scrollsaw_gui.ScrollSawFrame(window)

@@ -31,7 +31,7 @@ class SummarySeqWriter:
         self.target_dir = target_dir
         self.htype = hit_type
         self.mode = mode
-        self.extra = extra_groups
+        self.extras = extra_groups
         self.add_query = add_query_to_file
         # dbs are global objects
         self.rdb = configs['record_db']
@@ -39,6 +39,8 @@ class SummarySeqWriter:
         self.hdict = {}
         # internal data structure for file names; used in some contexts
         self.file_dict = {}
+        # internal data structure to keep track of file names for SGs (ScrollSaw)
+        self.sg_dict = {}
 
     def run(self):
         """Calls all internal functions"""
@@ -76,26 +78,40 @@ class SummarySeqWriter:
 
     def collect_hit_ids(self, query, qobj, db):
         """Collects the actual ids for each database"""
-        #print('calling collect_hit_ids')
-        #print(query)
-        #print(qobj)
-        #print(db)
         db_obj = qobj.dbs[db]
-        for hlist_name in db_obj.lists:
-            hlist = getattr(db_obj,hlist_name)
-            if len(hlist) > 0: # there are hits
-                hits = []
-                hits.append(query) # add the query id
-                hit_type = hlist_name.split('_')[0] # positive, tentative, or unlikely
-                #print(hit_type)
-                hits.append(hit_type) # add title
-                for rid in hlist:
-                    #print(rid)
-                    hits.append(rid)
+        if self.mobj.mode == 'result':
+            for hlist_name in db_obj.lists:
+                hlist = getattr(db_obj,hlist_name)
+                if len(hlist) > 0: # there are hits
+                    hits = []
+                    hits.append(query) # add the query id
+                    hit_type = hlist_name.split('_')[0] # positive, tentative, or unlikely
+                    #print(hit_type)
+                    hits.append(hit_type) # add title
+                    for rid in hlist:
+                        #print(rid)
+                        hits.append(rid)
+                    if not db in self.hdict.keys():
+                        self.hdict[db] = []
+                    self.hdict[db].append(hits) # makes a list of lists
+        elif self.mobj.mode == 'summary':
+            if len(db_obj.hit_list) > 0:
+                positive = [query, 'positive']
+                tentative = [query, 'tentative']
+                unlikely = [query, 'unlikely']
+                for hit in db_obj.hit_list:
+                    hit_obj = db_obj.hits[hit]
+                    if hit_obj.status == 'positive':
+                        positive.append(hit)
+                    elif hit_obj.status == 'tentative':
+                        tentative.append(hit)
+                    else:
+                        unlikely.append(hit)
                 if not db in self.hdict.keys():
                     self.hdict[db] = []
-                self.hdict[db].append(hits) # makes a list of lists
-                #print(self.hdict)
+                for hlist in [positive,tentative,unlikely]:
+                    if len(hlist) > 2: # actually has hit ids
+                        self.hdict[db].append(hlist) # makes a list of lists
 
     def write_to_output(self):
         """
@@ -125,6 +141,13 @@ class SummarySeqWriter:
                     if 'db' in self.mode:
                         db_file = self.get_output_file([query, rid, hit_type])
                         target_files.append(db_file)
+                    if 'supergroup' in self.extras:
+                        sg_file = self.get_output_file([query,
+                            robj.supergroup, hit_type])
+                        if not query in self.sg_dict.keys(): # keep track for scrollsaw
+                            self.sg_dict[query] = []
+                        self.sg_dict[query].append([robj.supergroup, sg_file])
+                        target_files.append(sg_file)
                     # could continue for arbitrary number of sets...
                     # get all the records to write just once
                     to_write = []
