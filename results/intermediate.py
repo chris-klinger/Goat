@@ -3,6 +3,7 @@ This module contains helper functions/classes for dealing with intermediate sear
 results, including creating new or reverse searches from them.
 """
 
+import re
 from Bio import SeqIO
 
 from bin.initialize_goat import configs
@@ -23,6 +24,7 @@ class Search2Queries:
     def get_result_objs(self):
         """Goes through and fetches the robj for each rid"""
         for rid in self.sobj.list_results():
+            #print(rid)
             robj = self.udb[rid]
             yield robj
 
@@ -50,11 +52,20 @@ class Result2Queries:
             desired_seqs.extend([search_util.remove_blast_header(hit.title)
                 for hit in self.uobj.parsed_result.descriptions])
         elif self.sobj.algorithm == 'hmmer':
-            desired_seqs.extend([(hit.target_name + ' ' + hit.desc) # should recapitulate description
-                for hit in self.uobj.parsed_result.descriptions])
-        #print(desired_seqs)
+            #desired_seqs.extend([(hit.target_name + ' ' + hit.desc) # should recapitulate description
+            #    for hit in self.uobj.parsed_result.descriptions])
+            desired_seqs.extend([hit.title for hit in self.uobj.parsed_result.descriptions])
+        #tterfile = open('/Users/cklinger/tthermophila.txt','w')
+        #for seq in desired_seqs:
+            #print(seq)
+            #print()
+            #tterfile.write(str(seq) + '\n')
+            #tterfile.write('\n') #print()
         for record in SeqIO.parse(self.get_record_file(), "fasta"):
-            if record.description in desired_seqs:
+            #print(str(record.description).strip())
+            #tterfile.write(str(record.description) + '\n')
+            if (record.description in desired_seqs or\
+                re.sub('\t','   ',record.description) in desired_seqs): # BLAST turns tabs into three spaces
                 seq_records.append(record)
         return seq_records
 

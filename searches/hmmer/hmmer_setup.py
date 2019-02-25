@@ -47,6 +47,7 @@ class HMMer():
                     else:
                         args.append('--' + str(k))
                     args.append(str(v))
+        args.extend(['-E', str(0.05)])
         args.extend([self.query.location, self.db])
         try:
             e_file = open(self.get_tmp_output(),'wb')
@@ -71,6 +72,7 @@ class HMMer():
                     else:
                         args.append('--' + str(k))
                     args.append(str(v))
+        args.extend(['-E', str(0.05)])
         args.extend(['-', self.db]) # '-' signals hmmer to expect input from stdin
         try:
             #e_file = open(self.get_tmp_output(),'wb')

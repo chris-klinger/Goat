@@ -39,6 +39,7 @@ class HMMsearchParser(HMMerParser):
         record = hmmer_record.HMMerRecord('protein')
         for entry in self.read():
             descr = hmmer_record.ProtDescr(*entry) # should unpack list of lists into args?
+            print(descr)
             record.add_description(descr)
         return record
 

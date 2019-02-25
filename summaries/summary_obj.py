@@ -89,6 +89,12 @@ class QuerySummary(Persistent):
             self._p_changed = 1
         self.dbs[db] = db_summary
 
+    def remove_db_summary(self, db):
+        """Removes a db"""
+        self.db_list.remove(db)
+        self._p_changed = 1
+        del self.dbs[db]
+
 class ResultSummary(Persistent):
     """
     Simple object representing the overall result of searching the given DB with

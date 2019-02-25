@@ -337,6 +337,7 @@ class FullBLASTHMMerFrame(Frame):
         prog_frame = new_threaded_search.ProgressFrame(
                 fwd_sobj, 'full_blast_hmmer', window, other_widget=self,
                 callback=self.full_blast_hmmer_callback,
+                callback_args = [], # list of things to delete
                 rev_search_name=rev_name, keep_rev_output=rev_ko,
                 **int_args) # use these as kwargs
         prog_frame.run()
@@ -347,8 +348,10 @@ class FullBLASTHMMerFrame(Frame):
         """Close without doing anything"""
         self.parent.destroy()
 
-    def full_blast_hmmer_callback(self):
+    def full_blast_hmmer_callback(self, *to_delete):
         """Commit changes in multiple databases"""
+        for filepath in to_delete:
+            os.remove(filepath)
         configs['threads'].remove_thread()
         configs['search_queries'].commit()
         configs['search_db'].commit()

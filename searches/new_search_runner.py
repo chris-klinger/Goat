@@ -37,6 +37,7 @@ class SearchRunner:
 
     def get_unique_outpath(self, query, db, sep='-'):
         """Returns an outpath for a given query and database"""
+        query = query.replace('/','-') # '/' is linux separator, confuses file read/write operations
         out_string = sep.join([query, db, 'out.txt'])
         if self.sobj.output_location: # not None
             #print(self.sobj.output_location)
@@ -80,15 +81,18 @@ class SearchRunner:
         """Calls the run_one for each query/db pair"""
         uniq_out = self.get_unique_outpath(qid, db)
         result_id = self.get_result_id(sid, qid, db)
-        db_obj = self.rdb[db]
-        for v in db_obj.files.values():
-            if db_type: # specified by query, not search_obj
-                if v.filetype == db_type:
-                    dbf = v.filepath
-            elif v.filetype == self.sobj.db_type:
-                dbf = v.filepath # worry about more than one possible file?
-                db_type = self.sobj.db_type
-        self.run_one(qid, db, qobj, dbf, db_type, uniq_out, self.udb, result_id)
+        if os.path.exists(uniq_out):
+            self.add_result(result_id, qid, qobj, db, uniq_out)
+        else: # actually run the search
+            db_obj = self.rdb[db]
+            for v in db_obj.files.values():
+                if db_type: # specified by query, not search_obj
+                    if v.filetype == db_type:
+                        dbf = v.filepath
+                elif v.filetype == self.sobj.db_type:
+                    dbf = v.filepath # worry about more than one possible file?
+                    db_type = self.sobj.db_type
+            self.run_one(qid, db, qobj, dbf, db_type, uniq_out, self.udb, result_id)
 
     def run_one(self, qid, db, qobj, dbf, db_type, outpath, result_db, result_id):
         """Runs each individual search"""
@@ -108,9 +112,27 @@ class SearchRunner:
             else:
                 pass # sort out eventually
             hmmer_search.run_from_stdin()
+        self.add_result(result_id, qid, qobj, db, outpath)
+        #robj = result_obj.Result(result_id, self.sobj.algorithm,
+        #        self.sobj.q_type, self.sobj.db_type, qid, db, self.sobj.name,
+        #        outpath)
+        # Add specified query/record info, if available
+        #try:
+        #    if qobj.spec_qid:
+        #        robj.spec_qid = qobj.spec_qid
+        #    if qobj.spec_record:
+        #        robj.spec_record = qobj.spec_record
+        #except(AttributeError):
+        #    pass # not applicable
+        # Add result object to search object and result database
+        #self.sobj.add_result(result_id) # function ensures persistent object updated
+        #self.udb[result_id] = robj # add to result db
+
+    def add_result(self, result_id, qid, qobj, db, outpath):
+        """Separates running search from adding info"""
         robj = result_obj.Result(result_id, self.sobj.algorithm,
-                self.sobj.q_type, self.sobj.db_type, qid, db, self.sobj.name,
-                outpath)
+                self.sobj.q_type, self.sobj.db_type, qid, db,
+                self.sobj.name, outpath)
         # Add specified query/record info, if available
         try:
             if qobj.spec_qid:
@@ -134,8 +156,11 @@ class SearchRunner:
         # Parse result first
         if robj.algorithm == 'blast':
             #print("adding result object for BLAST")
-            blast_result = NCBIXML.read(open(robj.outpath))
-            robj.parsed_result = blast_result
+            try:
+                blast_result = NCBIXML.read(open(robj.outpath))
+                robj.parsed_result = blast_result
+            except:
+                print("Could not parse file {}".format(robj.outpath))
         elif robj.algorithm == 'hmmer':
             # need to sort out prot/nuc later
             hmmer_result = hmmer_parser.HMMsearchParser(robj.outpath).parse()
@@ -144,5 +169,6 @@ class SearchRunner:
         robj.parsed = True
         if not self.sobj.keep_output: #and robj.parsed:
             #print("removing output")
-            os.remove(robj.outpath)
+            self.other.add_file_to_delete(robj.outpath)
+            #os.remove(robj.outpath)
 

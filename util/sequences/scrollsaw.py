@@ -68,6 +68,7 @@ class QueryScrollSaw:
         self.id_dict = {} # dictionary to compare seq_id to simplified id
         self.rev_id_dict = {} # determines whether old headers already have unique headers
         self.counter = util.IDCounter() # for creating unique, short, IDs
+        self.files = [] # keep track of all files and delete them at the end
 
     def calc_num_start_files(self):
         """Utility function"""
@@ -80,17 +81,22 @@ class QueryScrollSaw:
             sg2 = self.gdict[f2]
             # Combine files into new file
             new_seq_file = self.cat_and_dist(f1,f2,sg1,sg2)
+            self.files.append(new_seq_file)
             # Align file
             msa_file = new_seq_file.rsplit('.',1)[0] + '.mfa'
+            self.files.append(msa_file)
             mafft.MAFFT(new_seq_file,msa_file).run_from_file()
             # Run RAxML to get distances
             dist_base = (os.path.basename(msa_file)).rsplit('.',1)[0] # without extension
             raxml.RAxML(msa_file, dist_base, tmp_dir).get_distances()
             dist_file = os.path.join(tmp_dir,
                     ('RAxML_distances.' + dist_base))
+            self.files.append(dist_file)
             # Add distances to dict
             self.add_distances_to_dict(dist_file)
         self.write_outfiles()
+        for tmp_file in self.files:
+            os.remove(tmp_file)
 
     def cat_and_dist(self, f1, f2, sg1, sg2):
         """Cats two files and populates dist_dict with simplified headers"""
@@ -112,6 +118,7 @@ class QueryScrollSaw:
                             # write shorter header to new file
                             o.write('>' + new_header + '\n')
                         else:
+                            line = line.replace('.','-')
                             o.write(line) # re-write to outfile
         return outpath
 

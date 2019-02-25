@@ -7,6 +7,7 @@ regardless of whether or not threading is used.
 """
 
 import threading, queue, os
+import time
 
 from tkinter import *
 from tkinter import ttk
@@ -125,6 +126,11 @@ class ProgressFrame(Frame):
             pass # don't increment past max
         else:
             self.num_finished += 1
+
+    def add_file_to_delete(self, filepath):
+        """Adds to callback_args, assumes it is a list"""
+        if not filepath in self.callback_args:
+            self.callback_args.append(filepath)
 
     def determine_max_searches(self, sobj, mode):
         """Determines the number of searches to run"""
@@ -306,7 +312,7 @@ class ProgressFrame(Frame):
         int_summarizer = summarizer.SearchSummarizer(int_summary)
         int_summarizer.summarize_two_results()
         mdb = configs['summary_db']
-        mdb.add_entry(self.kwargs['summ_name'], int_summary) # should we make it nameable?
+        mdb.add_entry(self.kwargs['summ_name'], int_summary)
         # Get sequences from summarized results - positive only!
         seq_writer = seqs_from_summary.SummarySeqWriter(
                 basename = self.start_sobj.name,
@@ -316,12 +322,14 @@ class ProgressFrame(Frame):
                 mode = 'all',
                 add_query_to_file = True) # last one adds the query object seq as well
         seq_writer.run()
+        time.sleep(1)
         # Now create MSAs and HMMs for all files
         msa_dict = {}
         for qid,filename in seq_writer.file_dict.items():
             msa_file = (filename.rsplit('.',1)[0]) + '.mfa'
             msa_dict[qid] = msa_file
             mafft.MAFFT(filename,msa_file).run('file')
+        time.sleep(2)
         hmm_dict = {}
         for qid,msafile in msa_dict.items():
             hmm_file = (msafile.rsplit('.',1)[0]) + '.hmm'
@@ -330,10 +338,14 @@ class ProgressFrame(Frame):
                     hmmbuild_path = hmmer_path,
                     msa_filepath = msafile,
                     hmm_out = hmm_file).run_from_file()
+        time.sleep(2)
         # Create new intermediate queries for forward HMMer search and run
         qdb = configs['query_db']
         hmmer_queries = []
         for qid,hmmfile in hmm_dict.items():
+            #print(qid)
+            #print(hmmfile)
+            #print()
             name,hmm_obj = query_file.HMMFile(
                     hmmfile,self.start_sobj.db_type).get_query()
             hmm_obj.spec_qid = qid

@@ -44,7 +44,8 @@ class ResultFrame(Frame):
         if item['tags'][0] == 'search':
             self.sdb.remove_entry(item['text'])
         elif item['tags'][0] == 'result':
-            pass
+            #pass
+            self.udb.remove_entry(item['text'])
         self.results.result_tree.update() # lastly, call for an update
 
     def onSubmit(self):

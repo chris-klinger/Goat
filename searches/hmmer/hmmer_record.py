@@ -36,7 +36,10 @@ class ProtDescr:
         self.rep = int(rep)
         self.inc = int(inc)
         self.desc = desc
-        self.title = (self.target_name + ' ' + self.desc) # stay consistent with BLAST
+        if self.desc == '-': # not simply '', hmmer writes as '-'
+            self.title = self.target_name # all of the title is in the name
+        else:
+            self.title = (self.target_name + ' ' + self.desc) # stay consistent with BLAST
 
 class NuclDescr:
     def __init__(self, target_name, target_accession, query_name, query_accession,

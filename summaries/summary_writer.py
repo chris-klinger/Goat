@@ -78,7 +78,7 @@ class ResultSummaryWriter:
         """Iterates through the summary obj to print relevant information"""
         for qid in self.sobj.query_list:
             qobj = self.sobj.queries[qid]
-            for db in qobj.db_list:
+            for db in sorted(qobj.db_list): # sort DBs in alphabetical order?
                 db_obj = qobj.dbs[db]
                 if db_obj.status == 'negative':
                     self.info_list.extend([qid, db, db_obj.status])

@@ -400,10 +400,10 @@ class QuerySubmission:
                 databases=None)
         window = Toplevel()
         prog_frame = new_threaded_search.ProgressFrame(self.sobj, 'racc', window,
-                other_widget=self, callback=self.racc_callback, callback_args=(qtype,))
+                other_widget=self, callback=self.racc_callback, callback_args=[qtype])#callback_args=(qtype,))
         prog_frame.run()
 
-    def racc_callback(self, qtype):
+    def racc_callback(self, qtype, *args):
         """Parses output files, adds accs to qobjs, and then removes all db entries"""
         configs['threads'].remove_thread()
         self.udb = configs['result_db']

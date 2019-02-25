@@ -43,7 +43,7 @@ class BLAST():
         # note, query location here needs to be changed once a scheme is in place
         # to hold separate query files for each
         args.extend(['-query', self.query.location, '-db', self.db, '-out', self.out,
-            '-outfmt', str(self.outfmt)])
+            '-outfmt', str(self.outfmt)], '-evalue', str(0.0005))
         if self.kwargs:
             for k,v in self.kwargs:
                 if str(k) in valid_options: # will the program understand it?
@@ -57,11 +57,14 @@ class BLAST():
 
     def run_from_stdin(self, blast_type, valid_options=valid_options, sep='_'):
         """Runs BLAST using obj as stdin"""
+        #if not os.path.exists(self.out):
         args = []
         # first argument should always be the type of BLAST
         args.append(os.path.join(self.blast_path, blast_type))
         #out = self.get_uniq_out(sep='_')
-        args.extend(['-db', self.db, '-out', self.out, '-outfmt', str(self.outfmt)])
+        num_procs = 4
+        args.extend(['-db', self.db, '-out', self.out, '-outfmt', str(self.outfmt),
+            '-num_threads', str(num_procs), '-evalue', str(0.0005)])
         if self.kwargs:
             for k,v in self.kwargs:
                 if str(k) in valid_options:
@@ -105,4 +108,35 @@ class BLASTp(BLAST):
         BLAST.run_from_file(self, "blastp", valid_options, sep)
 
     def run_from_stdin(self, valid_options=valid_options, sep='_'):
+        if not os.path.exists((self.db + '.phr')):
+            MakeProtDB(self.blast_path, self.db).make_blast_db()
         BLAST.run_from_stdin(self, "blastp", valid_options, sep)
+
+#####################################
+# Class to run blast database setup #
+#####################################
+
+class MakeBlastDB():
+    def __init__(self, blast_path, infile, db_type):
+        self.blast_path = blast_path
+        self.infile = infile
+        self.db_type = db_type
+
+    def make_blast_db(self):
+        """Makes associated db_files for a given infile"""
+        args = []
+        # first argument should be the makeblastdb
+        args.append(os.path.join(self.blast_path, 'makeblastdb'))
+        if self.db_type == 'prot':
+            args.extend(['-in', self.infile, '-dbtype', str(self.db_type)])
+        try:
+            print(args)
+            print('running make blast db')
+            subprocess.run(args)
+        except(Exception):
+            print("Could not make BLAST database for {}".format(
+                self.infile))
+
+class MakeProtDB(MakeBlastDB):
+    def __init__(self, blast_path, infile, db_type='prot'):
+        MakeBlastDB.__init__(self, blast_path, infile, db_type)

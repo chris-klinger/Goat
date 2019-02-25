@@ -338,6 +338,16 @@ class SummaryViewer(Frame):
                     icon='question', title='Remove summary'):
                 self.mdb.remove_entry(mid)
                 self.summaries.redraw_tree(mtype)
+        elif item['tags'][0] == 'dbsum': # need this
+            #try:
+            item_id = self.summaries.notebook_id()
+            parent_list = self.summaries.notebook.search_summs.get_ancestors(item_id,[])
+            #print(parent_list)
+            summ_obj = self.mdb[parent_list[0]]
+            query_summ = summ_obj.queries[parent_list[1]]
+            query_summ.remove_db_summary(parent_list[2])
+            #except:
+            #    print("Could not remove " + str(item))
 
     def onSubmit(self):
         """Commits any changes and destroys window"""
@@ -365,6 +375,9 @@ class SummaryGui(ttk.PanedWindow):
     def notebook_item(self):
         return self.notebook.get_item()
 
+    def notebook_id(self):
+        return self.notebook.get_id()
+
     def redraw_tree(self, mtype):
         self.notebook.redraw_tree(mtype)
 
@@ -391,6 +404,12 @@ class SummaryNotebook(ttk.Notebook):
             return self.search_summs.item(self.search_summs.focus())
         else:
             return self.summary_summs.item(self.summary_summs.focus())
+
+    def get_id(self):
+        """Returns the item id currently selected"""
+        tab = self.selected_tab()
+        if tab == 'search':
+            return self.search_summs.focus()
 
     def redraw_tree(self, mtype):
         """Force update() on relevant child widget"""
@@ -456,8 +475,10 @@ class SearchSummaryTree(ttk.Treeview):
         """Builds a list of information for display by ResultInfo panel for
         either searches or results; delegates formatting/display to panel"""
         item_id = self.focus() # here item should be the object itself?
+        #print(item_id)
         item = self.item(item_id)
         parent_list = self.get_ancestors(item_id,[])
+        #print(parent_list)
         db_obj = self.get_item_from_db(parent_list, self.mdb)
         to_display = []
         if tag == 'summary':

@@ -24,6 +24,7 @@ class MAFFT:
     def run(self, mode):
         """Choose to run"""
         self.get_msa_name()
+        self.check_input_file()
         if mode == 'file':
             self.run_from_file()
         elif mode == 'stdin':
@@ -40,10 +41,14 @@ class MAFFT:
         try:
             # cannot use shell redirects, instead set stdout as target file
             o_file = open(self.msa_file,'wb')
-            e_file = open(self.get_tmp_output(),'wb')
-            print("Running mafft for {}".format(self.seq_file))
+            #e_file = open(self.get_tmp_output(),'wb')
+            #print("Running mafft for {}".format(self.seq_file))
+            # Somehow a PIPE works better here than an output file?
             subprocess.run(args, stdout=o_file,
-                    stderr=e_file) # prevents clogging terminal window
+                    stderr=subprocess.PIPE) # prevents clogging terminal window
+            #mafft_line = 'mafft-linsi ' + str(self.seq_file) + ' > ' + str(self.msa_file)
+            #p = subprocess.Popen(mafft_line, shell=True)
+            #p.communicate()
         except(Exception):
             print("Could not run MAFFT for {}".format(
                 self.seq_file))
@@ -61,3 +66,16 @@ class MAFFT:
         if not self.msa_file:
             self.msa_file = self.seq_file.rsplit('.',1)[0] + '.mfa'
         return os.path.join(tmp_dir,self.msa_file)
+
+    def check_input_file(self):
+        """
+        Checks input file for illegal characters and replaces them with gap
+        characters instead.
+        """
+        new_file = self.seq_file.rsplit('.',1)[0] + '_filtered.fa'
+        with open(self.seq_file,'U') as i, open(new_file,'w') as o:
+            for line in i:
+                if not line.startswith('>'):
+                    line = line.replace('.','-')
+                o.write(line)
+        self.seq_file = new_file

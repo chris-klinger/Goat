@@ -23,3 +23,9 @@ class FileExistsError(ExistsError):
     """A unique file already exists"""
     def __str__(self):
         return 'File already exists: {}'.format(self.entity)
+
+class AccessionsExistError(ExistsError):
+    """Signals that one or more accessions already exist, and that the
+    user does not wish to override them"""
+    def __str__(self):
+        return 'Values already exist: {}'.format(self.entity)
