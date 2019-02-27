@@ -19,39 +19,30 @@ class GoatDB:
     """
     def __init__(self, filepath):
         """Connects to database file on instantiation"""
+        self._lock = Lock()
         if os.path.exists(filepath):
             self.storage = FileStorage.FileStorage(filepath)
             db = DB(self.storage)
             connection = db.open()
             self.root = connection.root()
-            try:
-                self.misc = self.root['misc_queries']
-            except:
-                self.root['misc_queries'] = OOBTree()
-            try:
-                self.squeries = self.root['search_queries']
-            except:
-                self.root['search_queries'] = OOBTree()
-            try:
-                self.qsets = self.root['query_sets']
-            except:
-                self.root['query_sets'] = OOBTree()
-            try:
-                self.rsets = self.root['record_sets']
-            except:
-                self.root['record_sets'] = OOBTree()
         else: # first time accessing
             self.storage = FileStorage.FileStorage(filepath)
             db = DB(self.storage)
             connection = db.open()
             self.root = connection.root()
             # create data structures
-            self.root['queries'] = OOBTree()
-            self.root['records'] = OOBTree()
-            self.root['results'] = OOBTree()
-            self.root['searches'] = OOBTree()
-            self.root['summaries'] = OOBTree()
-        self._lock = Lock()
+            self.root['misc_queries']   = OOBTree()
+            self.root['query_db']       = OOBTree()
+            self.root['query_sets']     = OOBTree()
+            self.root['record_db']      = OOBTree()
+            self.root['record_sets']    = OOBTree()
+            self.root['result_db']      = OOBTree()
+            self.root['search_queries'] = OOBTree()
+            self.root['search_db']      = OOBTree()
+            self.root['settings_db']    = OOBTree()
+            self.root['settings_sets']  = OOBTree()
+            self.root['summary_db']     = OOBTree()
+            self._commit()
 
     def _commit(self):
         #print('commiting changes')

@@ -3,8 +3,11 @@ This module contains various multi-use tools for constructing GUI interfaces.
 """
 
 from tkinter import *
+import tkinter.font as tkf
+
 
 from bin.initialize_goat import configs
+
 
 ##################
 # Helper Classes #
@@ -248,13 +251,176 @@ class InfoPanel(ttk.Label):
                 display_string += line + '\n'
         self.displayInfo.set(display_string)
 
+
+class InfoColumnPanel(ttk.Label):#ttk.Entry):
+    """
+    Provides a simple "label-like" interface to display text with. This
+    widget should determine, based on the values profided and the size of
+    the parent frame, how to stack rows and then space values.
+    """
+    def __init__(
+            self,
+            parent,
+            values,
+            width=50,
+            justify='left',
+            gap=3,
+            max_cols=4,
+            #values=[],
+            textvariable='',
+            #state='readonly',
+            ):
+        ttk.Label.__init__(self, parent) #, width)
+        self._parent = parent
+        self._width = width
+        self._values = values
+        self._gap = gap  # desired spacing between values
+        self._max_cols = max_cols # user-specified number of cols to display
+        # Values that are calculated for drawing
+        #self._max_length = 1  # maximum length of all values
+        self._char_width = 0  # Actual width of a character
+        self._gap_width = 0  # Actual width of a gap
+        self._real_max = 0    # Actual width of the maximum value
+        self._real_gap = 0   # Width of the specified number of gaps
+        self._num_cols = 1  # number of columns to display
+        self._to_display = StringVar()
+        self.config(
+                textvariable=self._to_display,
+                width=width,
+                justify=justify,
+                #state=state,
+                )
+        self.pack(expand=YES, fill=BOTH)
+        # Configure actual text display
+        self.bind('<Configure>', self._draw_info) # re-draw on window resizes
+
+        # Draw on intial instantiation
+        self._display = self._values
+        self._draw_info()
+
+
+    def update_info(self, values):
+        """Updates internal list and forces re-draw"""
+        self._display = values
+        self._draw_info()
+
+
+    def _draw_info(self, event=None):
+        """
+        Determines own width and then uses that to calculate, from the
+        list of values, the maximum number of columns and required
+        spacing for each row
+        """
+        # First ensure root window is updated
+        configs['root'].update_idletasks()
+        # get current parameters of window
+        curr_width = self.winfo_width()
+        font_name = self['font']
+        # Figure out parameters from values
+        self._determine_num_cols(curr_width, font_name)
+        # Create formatted string
+        display_string = self._create_display_string()
+        # Finally, update linked variable
+        self._to_display.set(display_string)
+
+
+    def _determine_num_cols(self, width, font):
+        """
+        Given the desired width of the window, determine how many columns
+        could be used to display the values and update two private instance
+        variables accordingly
+        """
+        # Determine values based on font
+        f = tkf.Font(family=font)  # name of the font
+        self._char_width = f.measure('0')  # standard char for avg width
+        self._gap_width = f.measure(' ')   # actual width of a gap
+        # Now determine how many columns are needed
+        sorted_vals = sorted(
+                self._values,
+                reverse = True,  # largest values first
+                key=lambda x: len(x),
+                )
+        self._real_max = len(sorted_vals[0]) * self._char_width
+        self._real_gap = self._gap_width * self._gap  # Actual width of the gap
+        total_length = 0
+        num_cols = 1
+        for value in sorted_vals:
+            val_length = len(value) * self._char_width
+            max_required = total_length + val_length + (num_cols * self._real_gap)
+            if max_required >= width:  #self._width:  # too wide
+                print("breaking due to max length")
+                break
+            else:
+                total_length += val_length  # keep track
+                num_cols += 1
+                if num_cols >= self._max_cols:
+                    print("Currently want {} columns".format(num_cols))
+                    print("breaking due to max cols")
+                    break  # reached cutoff
+        self._num_cols = num_cols
+
+
+    def _create_display_string(self):
+        """
+        Given the desired width of the window and the number of values
+        expected for each row, create a formatted string.
+
+        A single value per row is easy, but may require clipping (check).
+
+        If num_vals > 1, then this means that no clipping is required,
+        but that the length of the gap will need to be calculated for
+        each row to ensure that subsequent columns line up
+        """
+        num_vals = len(self._values)
+        num_rows = num_vals//self._num_cols  # rounds down
+        if num_vals%self._num_cols != 0:  # i.e. does not perfectly divide it
+            num_rows += 1
+        rows = [self._values[(i*self._num_cols):(i*self._num_cols+self._num_cols)]
+                for i in range(num_rows)]
+        # Iterate over rows to create display string
+        display_string = ''
+        for row in rows:
+            row_string = self._create_row_string(row)
+            display_string += row_string + '\n'
+        return display_string
+
+
+    def _create_row_string(self, row):
+        """
+        Given a row with an arbitrary number of values, create a
+        single formatted string such that all values will be properly
+        spaced when multiple rows are created.
+        """
+        row_string = ''
+        column_width = self._real_max + self._real_gap  # All entries must add up to this!
+        if len(row) == 1:  # Single value, nothing to do
+            row_string += row[0]
+        else:
+            for i,value in enumerate(row):  # Enumerate is 0-indexed
+                if i == 0:
+                    row_string += value
+                else:
+                    num_gaps = ((column_width - (
+                    (len(row[i-1]) * self._char_width) + # Previous value
+                    (self._real_gap)  # Gap width
+                    )) //  # Round down
+                    (self._gap_width))
+                    row_string += (' ' * num_gaps)
+                    row_string += (' ' * self._gap)
+                    row_string += value
+        return row_string
+
+
+
 ####################
 # Helper Functions #
 ####################
 
 def clip_text(width, font, string):
-    """Calculates the approximate character width of a window (in pixels) and
-    then clips the desired display string to fit within that window"""
+    """
+    Calculates the approximate character width of a window (in pixels) and
+    then clips the desired display string to fit within that window
+    """
     import tkinter.font as tkf
     f = tkf.Font(family=font) # here font is the name
     char_width = f.measure('0') # 0 is a standard measure for width

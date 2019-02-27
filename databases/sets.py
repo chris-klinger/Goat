@@ -13,7 +13,7 @@ class Set(Persistent):
         self.num_entries = 0
 
     def add_entries(self, entry_list):
-        """Adds to internal list, recalculates attr value"""
+        """Updates internal list, recalculates attr value"""
         self.entries = entry_list
         self._calc_num_entries()
         self._p_changed = 1 # ensures persistence
@@ -31,6 +31,12 @@ class QuerySet(Set):
         Set.__init__(self, name)
         self.qtype = query_type
 
+
 class DBSet(Set):
+    def __init__(self, name):
+        Set.__init__(self, name)
+
+
+class SettingsSet(Set):
     def __init__(self, name):
         Set.__init__(self, name)

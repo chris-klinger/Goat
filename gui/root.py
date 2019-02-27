@@ -8,7 +8,8 @@ from tkinter.messagebox import *
 from bin.initialize_goat import configs
 
 from settings import settings_config
-from gui.settings import settings_form
+#from gui.settings import settings_form
+from gui.settings import settings_gui
 from gui.database import database_gui, db_set_gui
 from gui.searches import search_gui
 from gui.results import result_gui
@@ -120,7 +121,8 @@ class RootFrame(Frame):
 
     def settings_popup(self):
         window = Toplevel()
-        settings_form.SettingsForm(settings_config.list_settings(),window)
+        #settings_form.SettingsForm(settings_config.list_settings(),window)
+        settings_gui.SettingsFrame(window)
 
     def search_popup(self):
         window = Toplevel()

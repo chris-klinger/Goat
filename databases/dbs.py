@@ -49,9 +49,14 @@ class DB:
         """Removes a database object"""
         self.db.remove_entry(self.node, identity)
 
+    def is_empty(self):
+        """Convenicence function"""
+        length = sum(1 for _ in self.list_entries())  # Length of a generator
+        return length == 0
+
 class QueryDB(DB):
     def __init__(self):
-        DB.__init__(self, 'queries')
+        DB.__init__(self, 'query_db')
 
 class MiscQDB(DB):
     def __init__(self):
@@ -81,7 +86,7 @@ class QSetDB(DB):
 
 class RecordDB(DB):
     def __init__(self):
-        DB.__init__(self, 'records')
+        DB.__init__(self, 'record_db')
 
 class RSetDB(DB):
     def __init__(self):
@@ -89,12 +94,20 @@ class RSetDB(DB):
 
 class ResultDB(DB):
     def __init__(self):
-        DB.__init__(self, 'results')
+        DB.__init__(self, 'result_db')
 
 class SearchDB(DB):
     def __init__(self):
-        DB.__init__(self, 'searches')
+        DB.__init__(self, 'search_db')
+
+class SettingsDB(DB):
+    def __init__(self):
+        DB.__init__(self, 'settings_db')
+
+class SSetDB(DB):
+    def __init__(self):
+        DB.__init__(self, 'settings_sets')
 
 class SummaryDB(DB):
     def __init__(self):
-        DB.__init__(self, 'summaries')
+        DB.__init__(self, 'summary_db')
