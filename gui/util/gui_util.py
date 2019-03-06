@@ -274,15 +274,14 @@ class InfoColumnPanel(ttk.Label):#ttk.Entry):
         self._parent = parent
         self._width = width
         self._values = values
+        self._val_widths = []
         self._gap = gap  # desired spacing between values
         self._max_cols = max_cols # user-specified number of cols to display
         # Values that are calculated for drawing
-        #self._max_length = 1  # maximum length of all values
-        self._char_width = 0  # Actual width of a character
         self._gap_width = 0  # Actual width of a gap
         self._real_max = 0    # Actual width of the maximum value
         self._real_gap = 0   # Width of the specified number of gaps
-        self._num_cols = 1  # number of columns to display
+        self._num_cols = 0  # number of columns to display
         self._to_display = StringVar()
         self.config(
                 textvariable=self._to_display,
@@ -332,30 +331,29 @@ class InfoColumnPanel(ttk.Label):#ttk.Entry):
         """
         # Determine values based on font
         f = tkf.Font(family=font)  # name of the font
-        self._char_width = f.measure('0')  # standard char for avg width
         self._gap_width = f.measure(' ')   # actual width of a gap
         # Now determine how many columns are needed
+        self._val_widths = []  # reset or infinitely recurs!
+        for value in self._values:
+            char_width = sum([f.measure(char) for char in value])
+            self._val_widths.append([value,char_width])
         sorted_vals = sorted(
-                self._values,
+                self._val_widths,
                 reverse = True,  # largest values first
-                key=lambda x: len(x),
+                key=lambda x: x[1],
                 )
-        self._real_max = len(sorted_vals[0]) * self._char_width
+        self._real_max = sorted_vals[0][1]
         self._real_gap = self._gap_width * self._gap  # Actual width of the gap
         total_length = 0
-        num_cols = 1
+        num_cols = 0
         for value in sorted_vals:
-            val_length = len(value) * self._char_width
-            max_required = total_length + val_length + (num_cols * self._real_gap)
+            max_required = total_length + value[1] + (num_cols * self._real_gap)
             if max_required >= width:  #self._width:  # too wide
-                print("breaking due to max length")
                 break
             else:
-                total_length += val_length  # keep track
+                total_length += value[1]  # keep track
                 num_cols += 1
                 if num_cols >= self._max_cols:
-                    print("Currently want {} columns".format(num_cols))
-                    print("breaking due to max cols")
                     break  # reached cutoff
         self._num_cols = num_cols
 
@@ -371,17 +369,20 @@ class InfoColumnPanel(ttk.Label):#ttk.Entry):
         but that the length of the gap will need to be calculated for
         each row to ensure that subsequent columns line up
         """
-        num_vals = len(self._values)
-        num_rows = num_vals//self._num_cols  # rounds down
-        if num_vals%self._num_cols != 0:  # i.e. does not perfectly divide it
-            num_rows += 1
-        rows = [self._values[(i*self._num_cols):(i*self._num_cols+self._num_cols)]
+        num_vals = len(self._val_widths)
+        if self._num_cols == 0:
+            display_string = ''
+        else:
+            num_rows = num_vals//self._num_cols  # rounds down
+            if num_vals%self._num_cols != 0:  # i.e. does not perfectly divide it
+                num_rows += 1
+            rows = [self._val_widths[(i*self._num_cols):(i*self._num_cols+self._num_cols)]
                 for i in range(num_rows)]
-        # Iterate over rows to create display string
-        display_string = ''
-        for row in rows:
-            row_string = self._create_row_string(row)
-            display_string += row_string + '\n'
+            # Iterate over rows to create display string
+            display_string = ''
+            for row in rows:
+                row_string = self._create_row_string(row)
+                display_string += row_string + '\n'
         return display_string
 
 
@@ -394,20 +395,17 @@ class InfoColumnPanel(ttk.Label):#ttk.Entry):
         row_string = ''
         column_width = self._real_max + self._real_gap  # All entries must add up to this!
         if len(row) == 1:  # Single value, nothing to do
-            row_string += row[0]
+            row_string += row[0][0]
         else:
             for i,value in enumerate(row):  # Enumerate is 0-indexed
                 if i == 0:
-                    row_string += value
+                    row_string += value[0]
                 else:
-                    num_gaps = ((column_width - (
-                    (len(row[i-1]) * self._char_width) + # Previous value
-                    (self._real_gap)  # Gap width
-                    )) //  # Round down
-                    (self._gap_width))
+                    num_gaps = (column_width -
+                            (row[i-1][1] + self._real_gap)) // self._gap_width
                     row_string += (' ' * num_gaps)
                     row_string += (' ' * self._gap)
-                    row_string += value
+                    row_string += value[0]
         return row_string
 
 
