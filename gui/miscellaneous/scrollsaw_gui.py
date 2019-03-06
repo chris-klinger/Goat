@@ -27,7 +27,7 @@ class ScrollSawFrame(Frame):
         self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onSubmit(self):
         """Pop up appropriate window for analysis"""
@@ -62,7 +62,7 @@ class SummScrollSawFrame(Frame):
         self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onChoose(self):
         """Generic file choice"""

@@ -31,7 +31,7 @@ class ResultFrame(Frame):
                         ('Done', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onClose(self):
         """Close associated database and destroy window"""

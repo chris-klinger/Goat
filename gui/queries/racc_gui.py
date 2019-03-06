@@ -21,7 +21,7 @@ class AddRaccFrame(Frame):
         self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onSubmit(self):
         """Submits and signals back to the other widget to do something"""
@@ -110,7 +110,7 @@ class BlastListFrame(Frame):
         self.toolbar.pack(expand=YES, fill=X, side=BOTTOM)
         self.buttons = [('Add', self.onAdd, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def link_widget(self, widget):
         """Hook up another widget after instantiation"""
@@ -137,7 +137,7 @@ class AddedListFrame(Frame):
         self.toolbar.pack(expand=YES, fill=X, side=BOTTOM)
         self.buttons = [('Remove', self.onRemove, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def link_widget(self, widget):
         """Hook up another widget after instantiation"""

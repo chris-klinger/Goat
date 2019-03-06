@@ -37,7 +37,7 @@ class DatabaseFrame(Frame):
                         ('Modify', self.onModify, {'side':LEFT}),
                         ('Add', self.onAdd, {'side':LEFT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onSubmit(self):
         """Commits changes to database before closing"""
@@ -213,7 +213,7 @@ class RecordFrame(Frame):
         self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onCancel(self):
         self.parent.destroy()
@@ -292,7 +292,7 @@ class AttributeFrame(Frame):
         self.buttons = [('Remove Attribute', self.onReAttr, {'side':RIGHT}),
                         ('Add Attribute', self.onAttr, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def update_attr(self, update, setting, value=None):
         """Updates window with added entries"""
@@ -347,7 +347,7 @@ class RemovalFrame(Frame):
         self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onCancel(self):
         self.parent.destroy()
@@ -377,7 +377,7 @@ class FileFrame(Frame):
         self.buttons = [('Remove file', self.onReFile, {'side':RIGHT}),
                         ('Add file', self.onAddFile, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onSelect(self):
         """Signal to file panel to display associated file information"""
@@ -453,7 +453,7 @@ class NewFileFrame(Frame):
         self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onCancel(self):
         self.parent.destroy()

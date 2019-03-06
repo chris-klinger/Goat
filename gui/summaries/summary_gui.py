@@ -42,7 +42,7 @@ class SearchSummaryFrame(Frame):
         self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onClose(self):
         """Close dbs"""
@@ -83,7 +83,7 @@ class OneSearchFrame(Frame):
         self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onClose(self):
         """Close dbs and destroy window"""
@@ -147,7 +147,7 @@ class TwoSearchFrame(Frame):
         self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onClose(self):
         """Close dbs and destroy window"""
@@ -225,7 +225,7 @@ class SummSummaryFrame(Frame):
         self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onCancel(self):
         self.parent.destroy()
@@ -312,7 +312,7 @@ class SummaryViewer(Frame):
                         ('Done', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onClose(self):
         """Close associated database and destroy window"""
@@ -736,7 +736,7 @@ class TableFrame(Frame):
         self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onClose, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onChoose(self):
         """Pops up directory choice"""
@@ -791,7 +791,7 @@ class SummarySeqFrame(Frame):
         self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onCancel(self):
         self.parent.destroy()

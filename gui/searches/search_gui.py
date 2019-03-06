@@ -39,7 +39,7 @@ class SearchFrame(Frame):
         self.buttons = [('Cancel', self.onClose, {'side':RIGHT}),
                         ('Run', self.onRun, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onClose(self):
         """Close without actually running the search"""
@@ -163,7 +163,7 @@ class QuerySummaryFrame(Frame):
         self.buttons=[('Remove Query(ies)', self.onRemove, {'side':RIGHT}),
                     ('Add Query(ies)', self.onAdd, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def change_algorithm(self, algorithm):
         """Called from parent window"""
@@ -244,7 +244,7 @@ class QueryWindow(Frame):
         self.buttons = [('Submit', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onSubmit(self):
         """Checks whether the treeview or list widget is in focus, then checks the
@@ -417,7 +417,7 @@ class DatabaseSummaryFrame(Frame):
         self.buttons=[('Remove Database(s)', self.onRemove, {'side':RIGHT}),
                     ('Add Database(s)', self.onAdd, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onRemove(self):
         """Removes select entry(ies)"""
@@ -445,7 +445,7 @@ class DatabaseWindow(Frame):
         self.buttons = [('Submit', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onSubmit(self):
         """Adds selected records to the database list in parent widget"""
@@ -565,7 +565,7 @@ class ReverseSearchFrame(Frame):
         self.buttons = [('Cancel', self.onClose, {'side':RIGHT}),
                         ('Run', self.onRun, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onClose(self):
         """Close without actually running the search"""

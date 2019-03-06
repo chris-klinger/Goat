@@ -27,7 +27,7 @@ class AddQueryFrame(Frame):
                         ('Done', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onAddFile(self):
         """Prompts user to add a file and associated data"""
@@ -77,7 +77,7 @@ class QueryListFrame(Frame):
         self.toolbar.pack(expand=YES, fill=X, side=BOTTOM)
         self.buttons = [('Add', self.onAdd, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def link_widget(self, widget):
         """Hook up another widget after instantiation"""
@@ -103,7 +103,7 @@ class AddedListFrame(Frame):
         self.toolbar.pack(expand=YES, fill=X, side=BOTTOM)
         self.buttons = [('Remove', self.onRemove, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def link_widget(self, widget):
         """Hook up another widget after instantiation"""
@@ -149,7 +149,7 @@ class AddFileFrame(Frame):
         self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onSubmit(self):
         """Signals back to other widget to update queries"""
@@ -189,7 +189,7 @@ class AddManualFrame(Frame):
         self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onSubmit(self):
         """Signals back to other widget to update queries"""

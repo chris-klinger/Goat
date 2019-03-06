@@ -30,7 +30,7 @@ class AnalysisPicker(Frame):
         self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onSubmit(self):
         """Pop up appropriate window for analysis to be performed"""
@@ -73,7 +73,7 @@ class ReciprocalBLASTFrame(Frame):
         self.buttons = [('Run', self.onRun, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onRun(self):
         """Collect all relevant information and call reciprocal BLAST"""
@@ -182,7 +182,7 @@ class HMMerBLASTFrame(Frame):
         self.buttons = [('Run', self.onRun, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onRun(self):
         """Collect all relevant information and call fwd HMMer followed by rBLAST"""
@@ -298,7 +298,7 @@ class FullBLASTHMMerFrame(Frame):
         self.buttons = [('Run', self.onRun, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onRun(self):
         """

@@ -23,8 +23,8 @@ class Form:
             entry = Entry(row, width=entrysize)
             entry.pack(side=RIGHT, expand=YES, fill=X)
             self.content[label] = entry
-        Button(box, text='Cancel', command=self.onCancel).pack(side=RIGHT)
-        Button(box, text='Submit', command=self.onSubmit).pack(side=RIGHT)
+        ttk.Button(box, text='Cancel', command=self.onCancel).pack(side=RIGHT)
+        ttk.Button(box, text='Submit', command=self.onSubmit).pack(side=RIGHT)
         box.master.bind('<Return>', (lambda event: self.onSubmit()))
 
     def onSubmit(self): # override in subclass
@@ -59,7 +59,7 @@ class DefaultValueForm(Frame):
 
         if self.buttons:
             for (label, action, where) in self.buttons:
-                Button(self, text=label, command=action).pack(where)
+                ttk.Button(self, text=label, command=action).pack(where)
 
     def get(self, label):
         """Convenience function"""
@@ -91,7 +91,7 @@ class FileValueForm(DefaultValueForm):
     def __init__(self, parent=None, entrysize=40):
         entry_list = [('Filepath','')]
         DefaultValueForm.__init__(self, entry_list, parent)
-        Button(self, text='Choose File', command=self.onChoose).pack(side=RIGHT)
+        ttk.Button(self, text='Choose File', command=self.onChoose).pack(side=RIGHT)
 
     def onChoose(self):
         """Pops up file choice dialogue"""

@@ -31,7 +31,7 @@ class RecordSetFrame(Frame):
                         ('Modify Record Set', self.onModify, {'side': LEFT}),
                         ('Remove Record Set', self.onRemove, {'side': LEFT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onSubmit(self):
         self.rsdb.commit()
@@ -219,7 +219,7 @@ class ModifySetFrame(Frame):
         self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
         # add possibilities
         present = list(set_obj.entries) if set_obj else []

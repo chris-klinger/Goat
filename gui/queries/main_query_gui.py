@@ -34,7 +34,7 @@ class QueryFrame(Frame):
                         ('Modify Query', self.onModify, {'side': LEFT}),
                         ('Remove Query(ies)', self.onRemove, {'side': LEFT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onSubmit(self):
         self.qdb.commit()
@@ -314,7 +314,7 @@ class AddQueryFrame(Frame):
         else:
             self.buttons.append(('Add by File', self.onAddFile, {'side':LEFT}))
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onSubmit(self):
         """Add all entries in 'To be Added' side of columns to parent widget"""
@@ -500,7 +500,7 @@ class AddedListFrame(Frame):
         self.toolbar.pack(expand=YES, fill=X, side=BOTTOM)
         self.buttons = [('Remove', self.onRemove, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def link_widget(self, widget):
         """Hook up another widget after instantiation"""
@@ -551,7 +551,7 @@ class AddSeqFileFrame(Frame):
         self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onSubmit(self):
         """Get queries from file and add them to the columns widget"""
@@ -596,7 +596,7 @@ class AddHMMFileFrame(Frame):
                         ('Cancel', self.onCancel, {'side':RIGHT}),
                         ('Add Associated Query(ies)', self.onAddQ, {'side':LEFT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onSubmit(self):
         """Get queries from file and add them to the columns widget"""
@@ -673,7 +673,7 @@ class AddSeqManFrame(Frame):
         self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onSubmit(self):
         """Signals back to other widget to update queries"""
@@ -758,7 +758,7 @@ class ModifySeqQuery(Frame):
         self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onSubmit(self):
         """Submits and signals back to the other widget to do something"""
@@ -858,7 +858,7 @@ class BlastListFrame(Frame):
         self.toolbar.pack(expand=YES, fill=X, side=BOTTOM)
         self.buttons = [('Add', self.onAdd, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def link_widget(self, widget):
         """Hook up another widget after instantiation"""
@@ -887,7 +887,7 @@ class BlastAddedFrame(Frame):
         self.toolbar.pack(expand=YES, fill=X, side=BOTTOM)
         self.buttons = [('Remove', self.onRemove, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def link_widget(self, widget):
         """Hook up another widget after instantiation"""
@@ -921,7 +921,7 @@ class ModifyHMMQuery(Frame):
         self.buttons = [('Done', self.onSubmit, {'side':RIGHT}),
                         ('Cancel', self.onCancel, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def onSubmit(self):
         """Submits and signals back to the other widget to do something"""
