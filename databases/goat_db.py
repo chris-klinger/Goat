@@ -7,9 +7,10 @@ and the code necessary to perform manipulations on them.
 """
 
 import os
+import time
 from threading import Lock
 
-from ZODB import FileStorage, DB
+from ZODB import FileStorage, DB, serialize
 from BTrees.OOBTree import OOBTree
 
 class GoatDB:
@@ -51,6 +52,10 @@ class GoatDB:
             transaction.commit()
 
     def close(self):
+        self.storage.pack(  # Reduce size of DB
+                time.time(),  # Do it now
+                serialize.referencesf,  # These are the active references
+                )
         self.storage.close()
 
     def list_entries(self, node):
