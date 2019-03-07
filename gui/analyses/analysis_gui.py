@@ -134,8 +134,12 @@ class ReciprocalBLASTParams(Frame):
         self.pack()
         self.curdir = os.getcwd()
         self.entries = input_form.DefaultValueForm(
-                [('Forward search name','fwd1'),('Reverse search name','rev1'), ('Location',self.curdir)],
-                self, [('Choose Directory', self.onChoose, {'side':RIGHT})])
+                [('Forward search name','fwd1'),
+                ('Reverse search name','rev1'),
+                ('Location',self.curdir)],
+                self,
+                [('Choose Directory', self.onChoose, {'side':RIGHT})]
+                )
         self.q_type = gui_util.RadioBoxFrame(self,
                 [('Protein','protein'), ('Genomic','genomic')],
                 labeltext='Query data type')

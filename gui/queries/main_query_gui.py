@@ -474,7 +474,7 @@ class QueryListFrame(Frame):
         self.toolbar.pack(expand=YES, fill=X, side=BOTTOM)
         self.buttons = [('Add', self.onAdd, {'side':RIGHT})]
         for (label, action, where) in self.buttons:
-            Button(self.toolbar, text=label, command=action).pack(where)
+            ttk.Button(self.toolbar, text=label, command=action).pack(where)
 
     def link_widget(self, widget):
         """Hook up another widget after instantiation"""
